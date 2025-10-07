@@ -1,0 +1,24 @@
+{
+  "services": [
+    {
+      "name": "One-on-one Coaching Session",
+      "description": "60-minute video call focused on productivity and workflow improvements.",
+      "price": 150
+    },
+    {
+      "name": "Workflow Audit",
+      "description": "Comprehensive review of current tools and automations with a written action plan.",
+      "price": 600
+    },
+    {
+      "name": "Implementation Sprint",
+      "description": "Two-week engagement to implement agreed automations and integrations.",
+      "price": 2400
+    },
+    {
+      "name": "On-call Support Retainer",
+      "description": "Monthly access to troubleshooting and updates (up to 6 support hours).",
+      "price": 900
+    }
+  ]
+}
