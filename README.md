@@ -52,47 +52,24 @@ python auto_responder.py "Hi, can you help my team automate our reporting?"
 
 By default the script calls `gpt-4o-mini` with a balanced temperature of `0.6`. The generated reply is printed to standard output.
 
-## WhatsApp-inspired Flutter web client
+## Pow AI collaboration workspace (Flask web app)
 
-The `flutter_whatsapp_clone` directory contains a Flutter application that mimics a multi-party WhatsApp conversation. It lets
-you:
+The repository now ships with a lightweight Flask app that serves a browser-based chat workspace inspired by the original Flutter mock-up—no additional SDKs or build steps required.
 
-* switch between two or more human participants, each with a unique bubble colour or gradient;
-* enable or disable AI auto-replies via a toggle in the top app bar;
-* preview an AI-generated response, watch the "thinking" indicator and either send or cancel the draft before it posts;
-* interject manually at any time—sending a human message cancels the pending AI response.
+### Features
 
-### Prerequisites
+* Switch between three human teammates to post messages with distinct gradients.
+* Toggle automatic Pow AI responses on or off from the chat header.
+* Watch the typing indicator before previewing the suggested AI draft, then send or cancel it.
+* Compose messages with Shift+Enter for multi-line editing and Enter to send.
 
-* Flutter SDK 3.16 or newer with web support enabled.
-* Node.js is **not** required; Flutter serves the compiled assets.
-
-### Run the Flutter app in debug mode
+### Run the web app
 
 ```bash
-cd flutter_whatsapp_clone
-flutter pub get
-flutter run -d chrome
+pip install -r requirements.txt
+python app.py
 ```
 
-### Build for the Flask host
+Visit `http://127.0.0.1:5000/` and press the **Run** button in your IDE if you prefer; the app uses standard Flask defaults and does not depend on extra virtual environments.
 
-1. Compile the Flutter project for the web:
-
-   ```bash
-   cd flutter_whatsapp_clone
-   flutter pub get
-   flutter build web
-   ```
-
-2. Start the Flask server, which serves the generated `build/web` directory as a static site:
-
-   ```bash
-   cd ..
-   pip install -r requirements.txt
-   python -m flask --app flask_app.app run
-   ```
-
-3. Navigate to `http://127.0.0.1:5000/` to use the chat interface as a static HTML experience.
-
-The Flask application automatically detects missing Flutter build assets and instructs you to run `flutter build web` first.
+The UI assets live in `templates/` and `static/` and can be customised without rebuilding anything.
