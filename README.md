@@ -51,3 +51,48 @@ python auto_responder.py "Hi, can you help my team automate our reporting?"
 ```
 
 By default the script calls `gpt-4o-mini` with a balanced temperature of `0.6`. The generated reply is printed to standard output.
+
+## WhatsApp-inspired Flutter web client
+
+The `flutter_whatsapp_clone` directory contains a Flutter application that mimics a multi-party WhatsApp conversation. It lets
+you:
+
+* switch between two or more human participants, each with a unique bubble colour or gradient;
+* enable or disable AI auto-replies via a toggle in the top app bar;
+* preview an AI-generated response, watch the "thinking" indicator and either send or cancel the draft before it posts;
+* interject manually at any time—sending a human message cancels the pending AI response.
+
+### Prerequisites
+
+* Flutter SDK 3.16 or newer with web support enabled.
+* Node.js is **not** required; Flutter serves the compiled assets.
+
+### Run the Flutter app in debug mode
+
+```bash
+cd flutter_whatsapp_clone
+flutter pub get
+flutter run -d chrome
+```
+
+### Build for the Flask host
+
+1. Compile the Flutter project for the web:
+
+   ```bash
+   cd flutter_whatsapp_clone
+   flutter pub get
+   flutter build web
+   ```
+
+2. Start the Flask server, which serves the generated `build/web` directory as a static site:
+
+   ```bash
+   cd ..
+   pip install -r requirements.txt
+   python -m flask --app flask_app.app run
+   ```
+
+3. Navigate to `http://127.0.0.1:5000/` to use the chat interface as a static HTML experience.
+
+The Flask application automatically detects missing Flutter build assets and instructs you to run `flutter build web` first.

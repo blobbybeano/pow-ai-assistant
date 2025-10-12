@@ -1,0 +1,27 @@
+# Generic
+.DS_Store
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.melisearch
+.melos_tool
+.pub-cache
+.dart_tool/
+.packages
+build/
+
+# Flutter related
+flutter_export_environment.sh
+.gradle/
+android/
+ios/
+linux/
+macos/
+windows/
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+*.iml
