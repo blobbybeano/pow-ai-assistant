@@ -27,19 +27,36 @@
             <h2 id="activeName"></h2>
             <p id="activeRole" class="workspace__subtitle"></p>
           </div>
-          <label class="toggle">
-            <input type="checkbox" id="autoToggle" checked />
-            <span class="toggle__track"></span>
-            <span class="toggle__label">Auto AI replies</span>
-          </label>
+          <div class="workspace__controls">
+            <div
+              id="personaSwitch"
+              class="persona-switch"
+              role="group"
+              aria-label="Select AI persona"
+            ></div>
+            <label class="toggle">
+              <input type="checkbox" id="autoToggle" checked />
+              <span class="toggle__track"></span>
+              <span class="toggle__label">Auto AI replies</span>
+            </label>
+          </div>
         </header>
         <section class="messages" id="messageList"></section>
         <section class="ai-preview hidden" id="aiPreview">
           <div class="ai-preview__bubble">
-            <div class="ai-preview__typing" id="typingIndicator">
-              <span></span><span></span><span></span>
+            <div class="ai-preview__avatar">
+              <img id="previewAvatar" alt="" />
             </div>
-            <p id="previewText"></p>
+            <div class="ai-preview__body">
+              <div class="ai-preview__meta">
+                <span class="ai-preview__name" id="previewPersonaName"></span>
+                <span class="ai-preview__tone" id="previewPersonaTone"></span>
+              </div>
+              <div class="ai-preview__typing" id="typingIndicator">
+                <span></span><span></span><span></span>
+              </div>
+              <p id="previewText"></p>
+            </div>
           </div>
           <div class="ai-preview__actions">
             <button class="btn btn--primary" id="sendPreview">Send</button>
