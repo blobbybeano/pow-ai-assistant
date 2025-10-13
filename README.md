@@ -73,3 +73,33 @@ python app.py
 Visit `http://127.0.0.1:5000/` and press the **Run** button in your IDE if you prefer; the app uses standard Flask defaults and does not depend on extra virtual environments.
 
 The UI assets live in `templates/` and `static/` and can be customised without rebuilding anything.
+
+## Twilio WhatsApp sandbox auto-responder
+
+The `twilio_app.py` module exposes a Flask webhook that turns inbound WhatsApp sandbox
+messages into PowWash quote replies using the shared OpenAI auto-responder logic.
+
+### Configure
+
+1. Install the additional dependency:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Provide your OpenAI credentials in the environment (as described earlier).
+
+3. Run the webhook locally:
+
+   ```bash
+   python twilio_app.py
+   ```
+
+   The server listens on `http://0.0.0.0:5002/twilio/whatsapp`.
+
+4. In the Twilio console, point your WhatsApp sandbox **When a message comes in** URL to
+   the public address of this webhook (use a tunnelling tool such as ngrok when running locally).
+
+5. Send a message from your verified WhatsApp number. The AI agent will draft a PowWash reply
+   using the updated tone guide and service menu so you can observe the full exchange inside the
+   Flutter app connected to the sandbox.

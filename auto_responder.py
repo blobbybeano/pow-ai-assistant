@@ -22,7 +22,7 @@ def _load_price_list(path: Path) -> str:
         name = service.get("name", "Unnamed service")
         description = service.get("description", "")
         price = service.get("price")
-        price_text = f"${price}" if price is not None else "price upon request"
+        price_text = f"£{price}" if price is not None else "price upon request"
         if description:
             lines.append(f"- {name} ({price_text}): {description}")
         else:
@@ -42,14 +42,16 @@ def _load_tone_profile(path: Path) -> str:
 
 def _build_system_prompt(price_list: str, tone_profile: str) -> str:
     return (
-        "You write email replies as a helpful automation consultant.\n"
+        "You are PowWash's virtual assistant replying to WhatsApp enquiries about"
+        " exterior cleaning quotes.\n"
         "In every response you must:\n"
         "- Follow the tone guide below.\n"
-        "- Reference offerings only from the provided price list.\n"
+        "- Reference offerings only from the provided service menu.\n"
+        "- Gather any missing details that affect pricing (surface type, size, access, preferred times).\n"
         "- Offer a clear next step at the end of the message.\n\n"
         "Tone guide:\n"
         f"{tone_profile}\n\n"
-        f"Price list:\n{price_list}"
+        f"Service menu and starting prices:\n{price_list}"
     )
 
 

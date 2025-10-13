@@ -1,24 +1,24 @@
 {
   "services": [
     {
-      "name": "One-on-one Coaching Session",
-      "description": "60-minute video call focused on productivity and workflow improvements.",
-      "price": 150
+      "name": "Driveway Pressure Wash",
+      "description": "Deep clean of block paving or concrete driveways, including moss and stain removal (up to 60m²).",
+      "price": 120
     },
     {
-      "name": "Workflow Audit",
-      "description": "Comprehensive review of current tools and automations with a written action plan.",
-      "price": 600
+      "name": "Patio Refresh",
+      "description": "Pressure wash and chemical treatment for patios or decking to lift dirt and algae (up to 40m²).",
+      "price": 95
     },
     {
-      "name": "Implementation Sprint",
-      "description": "Two-week engagement to implement agreed automations and integrations.",
-      "price": 2400
+      "name": "Roof Soft Wash",
+      "description": "Low-pressure biocide treatment that clears moss and prevents regrowth for 12 months.",
+      "price": 320
     },
     {
-      "name": "On-call Support Retainer",
-      "description": "Monthly access to troubleshooting and updates (up to 6 support hours).",
-      "price": 900
+      "name": "Gutter Clear & Flush",
+      "description": "Vacuum removal of debris, downpipe flush, and a condition report for homes up to two storeys.",
+      "price": 80
     }
   ]
 }
