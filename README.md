@@ -79,6 +79,22 @@ The UI assets live in `templates/` and `static/` and can be customised without r
 The `twilio_app.py` module exposes a Flask webhook that turns inbound WhatsApp sandbox
 messages into PowWash quote replies using the shared OpenAI auto-responder logic.
 
+### New Flutter workspace
+
+A production-style Flutter client now lives in `flutter_app/`. It surfaces the
+Twilio conversations captured by the webhook, supports toggling AI auto-replies
+per contact, and lets you send manual responses directly from your device.
+
+1. Install Flutter 3.19 or newer.
+2. Start the Flask webhook (`python twilio_app.py`) and expose it with ngrok if
+   you plan to test on a physical device.
+3. From `flutter_app/` run `flutter pub get` followed by `flutter run`. Pass the
+   appropriate `--dart-define=API_BASE_URL=...` depending on your emulator
+   target (e.g. `http://10.0.2.2:5002` for Android).
+4. Watch conversations update in real time as Twilio forwards messages. Disable
+   Pow AI autopilot for a thread to test human replies or tap **AI Draft** to
+   fetch a suggested response without sending it.
+
 ### Configure
 
 1. Install the additional dependency:
@@ -87,7 +103,11 @@ messages into PowWash quote replies using the shared OpenAI auto-responder logic
    pip install -r requirements.txt
    ```
 
-2. Provide your OpenAI credentials in the environment (as described earlier).
+2. Provide your OpenAI credentials in the environment (as described earlier) as
+   well as the Twilio credentials needed for outbound sandbox messages:
+   `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and either
+   `TWILIO_WHATSAPP_NUMBER` (prefixed with `whatsapp:`) or
+   `TWILIO_MESSAGING_SERVICE_SID`.
 
 3. Run the webhook locally:
 
@@ -103,3 +123,40 @@ messages into PowWash quote replies using the shared OpenAI auto-responder logic
 5. Send a message from your verified WhatsApp number. The AI agent will draft a PowWash reply
    using the updated tone guide and service menu so you can observe the full exchange inside the
    Flutter app connected to the sandbox.
+
+### Local trial workflow (PyCharm + ngrok)
+
+If you are developing inside PyCharm and want to exercise the full sandbox loop, follow the
+sequence below:
+
+1. **Create two PyCharm run configurations.**
+   * `Twilio webhook` – points to `python twilio_app.py`, uses your preferred virtual
+     environment, and loads the OpenAI/Twilio environment variables. Ensure the working
+     directory is the project root so the Flask app can find `conversation_store.db`.
+   * `Flutter client` – marks `flutter_app/lib/main.dart` as the entry point. PyCharm will use
+     the Flutter SDK you configured globally.
+2. **Start the backend first.** Run the `Twilio webhook` configuration so the Flask server is
+   available at `http://127.0.0.1:5002`. Watch the PyCharm Run tool window for the log output
+   confirming the webhook URL.
+3. **Expose the webhook to Twilio.** Launch ngrok from a terminal (this can be PyCharm’s
+   built-in terminal) with:
+
+   ```bash
+   ngrok http 5002
+   ```
+
+   Copy the generated `https://` forwarding address and update the Twilio sandbox **When a
+   message comes in** webhook URL to `https://<forwarding-host>/twilio/whatsapp`.
+4. **Run the Flutter workspace.** Execute the `Flutter client` configuration. When prompted for
+   an `API_BASE_URL`, use the host that matches your target device:
+   * Android emulator – `http://10.0.2.2:5002`
+   * iOS simulator – `http://127.0.0.1:5002`
+   * Physical device – replace with your machine’s LAN IP (e.g. `http://192.168.1.50:5002`)
+5. **Test the flows.** With all three pieces running (Flask webhook, ngrok tunnel, Flutter app),
+   send a WhatsApp message to your sandbox number. The inbox page should refresh with the new
+   conversation. Open it to toggle AI autopilot, request an AI draft, or send a manual reply. Any
+   replies you send from the Flutter app will appear in the Twilio sandbox thread on your phone.
+
+Keep ngrok running while you iterate so Twilio can continue to reach your local webhook. If you
+restart the tunnel, update the sandbox URL with the new forwarding address before sending the
+next test message.
