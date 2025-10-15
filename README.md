@@ -79,6 +79,22 @@ The UI assets live in `templates/` and `static/` and can be customised without r
 The `twilio_app.py` module exposes a Flask webhook that turns inbound WhatsApp sandbox
 messages into PowWash quote replies using the shared OpenAI auto-responder logic.
 
+### New Flutter workspace
+
+A production-style Flutter client now lives in `flutter_app/`. It surfaces the
+Twilio conversations captured by the webhook, supports toggling AI auto-replies
+per contact, and lets you send manual responses directly from your device.
+
+1. Install Flutter 3.19 or newer.
+2. Start the Flask webhook (`python twilio_app.py`) and expose it with ngrok if
+   you plan to test on a physical device.
+3. From `flutter_app/` run `flutter pub get` followed by `flutter run`. Pass the
+   appropriate `--dart-define=API_BASE_URL=...` depending on your emulator
+   target (e.g. `http://10.0.2.2:5002` for Android).
+4. Watch conversations update in real time as Twilio forwards messages. Disable
+   Pow AI autopilot for a thread to test human replies or tap **AI Draft** to
+   fetch a suggested response without sending it.
+
 ### Configure
 
 1. Install the additional dependency:
@@ -87,7 +103,11 @@ messages into PowWash quote replies using the shared OpenAI auto-responder logic
    pip install -r requirements.txt
    ```
 
-2. Provide your OpenAI credentials in the environment (as described earlier).
+2. Provide your OpenAI credentials in the environment (as described earlier) as
+   well as the Twilio credentials needed for outbound sandbox messages:
+   `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and either
+   `TWILIO_WHATSAPP_NUMBER` (prefixed with `whatsapp:`) or
+   `TWILIO_MESSAGING_SERVICE_SID`.
 
 3. Run the webhook locally:
 

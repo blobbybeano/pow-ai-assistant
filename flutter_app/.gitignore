@@ -1,0 +1,38 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.dart_tool/
+.packages
+.idea/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+*.iml
+build/
+# Web artifacts
+flutter_app.iml
+
+# Android/Gradle
+**/android/**/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/**/GeneratedPluginRegistrant.kt
+**/android/key.properties
+**/android/**/.gradle/
+**/android/**/gradle-wrapper.jar
+
+# iOS/Xcode
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/.symlinks/
+**/ios/Pods/
+**/ios/build/
+
+# VS Code
+.vscode/
