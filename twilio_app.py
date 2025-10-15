@@ -7,6 +7,9 @@ from flask import Flask, Response, request
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auto_responder import generate_reply
+import os
+print("✅ Flask sees OPENAI_API_KEY:", bool(os.getenv("OPENAI_API_KEY")))
+
 
 
 app = Flask(__name__)
