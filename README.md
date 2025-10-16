@@ -1,125 +1,86 @@
 # pow-ai-assistant
 
-## Gmail subject preview script
+This repository bundles everything you need to run a PowWash operations
+workspace end-to-end: the Twilio webhook, OpenAI powered auto-responder, and a
+Flutter client for live agent collaboration.
 
-This repository contains a minimal command-line helper that authenticates with Gmail and prints the subject lines of the ten most recent messages in your inbox.
+## Unified launcher (Flutter + Flask)
+
+The quickest way to exercise the full stack is via the new
+`workspace_launcher.py` helper. It boots the Twilio Flask webhook on the chosen
+port and optionally launches the Flutter workspace with the matching API base
+URL so you can trial the experience in one step.
 
 ### Prerequisites
 
-* Python 3.9 or newer.
-* A Google account with Gmail access.
-* Network access to complete the OAuth sign-in flow.
+* Python 3.9+
+* Flutter 3.19+ (only if you want to launch the Flutter workspace)
+* OpenAI credentials exposed as environment variables (`OPENAI_API_KEY`, plus
+  `OPENAI_ORG_ID` / `OPENAI_PROJECT_ID` if required)
+* Twilio sandbox credentials for outbound replies (`TWILIO_ACCOUNT_SID`,
+  `TWILIO_AUTH_TOKEN`, and either `TWILIO_WHATSAPP_NUMBER` or
+  `TWILIO_MESSAGING_SERVICE_SID`)
 
-### Setup
-
-1. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Run the script and complete the Google sign-in flow when prompted. The script stores your OAuth token locally in `token.json` (ignored by Git):
-
-   ```bash
-   python gmail_subjects.py
-   ```
-
-On subsequent runs the stored token will be reused until it expires or is revoked. Delete `token.json` if you need to re-authorize.
-
-## AI-powered auto responder
-
-Use `auto_responder.py` to draft customer replies that reflect your pricing and preferred tone.
-
-### Configure your pricing and tone
-
-* Update `price_list.json` with the services you offer. Each entry needs a name, description, and price.
-* Adjust `tone_profile.md` to describe how you want replies to sound.
-
-### Provide OpenAI credentials
-
-The script uses the official OpenAI Python SDK. Ensure the following environment variables are set before running the script:
-
-* `OPENAI_API_KEY`
-* Optionally `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` if your workspace requires them.
-
-### Generate a reply
-
-Pass the inbound customer message on the command line. You can override the model, price list, or tone profile paths if needed.
-
-```bash
-python auto_responder.py "Hi, can you help my team automate our reporting?"
-```
-
-By default the script calls `gpt-4o-mini` with a balanced temperature of `0.6`. The generated reply is printed to standard output.
-
-## Pow AI collaboration workspace (Flask web app)
-
-The repository now ships with a lightweight Flask app that serves a browser-based chat workspace inspired by the original Flutter mock-up—no additional SDKs or build steps required.
-
-### Features
-
-* Switch between three human teammates to post messages with distinct gradients.
-* Toggle automatic Pow AI responses on or off from the chat header.
-* Watch the typing indicator before previewing the suggested AI draft, then send or cancel it.
-* Compose messages with Shift+Enter for multi-line editing and Enter to send.
-
-### Run the web app
+### Run everything together
 
 ```bash
 pip install -r requirements.txt
-python app.py
+python workspace_launcher.py
 ```
 
-Visit `http://127.0.0.1:5000/` and press the **Run** button in your IDE if you prefer; the app uses standard Flask defaults and does not depend on extra virtual environments.
+The launcher will:
 
-The UI assets live in `templates/` and `static/` and can be customised without rebuilding anything.
+1. Serve the Twilio webhook + REST API locally (default `http://0.0.0.0:5002`).
+2. Run `flutter pub get` (unless `--skip-pub-get` is supplied).
+3. Execute `flutter run` with `--dart-define=API_BASE_URL=http://127.0.0.1:5002`
+   so the workspace talks to the freshly started backend.
 
-## Twilio WhatsApp sandbox auto-responder
+Use `Ctrl+C` to shut down both processes at once. Pass `--no-flutter` if you only
+need the Flask backend (e.g. when deploying to a server or testing webhooks).
 
-The `twilio_app.py` module exposes a Flask webhook that turns inbound WhatsApp sandbox
-messages into PowWash quote replies using the shared OpenAI auto-responder logic.
+#### Helpful flags
 
-### New Flutter workspace
+* `--flutter-device`: forwards a device ID from `flutter devices` when you need
+  to target a physical device or specific simulator.
+* `--flutter-base-url`: override the API base URL (for example,
+  `http://10.0.2.2:5002` when talking to Android emulators).
+* `--flutter-extra-args -- <args>`: append custom arguments to the `flutter run`
+  invocation.
 
-A production-style Flutter client now lives in `flutter_app/`. It surfaces the
-Twilio conversations captured by the webhook, supports toggling AI auto-replies
-per contact, and lets you send manual responses directly from your device.
+All launcher output is prefixed with `[server]`, `[flutter]`, or `[launcher]` so
+you can follow the combined logs in a single terminal.
 
-1. Install Flutter 3.19 or newer.
-2. Start the Flask webhook (`python twilio_app.py`) and expose it with ngrok if
-   you plan to test on a physical device.
-3. From `flutter_app/` run `flutter pub get` followed by `flutter run`. Pass the
-   appropriate `--dart-define=API_BASE_URL=...` depending on your emulator
-   target (e.g. `http://10.0.2.2:5002` for Android).
-4. Watch conversations update in real time as Twilio forwards messages. Disable
-   Pow AI autopilot for a thread to test human replies or tap **AI Draft** to
-   fetch a suggested response without sending it.
+## Backend components
 
-### Configure
+* **`twilio_app.py`** – Flask webhook that records WhatsApp conversations and
+  exposes REST endpoints for the workspace. It reuses the shared
+  `auto_responder.generate_reply` helper to draft AI responses.
+* **`conversation_store.py`** – Thread-safe in-memory + JSON persisted store
+  backing the conversation list.
+* **`auto_responder.py`** – Standalone CLI for composing replies from the price
+  list and tone guide.
+* **`twilio_helpers.py`** – Convenience wrapper around the Twilio REST API.
 
-1. Install the additional dependency:
+You can still launch the webhook directly with `python twilio_app.py` if you
+prefer, but the new launcher handles coordinating ports and environment details
+for local development.
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Flutter workspace
 
-2. Provide your OpenAI credentials in the environment (as described earlier) as
-   well as the Twilio credentials needed for outbound sandbox messages:
-   `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and either
-   `TWILIO_WHATSAPP_NUMBER` (prefixed with `whatsapp:`) or
-   `TWILIO_MESSAGING_SERVICE_SID`.
+The Flutter client lives in [`flutter_app/`](flutter_app/README.md) and mirrors a
+WhatsApp-style inbox for PowWash operators. It polls the REST API for
+conversations, lets agents toggle AI auto-replies per contact, and supports
+manual outbound messaging when Twilio credentials are present. The launcher
+described above runs the same `flutter run` workflow you would execute manually.
 
-3. Run the webhook locally:
+## Additional utilities
 
-   ```bash
-   python twilio_app.py
-   ```
+* **`gmail_subjects.py`** – Authenticates with Gmail and prints the ten most
+  recent subject lines. Install dependencies with `pip install -r
+  requirements.txt` and run `python gmail_subjects.py` to complete the OAuth
+  flow.
+* **`app.py`** – Minimal Flask app serving a static prototype workspace. Useful
+  for quick UI experiments outside of Flutter.
 
-   The server listens on `http://0.0.0.0:5002/twilio/whatsapp`.
-
-4. In the Twilio console, point your WhatsApp sandbox **When a message comes in** URL to
-   the public address of this webhook (use a tunnelling tool such as ngrok when running locally).
-
-5. Send a message from your verified WhatsApp number. The AI agent will draft a PowWash reply
-   using the updated tone guide and service menu so you can observe the full exchange inside the
-   Flutter app connected to the sandbox.
+Update `price_list.json` and `tone_profile.md` to keep the AI output aligned
+with your current services and brand voice.

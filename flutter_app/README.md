@@ -14,6 +14,16 @@ switch between automated and human replies in real time.
 
 ## Getting started
 
+The repository root ships with `workspace_launcher.py`, a helper that boots the
+Flask backend and this Flutter client together:
+
+```bash
+python workspace_launcher.py
+```
+
+If you prefer to run the Flutter workspace manually, the usual workflow still
+applies:
+
 ```bash
 cd flutter_app
 flutter pub get
