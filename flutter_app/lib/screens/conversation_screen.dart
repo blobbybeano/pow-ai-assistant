@@ -126,10 +126,19 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   ),
                   child: controller.isLoading && messages.isEmpty
                       ? const Center(child: CircularProgressIndicator())
-                      : ListView(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          children: _buildMessageWidgets(messages),
+                      : RefreshIndicator(
+                          onRefresh: controller.refresh,
+                          child: ListView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            children: messages.isEmpty
+                                ? const [
+                                    SizedBox(height: 160),
+                                    _NoMessagesHint(),
+                                  ]
+                                : _buildMessageWidgets(messages),
+                          ),
                         ),
                 ),
               ),
@@ -285,6 +294,38 @@ String _formatDate(DateTime date) {
   final yesterday = DateTime(now.year, now.month, now.day - 1);
   if (_isSameDay(yesterday, date)) return 'Yesterday';
   return DateFormat.MMMd().format(date);
+}
+
+class _NoMessagesHint extends StatelessWidget {
+  const _NoMessagesHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Icon(Icons.chat_bubble_outline,
+              size: 48, color: Colors.black.withOpacity(0.18)),
+          const SizedBox(height: 12),
+          Text(
+            'No messages yet',
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Send a WhatsApp message to this conversation to see it appear instantly.',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: Colors.black54),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ComposerBar extends StatefulWidget {

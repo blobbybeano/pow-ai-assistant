@@ -14,6 +14,42 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.author == 'system') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Text(
+                  message.text,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.black87, height: 1.4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message.formattedTime(),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.black45, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+
     final isInbound = message.isInbound;
     final alignment = isInbound ? Alignment.centerLeft : Alignment.centerRight;
     return Align(
@@ -75,6 +111,16 @@ class MessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
+                  _authorLabel(message.author),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isInbound
+                            ? const Color(0xFF246BFD)
+                            : Colors.white.withOpacity(0.85),
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(width: 6),
+                Text(
                   message.formattedTime(),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isInbound
@@ -102,5 +148,20 @@ IconData _iconForAuthor(String author) {
       return Icons.shield_outlined;
     default:
       return Icons.phone_iphone;
+  }
+}
+
+String _authorLabel(String author) {
+  switch (author) {
+    case 'ai':
+      return 'AI';
+    case 'agent':
+      return 'Agent';
+    case 'customer':
+      return 'Customer';
+    case 'system':
+      return 'System';
+    default:
+      return author;
   }
 }

@@ -39,17 +39,25 @@ class ConversationController extends ChangeNotifier {
 
   List<ChatMessage> get messages => _detail?.messages ?? [];
 
+  Future<void> refresh() => _loadConversation(force: true);
+
   Future<void> toggleAi(bool value) async {
+    final previous = aiEnabled;
     try {
       final result = await apiClient.setAiEnabled(conversationId, value);
       _detail = _detail?.copyWith(aiEnabled: result);
       if (result) {
         _aiDraft = null;
       }
+      notifyListeners();
+      await _loadConversation(force: true);
     } catch (error) {
       _error = error;
+      if (_detail != null) {
+        _detail = _detail!.copyWith(aiEnabled: previous);
+      }
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> sendMessage(String text) async {

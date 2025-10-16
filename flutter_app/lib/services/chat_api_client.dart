@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import '../models/conversation.dart';
 
 class ChatApiClient {
-  ChatApiClient({required this.baseUrl});
+  ChatApiClient({required this.baseUrl, http.Client? httpClient})
+      : _client = httpClient ?? http.Client();
 
   factory ChatApiClient.fromEnvironment() {
     const defaultUrl = String.fromEnvironment(
@@ -16,14 +17,15 @@ class ChatApiClient {
   }
 
   final String baseUrl;
+  final http.Client _client;
 
   Uri _uri(String path) {
-    final normalizedBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-    return Uri.parse('$normalizedBase$path');
+    final base = Uri.parse(baseUrl);
+    return base.resolve(path);
   }
 
   Future<List<ConversationSummary>> fetchConversations() async {
-    final response = await http.get(_uri('/api/conversations'));
+    final response = await _client.get(_uri('/api/conversations'));
     if (response.statusCode != 200) {
       throw Exception('Failed to load conversations (${response.statusCode})');
     }
@@ -35,7 +37,7 @@ class ChatApiClient {
   }
 
   Future<ConversationDetail> fetchConversation(String conversationId) async {
-    final response = await http.get(_uri('/api/conversations/$conversationId'));
+    final response = await _client.get(_uri('/api/conversations/$conversationId'));
     if (response.statusCode != 200) {
       throw Exception('Conversation request failed (${response.statusCode})');
     }
@@ -44,7 +46,7 @@ class ChatApiClient {
   }
 
   Future<bool> setAiEnabled(String conversationId, bool enabled) async {
-    final response = await http.post(
+    final response = await _client.post(
       _uri('/api/conversations/$conversationId/toggle-ai'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'enabled': enabled}),
@@ -60,7 +62,7 @@ class ChatApiClient {
     required String conversationId,
     required String text,
   }) async {
-    final response = await http.post(
+    final response = await _client.post(
       _uri('/api/conversations/$conversationId/messages'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'text': text}),
@@ -73,7 +75,7 @@ class ChatApiClient {
   }
 
   Future<String> fetchAiDraft(String conversationId) async {
-    final response = await http.post(
+    final response = await _client.post(
       _uri('/api/conversations/$conversationId/ai-draft'),
     );
     if (response.statusCode != 200) {
@@ -81,5 +83,9 @@ class ChatApiClient {
     }
     final payload = json.decode(response.body) as Map<String, dynamic>;
     return payload['draft'] as String;
+  }
+
+  void close() {
+    _client.close();
   }
 }
