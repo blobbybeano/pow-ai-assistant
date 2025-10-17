@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 ThemeData buildPowWashTheme() {
-  final base = ThemeData.light(useMaterial3: true);
-  final colorScheme = ColorScheme.fromSeed(seedColor: const Color(0xFF246BFD));
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: const Color(0xFF246BFD),
+    brightness: Brightness.light,
+  ).copyWith(
+    background: const Color(0xFFF5F7FA),
+    surface: Colors.white,
+  );
 
-  return base.copyWith(
+  final baseTextTheme = GoogleFonts.interTextTheme(
+    ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+    ).textTheme,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
     colorScheme: colorScheme,
-    textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
+    textTheme: baseTextTheme.copyWith(
       titleLarge: GoogleFonts.inter(
         fontWeight: FontWeight.w700,
         fontSize: 22,
@@ -32,21 +45,29 @@ ThemeData buildPowWashTheme() {
       ),
     ),
     cardTheme: CardThemeData(
-      color: Colors.white,
+      color: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: colorScheme.primaryContainer,
-      labelStyle: GoogleFonts.inter(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onPrimaryContainer,
+      side: const WidgetStatePropertyAll(BorderSide(style: BorderStyle.none)),
+      shape: const WidgetStatePropertyAll(StadiumBorder()),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelStyle: WidgetStatePropertyAll(
+        GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onPrimaryContainer,
+        ),
+      ),
+      color: WidgetStatePropertyAll(colorScheme.primaryContainer),
     ),
   );
 }
