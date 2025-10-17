@@ -10,27 +10,26 @@ ThemeData buildPowWashTheme() {
     surface: Colors.white,
   );
 
-  final baseTextTheme = GoogleFonts.interTextTheme(
-    ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-    ).textTheme,
-  );
-
-  return ThemeData(
+  final base = ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
-    textTheme: baseTextTheme.copyWith(
-      titleLarge: GoogleFonts.inter(
-        fontWeight: FontWeight.w700,
-        fontSize: 22,
-        color: colorScheme.onBackground,
-      ),
-      bodyMedium: GoogleFonts.inter(
-        fontSize: 15,
-        color: const Color(0xFF1D1E20),
-      ),
+  );
+
+  final textTheme = GoogleFonts.interTextTheme(base.textTheme).copyWith(
+    titleLarge: GoogleFonts.inter(
+      fontWeight: FontWeight.w700,
+      fontSize: 22,
+      color: colorScheme.onBackground,
     ),
+    bodyMedium: GoogleFonts.inter(
+      fontSize: 15,
+      color: const Color(0xFF1D1E20),
+    ),
+  );
+
+  return base.copyWith(
+    colorScheme: colorScheme,
+    textTheme: textTheme,
     scaffoldBackgroundColor: const Color(0xFFF5F7FA),
     appBarTheme: AppBarTheme(
       backgroundColor: colorScheme.surface,
@@ -55,19 +54,15 @@ ThemeData buildPowWashTheme() {
       clipBehavior: Clip.antiAlias,
     ),
     chipTheme: ChipThemeData(
-      side: const WidgetStatePropertyAll(BorderSide(style: BorderStyle.none)),
-      shape: const WidgetStatePropertyAll(StadiumBorder()),
-      padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      backgroundColor: colorScheme.primaryContainer,
+      side: const BorderSide(style: BorderStyle.none),
+      shape: const StadiumBorder(),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelStyle: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: colorScheme.onPrimaryContainer,
       ),
-      labelStyle: WidgetStatePropertyAll(
-        GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: colorScheme.onPrimaryContainer,
-        ),
-      ),
-      color: WidgetStatePropertyAll(colorScheme.primaryContainer),
     ),
   );
 }
