@@ -31,10 +31,12 @@ ThemeData buildPowWashTheme() {
         color: colorScheme.onSurface,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.white,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
       elevation: 0,
     ),
     chipTheme: ChipThemeData(

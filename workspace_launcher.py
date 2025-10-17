@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import threading
 import time
+import json
 from pathlib import Path
 from typing import Iterable, List, Optional
 
@@ -77,13 +78,34 @@ class FlutterRunner:
         if result.returncode != 0:
             raise RuntimeError("`flutter pub get` failed. Inspect the output above for details.")
 
+    def _auto_detect_device(self) -> Optional[str]:
+        """Try to automatically select a preferred Flutter device (chrome > macos)."""
+        try:
+            result = subprocess.run(
+                ["flutter", "devices", "--machine"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            devices = json.loads(result.stdout)
+            device_ids = [d["id"] for d in devices]
+            if "chrome" in device_ids:
+                return "chrome"
+            if "macos" in device_ids:
+                return "macos"
+        except Exception:
+            pass
+        return None
+
     def start(self) -> None:
         self._ensure_flutter_available()
         self._run_pub_get()
 
+        # Choose device: explicit > auto-detect > none
+        device = self._device_id or self._auto_detect_device()
         command: List[str] = ["flutter", "run", f"--dart-define=API_BASE_URL={self._base_url}"]
-        if self._device_id:
-            command.extend(["-d", self._device_id])
+        if device:
+            command.extend(["-d", device])
         command.extend(self._extra_args)
 
         print("[flutter] Launching workspace with command:")
@@ -250,4 +272,3 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
     raise SystemExit(main())
-
