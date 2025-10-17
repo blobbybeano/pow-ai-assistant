@@ -6,8 +6,8 @@ ThemeData buildPowWashTheme() {
     seedColor: const Color(0xFF246BFD),
     brightness: Brightness.light,
   ).copyWith(
-    background: const Color(0xFFF5F7FA),
     surface: Colors.white,
+    surfaceContainerLowest: const Color(0xFFF5F7FA),
   );
 
   final base = ThemeData(
@@ -19,7 +19,7 @@ ThemeData buildPowWashTheme() {
     titleLarge: GoogleFonts.inter(
       fontWeight: FontWeight.w700,
       fontSize: 22,
-      color: colorScheme.onBackground,
+      color: colorScheme.onSurface,
     ),
     bodyMedium: GoogleFonts.inter(
       fontSize: 15,

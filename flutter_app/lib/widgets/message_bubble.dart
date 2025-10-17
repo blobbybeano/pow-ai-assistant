@@ -4,9 +4,9 @@ import '../models/message.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
-    super.key,
     required this.message,
     required this.isGrouped,
+    super.key,
   });
 
   final ChatMessage message;
@@ -79,7 +79,7 @@ class MessageBubble extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               offset: const Offset(0, 4),
               blurRadius: 12,
             ),
@@ -107,7 +107,7 @@ class MessageBubble extends StatelessWidget {
                   size: 14,
                   color: isInbound
                       ? const Color(0xFF246BFD)
-                      : Colors.white.withOpacity(0.85),
+                      : Colors.white.withValues(alpha: 0.85),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -115,7 +115,7 @@ class MessageBubble extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isInbound
                             ? const Color(0xFF246BFD)
-                            : Colors.white.withOpacity(0.85),
+                            : Colors.white.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -125,7 +125,7 @@ class MessageBubble extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isInbound
                             ? Colors.black45
-                            : Colors.white.withOpacity(0.85),
+                            : Colors.white.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w600,
                       ),
                 ),

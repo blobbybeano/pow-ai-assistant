@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AvatarCircle extends StatelessWidget {
-  const AvatarCircle({super.key, required this.label, this.size = 48});
+  const AvatarCircle({required this.label, this.size = 48, super.key});
 
   final String label;
   final double size;

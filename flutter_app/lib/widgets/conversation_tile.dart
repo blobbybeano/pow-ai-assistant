@@ -6,9 +6,9 @@ import 'avatar_circle.dart';
 
 class ConversationTile extends StatelessWidget {
   const ConversationTile({
-    super.key,
     required this.summary,
     required this.onTap,
+    super.key,
   });
 
   final ConversationSummary summary;
