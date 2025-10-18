@@ -17,7 +17,7 @@ class ConversationScreenArgs {
 }
 
 class ConversationScreen extends StatefulWidget {
-  const ConversationScreen({super.key, required this.args});
+  const ConversationScreen({required this.args, super.key});
 
   static const routeName = '/conversation';
 
@@ -43,6 +43,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return Consumer<ConversationController>(
       builder: (context, controller, _) {
         final messages = controller.messages;
+        final aiDraft = controller.aiDraft;
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
@@ -153,8 +154,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                               ? null
                               : () async {
                                   await controller.fetchDraft();
-                                  if (controller.aiDraft != null && mounted) {
-                                    _composerController.text = controller.aiDraft!;
+                                  final draft = controller.aiDraft;
+                                  if (draft != null && mounted) {
+                                    _composerController.text = draft;
                                   }
                                 },
                           icon: controller.isDrafting
@@ -170,7 +172,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     ],
                   ),
                 ),
-              if (controller.aiDraft != null && !controller.aiEnabled)
+              if (aiDraft != null && !controller.aiEnabled)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: DecoratedBox(
@@ -187,7 +189,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              controller.aiDraft!,
+                              aiDraft,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -197,7 +199,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           IconButton(
                             onPressed: () {
                               setState(() {
-                                _composerController.text = controller.aiDraft!;
+                                _composerController.text = aiDraft;
                               });
                             },
                             icon: const Icon(Icons.edit),
