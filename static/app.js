@@ -3,18 +3,21 @@ const humanParticipants = [
     id: 'mira',
     name: 'Mira Chen',
     role: 'Customer Success Lead',
+    avatar: '',
     color: 'linear-gradient(135deg, #fcd34d, #f59e0b)',
   },
   {
     id: 'samir',
     name: 'Samir Patel',
     role: 'Solutions Engineer',
+    avatar: '',
     color: 'linear-gradient(135deg, #34d399, #10b981)',
   },
   {
     id: 'jordan',
     name: 'Jordan Ellis',
     role: 'Product Marketing',
+    avatar: '',
     color: 'linear-gradient(135deg, #a855f7, #6366f1)',
   },
 ];
@@ -96,10 +99,11 @@ function getDefaultAIPersonaId() {
 let activeParticipantId = humanParticipants[0].id;
 let activeAIPersonaId = getDefaultAIPersonaId();
 let autoRepliesEnabled = true;
-let previousAutoRepliesEnabled = autoRepliesEnabled;
-let aiEnabled = true;
+let inboxAiEnabled = true;
+const conversationSettings = new Map();
 let pendingAI = null;
 let typingMessageId = null;
+let isPreviewEditing = false;
 
 const messageList = document.querySelector('#messageList');
 const participantList = document.querySelector('#participantList');
@@ -108,19 +112,22 @@ const activeName = document.querySelector('#activeName');
 const activeRole = document.querySelector('#activeRole');
 const messageInput = document.querySelector('#messageInput');
 const sendButton = document.querySelector('#sendButton');
-const globalAiToggle = document.querySelector('#globalAiToggle');
+const inboxAiToggle = document.querySelector('#inboxAiToggle');
 const autoToggle = document.querySelector('#autoToggle');
 const aiPreview = document.querySelector('#aiPreview');
-const openPreviewButton = document.querySelector('#openPreview');
-const previewPanel = document.querySelector('#aiPreviewPanel');
 const previewTypingIndicator = document.querySelector('#previewTypingIndicator');
+const previewDisplay = document.querySelector('#previewDisplay');
 const previewEditor = document.querySelector('#previewEditor');
 const aiPreviewName = document.querySelector('#aiPreviewName');
 const aiPreviewTone = document.querySelector('#aiPreviewTone');
 const aiPreviewAvatar = document.querySelector('#aiPreviewAvatar');
+const editPreviewButton = document.querySelector('#editPreview');
 const sendPreview = document.querySelector('#sendPreview');
 const cancelPreview = document.querySelector('#cancelPreview');
-const closePreviewButton = document.querySelector('#closePreview');
+const settingsButton = document.querySelector('#settingsButton');
+const settingsOverlay = document.querySelector('#settingsOverlay');
+const closeSettingsButton = document.querySelector('#closeSettings');
+const settingsForm = document.querySelector('#settingsForm');
 
 const initialAIPersonaId = activeAIPersonaId;
 
@@ -151,11 +158,22 @@ const messages = [
   },
 ];
 
+ensureConversationSettings(activeParticipantId);
+
 function formatTime(value) {
   return new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(value));
+}
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .map((chunk) => chunk[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 function renderParticipants() {
@@ -171,15 +189,20 @@ function renderParticipants() {
       button.classList.add('is-active');
     }
 
-    const avatar = document.createElement('div');
-    avatar.className = 'participant__avatar';
-    avatar.style.backgroundImage = participant.color;
-    avatar.textContent = participant.name
-      .split(' ')
-      .map((chunk) => chunk[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
+    let avatar;
+    if (participant.avatar) {
+      avatar = document.createElement('img');
+      avatar.className = 'participant__avatar-image';
+      avatar.src = participant.avatar;
+      avatar.alt = `${participant.name} avatar`;
+    } else {
+      avatar = document.createElement('div');
+      avatar.className = 'participant__avatar';
+      if (participant.color) {
+        avatar.style.backgroundImage = participant.color;
+      }
+      avatar.textContent = getInitials(participant.name);
+    }
 
     const meta = document.createElement('div');
     meta.className = 'participant__meta';
@@ -200,6 +223,18 @@ function renderParticipants() {
 
 function participantFor(id) {
   return participants.find((participant) => participant.id === id);
+}
+
+function ensureConversationSettings(participantId) {
+  if (!participantId) {
+    return { autoReplies: inboxAiEnabled };
+  }
+  if (!conversationSettings.has(participantId)) {
+    conversationSettings.set(participantId, {
+      autoReplies: inboxAiEnabled,
+    });
+  }
+  return conversationSettings.get(participantId);
 }
 
 function aiPersonaFor(id) {
@@ -259,11 +294,46 @@ function renderPersonaSwitcher() {
   personaSwitcher.append(label, options);
 }
 
-function bubbleBackground(participant) {
-  if (!participant) {
-    return 'linear-gradient(135deg, #5b5fef, #3730a3)';
+function applyAutoToggleState() {
+  const settings = ensureConversationSettings(activeParticipantId);
+  const storedPreference = settings?.autoReplies ?? inboxAiEnabled;
+  autoRepliesEnabled = inboxAiEnabled ? storedPreference : false;
+
+  if (autoToggle) {
+    if (!inboxAiEnabled) {
+      autoToggle.checked = false;
+      autoToggle.disabled = true;
+    } else {
+      autoToggle.disabled = false;
+      autoToggle.checked = autoRepliesEnabled;
+    }
   }
-  return participant.color ?? 'linear-gradient(135deg, #5b5fef, #3730a3)';
+}
+
+function updateInboxAiToggle() {
+  if (!inboxAiToggle) {
+    return;
+  }
+
+  inboxAiToggle.classList.toggle('is-off', !inboxAiEnabled);
+  inboxAiToggle.setAttribute('aria-pressed', String(inboxAiEnabled));
+  const status = inboxAiToggle.querySelector('.ai-inbox-toggle__status');
+  if (status) {
+    status.textContent = `Inbox AI: ${inboxAiEnabled ? 'On' : 'Off'}`;
+  }
+}
+
+function setInboxAiEnabled(enabled) {
+  if (inboxAiEnabled === enabled) {
+    return;
+  }
+  inboxAiEnabled = enabled;
+  updateInboxAiToggle();
+  applyAutoToggleState();
+
+  if (!inboxAiEnabled) {
+    cancelAIResponse();
+  }
 }
 
 function updateAIPreviewPersona(persona) {
@@ -282,42 +352,60 @@ function updateAIPreviewPersona(persona) {
   }
 }
 
-function openPreviewPanel() {
-  if (!previewPanel || !openPreviewButton || openPreviewButton.disabled) {
-    return;
-  }
-
-  previewPanel.classList.remove('hidden');
-  if (previewEditor && !previewEditor.disabled) {
-    previewEditor.focus();
-  }
-}
-
-function closePreviewPanel() {
-  if (!previewPanel) {
-    return;
-  }
-
-  previewPanel.classList.add('hidden');
-}
-
 function resetPreview() {
   if (aiPreview) {
     aiPreview.classList.add('hidden');
-  }
-  if (openPreviewButton) {
-    openPreviewButton.disabled = true;
-  }
-  if (previewPanel) {
-    previewPanel.classList.add('hidden');
   }
   if (previewTypingIndicator) {
     previewTypingIndicator.style.display = 'inline-flex';
   }
   if (previewEditor) {
     previewEditor.value = '';
-    previewEditor.placeholder = '';
     previewEditor.disabled = true;
+    previewEditor.classList.add('ai-preview__editor-hidden');
+  }
+  if (previewDisplay) {
+    previewDisplay.textContent = '';
+    previewDisplay.classList.remove('is-hidden');
+  }
+  if (editPreviewButton) {
+    editPreviewButton.disabled = true;
+    editPreviewButton.textContent = 'Edit';
+  }
+  if (sendPreview) {
+    sendPreview.disabled = true;
+  }
+  isPreviewEditing = false;
+}
+
+function setPreviewEditing(editing) {
+  const hasText = Boolean(
+    (previewEditor?.value ?? '').trim() || (previewDisplay?.textContent ?? '').trim()
+  );
+  const effectiveEditing = editing && hasText;
+  isPreviewEditing = effectiveEditing;
+
+  if (aiPreview) {
+    aiPreview.classList.toggle('is-editing', effectiveEditing);
+  }
+
+  if (previewDisplay) {
+    const shouldHide = effectiveEditing || !hasText;
+    previewDisplay.classList.toggle('is-hidden', shouldHide);
+  }
+
+  if (previewEditor) {
+    previewEditor.disabled = !effectiveEditing;
+    previewEditor.classList.toggle('ai-preview__editor-hidden', !effectiveEditing);
+    if (effectiveEditing) {
+      previewEditor.focus();
+      const length = previewEditor.value.length;
+      previewEditor.setSelectionRange(length, length);
+    }
+  }
+
+  if (editPreviewButton) {
+    editPreviewButton.textContent = effectiveEditing ? 'Done editing' : 'Edit';
   }
 }
 
@@ -432,9 +520,10 @@ function renderMessages() {
         bubble.innerHTML = '<span></span><span></span><span></span>';
       } else {
         bubble.textContent = message.text;
-        bubble.style.backgroundImage = outbound
-          ? bubbleBackground(participant)
-          : undefined;
+        bubble.style.backgroundImage = 'none';
+        bubble.style.backgroundColor = outbound
+          ? 'var(--bubble-outbound)'
+          : 'var(--bubble-inbound)';
       }
 
       const timestamp = document.createElement('span');
@@ -456,6 +545,8 @@ function setActiveParticipant(id) {
   }
 
   activeParticipantId = id;
+  ensureConversationSettings(activeParticipantId);
+  applyAutoToggleState();
   renderParticipants();
   renderActiveParticipant();
   renderMessages();
@@ -488,29 +579,34 @@ function showAIPreview(content) {
   aiPreview.classList.remove('hidden');
   updateAIPreviewPersona(getActiveAIPersona());
 
-  if (openPreviewButton) {
-    openPreviewButton.disabled = !content;
-  }
+  const hasContent = Boolean(content);
 
   if (previewTypingIndicator) {
-    previewTypingIndicator.style.display = content ? 'none' : 'inline-flex';
+    previewTypingIndicator.style.display = hasContent ? 'none' : 'inline-flex';
+  }
+
+  if (previewDisplay) {
+    previewDisplay.textContent = content ?? '';
   }
 
   if (previewEditor) {
-    if (content) {
-      previewEditor.disabled = false;
-      previewEditor.placeholder = '';
-      previewEditor.value = content;
-    } else {
-      previewEditor.disabled = true;
-      previewEditor.placeholder = 'Generating reply…';
-      previewEditor.value = '';
-    }
+    previewEditor.value = content ?? '';
   }
 
-  if (!content) {
-    closePreviewPanel();
+  if (sendPreview) {
+    sendPreview.disabled = !hasContent;
   }
+
+  if (editPreviewButton) {
+    editPreviewButton.disabled = !hasContent;
+  }
+
+  if (!hasContent) {
+    setPreviewEditing(false);
+    return;
+  }
+
+  setPreviewEditing(isPreviewEditing);
 }
 
 function generateAIResponse(text, persona) {
@@ -534,7 +630,7 @@ function generateAIResponse(text, persona) {
 
 function scheduleAIResponse(triggerText) {
   cancelAIResponse();
-  if (!autoRepliesEnabled || !aiEnabled) {
+  if (!autoRepliesEnabled || !inboxAiEnabled) {
     return;
   }
 
@@ -601,10 +697,7 @@ function commitPendingAI() {
   clearTimeout(pendingAI.previewTimer);
 
   const personaId = pendingAI.personaId ?? getActiveAIPersona().id;
-  const editedText =
-    previewEditor && !previewEditor.disabled
-      ? previewEditor.value.trim()
-      : '';
+  const editedText = previewEditor ? previewEditor.value.trim() : '';
   const textToSend = editedText || pendingAI.text;
   if (!textToSend) {
     return;
@@ -622,6 +715,158 @@ function commitPendingAI() {
   resetPreview();
   updateAIPreviewPersona(getActiveAIPersona());
   renderMessages();
+}
+
+function createSettingsField(labelText, name, value, placeholder = '') {
+  const field = document.createElement('label');
+  field.className = 'settings-form__field';
+  field.htmlFor = name;
+
+  const labelSpan = document.createElement('span');
+  labelSpan.textContent = labelText;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = name;
+  input.name = name;
+  input.value = value ?? '';
+  if (placeholder) {
+    input.placeholder = placeholder;
+  }
+
+  field.append(labelSpan, input);
+  return field;
+}
+
+function renderSettingsForm() {
+  if (!settingsForm) {
+    return;
+  }
+
+  settingsForm.innerHTML = '';
+
+  humanParticipants.forEach((participant) => {
+    const section = document.createElement('section');
+    section.className = 'settings-form__section';
+
+    const header = document.createElement('div');
+    header.className = 'settings-form__header';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'settings-form__avatar';
+    if (participant.avatar) {
+      const img = document.createElement('img');
+      img.className = 'participant__avatar-image';
+      img.src = participant.avatar;
+      img.alt = `${participant.name} avatar`;
+      avatar.append(img);
+    } else {
+      avatar.textContent = getInitials(participant.name);
+    }
+
+    const headerMeta = document.createElement('div');
+    headerMeta.className = 'settings-form__header-meta';
+    const title = document.createElement('strong');
+    title.textContent = participant.name;
+    const role = document.createElement('span');
+    role.textContent = participant.role;
+    headerMeta.append(title, role);
+
+    header.append(avatar, headerMeta);
+    section.append(header);
+
+    section.append(
+      createSettingsField('Display name', `${participant.id}-name`, participant.name)
+    );
+    section.append(
+      createSettingsField('Role', `${participant.id}-role`, participant.role)
+    );
+    section.append(
+      createSettingsField(
+        'Profile image URL',
+        `${participant.id}-avatar`,
+        participant.avatar ?? '',
+        'https://example.com/avatar.png'
+      )
+    );
+
+    settingsForm.append(section);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'settings-form__actions';
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'btn';
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', () => {
+    closeSettings();
+  });
+
+  const submit = document.createElement('button');
+  submit.type = 'submit';
+  submit.className = 'btn btn--primary';
+  submit.textContent = 'Save changes';
+
+  actions.append(cancel, submit);
+  settingsForm.append(actions);
+}
+
+function openSettings() {
+  if (!settingsOverlay || !settingsForm) {
+    return;
+  }
+
+  renderSettingsForm();
+  settingsOverlay.classList.add('is-open');
+  settingsOverlay.setAttribute('aria-hidden', 'false');
+  if (settingsButton) {
+    settingsButton.setAttribute('aria-expanded', 'true');
+  }
+  const firstInput = settingsForm.querySelector('input');
+  firstInput?.focus();
+}
+
+function closeSettings() {
+  if (!settingsOverlay) {
+    return;
+  }
+
+  settingsOverlay.classList.remove('is-open');
+  settingsOverlay.setAttribute('aria-hidden', 'true');
+  if (settingsButton) {
+    settingsButton.setAttribute('aria-expanded', 'false');
+    settingsButton.focus();
+  }
+}
+
+function handleSettingsSubmit(event) {
+  event.preventDefault();
+  if (!settingsForm) {
+    return;
+  }
+
+  const formData = new FormData(settingsForm);
+
+  humanParticipants.forEach((participant) => {
+    const name = (formData.get(`${participant.id}-name`) ?? '').toString().trim();
+    const role = (formData.get(`${participant.id}-role`) ?? '').toString().trim();
+    const avatar = (formData.get(`${participant.id}-avatar`) ?? '').toString().trim();
+
+    if (name) {
+      participant.name = name;
+    }
+    if (role) {
+      participant.role = role;
+    }
+    participant.avatar = avatar || '';
+  });
+
+  renderParticipants();
+  renderActiveParticipant();
+  renderMessages();
+  closeSettings();
 }
 
 participantList.addEventListener('click', (event) => {
@@ -642,13 +887,16 @@ if (personaSwitcher) {
   });
 }
 
-autoToggle.addEventListener('change', (event) => {
-  autoRepliesEnabled = event.target.checked;
-  previousAutoRepliesEnabled = autoRepliesEnabled;
-  if (!autoRepliesEnabled) {
-    cancelAIResponse();
-  }
-});
+if (autoToggle) {
+  autoToggle.addEventListener('change', (event) => {
+    autoRepliesEnabled = event.target.checked;
+    const settings = ensureConversationSettings(activeParticipantId);
+    settings.autoReplies = autoRepliesEnabled;
+    if (!autoRepliesEnabled) {
+      cancelAIResponse();
+    }
+  });
+}
 
 sendButton.addEventListener('click', sendMessage);
 
@@ -659,65 +907,85 @@ messageInput.addEventListener('keydown', (event) => {
   }
 });
 
-sendPreview.addEventListener('click', () => {
-  commitPendingAI();
-});
-
-cancelPreview.addEventListener('click', () => {
-  cancelAIResponse();
-});
-
-if (openPreviewButton) {
-  openPreviewButton.addEventListener('click', openPreviewPanel);
-  openPreviewButton.disabled = true;
+if (sendPreview) {
+  sendPreview.disabled = true;
+  sendPreview.addEventListener('click', () => {
+    commitPendingAI();
+  });
 }
 
-if (closePreviewButton) {
-  closePreviewButton.addEventListener('click', () => {
-    closePreviewPanel();
+if (cancelPreview) {
+  cancelPreview.addEventListener('click', () => {
+    cancelAIResponse();
+  });
+}
+
+if (editPreviewButton) {
+  editPreviewButton.disabled = true;
+  editPreviewButton.addEventListener('click', () => {
+    setPreviewEditing(!isPreviewEditing);
   });
 }
 
 if (previewEditor) {
   previewEditor.disabled = true;
+  previewEditor.classList.add('ai-preview__editor-hidden');
   previewEditor.addEventListener('input', () => {
     if (pendingAI && !previewEditor.disabled) {
       pendingAI.text = previewEditor.value;
     }
+    if (previewDisplay) {
+      previewDisplay.textContent = previewEditor.value;
+    }
+    if (sendPreview) {
+      sendPreview.disabled = !previewEditor.value.trim();
+    }
   });
 }
 
-if (globalAiToggle) {
-  aiEnabled = globalAiToggle.checked;
-  if (autoToggle) {
-    if (!aiEnabled) {
-      previousAutoRepliesEnabled = autoRepliesEnabled;
-      autoRepliesEnabled = false;
-      autoToggle.checked = false;
-      autoToggle.disabled = true;
+if (inboxAiToggle) {
+  updateInboxAiToggle();
+  inboxAiToggle.addEventListener('click', () => {
+    setInboxAiEnabled(!inboxAiEnabled);
+  });
+}
+
+if (settingsOverlay) {
+  settingsOverlay.setAttribute('aria-hidden', 'true');
+}
+
+if (settingsForm) {
+  settingsForm.addEventListener('submit', handleSettingsSubmit);
+}
+
+if (settingsButton) {
+  settingsButton.addEventListener('click', () => {
+    openSettings();
+  });
+}
+
+if (closeSettingsButton) {
+  closeSettingsButton.addEventListener('click', () => {
+    closeSettings();
+  });
+}
+
+if (settingsOverlay) {
+  settingsOverlay.addEventListener('click', (event) => {
+    if (event.target === settingsOverlay) {
+      closeSettings();
     }
+  });
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && settingsOverlay?.classList.contains('is-open')) {
+    closeSettings();
   }
+});
 
-  globalAiToggle.addEventListener('change', (event) => {
-    aiEnabled = event.target.checked;
-    if (autoToggle) {
-      if (!aiEnabled) {
-        previousAutoRepliesEnabled = autoRepliesEnabled;
-        autoRepliesEnabled = false;
-        autoToggle.checked = false;
-        autoToggle.disabled = true;
-        cancelAIResponse();
-      } else {
-        autoToggle.disabled = false;
-        autoRepliesEnabled = previousAutoRepliesEnabled ?? true;
-        autoToggle.checked = autoRepliesEnabled;
-        previousAutoRepliesEnabled = autoRepliesEnabled;
-      }
-    } else if (!aiEnabled) {
-      cancelAIResponse();
-    }
-  });
-}
+applyAutoToggleState();
+updateInboxAiToggle();
 
 renderParticipants();
 renderActiveParticipant();
