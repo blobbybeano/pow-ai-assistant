@@ -154,6 +154,32 @@
           "scheduledSendAt": "2025-10-19T12:23:02.319758+00:00",
           "sentAt": "2025-10-19T12:23:02.713831+00:00",
           "error": null
+        },
+        {
+          "id": "288382cb-996a-435b-a5d9-0ab036945780",
+          "text": "I would like a clean",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-19T12:51:04.598696+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "bf26bb98-c854-426d-b52f-c88951541223",
+          "text": "Hi there! Thanks for reaching out to PowWash! \ud83d\ude0a To help you get the best quote, could you please let me know what type of surface you'd like cleaned (like a driveway, patio, roof, or gutters)? Also, it would be great to know the size of the area and if there are any access considerations. \n\nOnce I have those details, I can give you a clearer idea of pricing! Looking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-19T12:51:04.600388+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-10-19T12:54:07.711929+00:00",
+          "sentAt": null,
+          "error": null
         }
       ]
     }
