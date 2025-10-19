@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'controllers/inbox_controller.dart';
 import 'controllers/profile_controller.dart';
+import 'controllers/user_controller.dart';
 import 'screens/chat_list_screen.dart';
+import 'screens/user_selection_screen.dart';
 import 'services/chat_api_client.dart';
 import 'theme/app_theme.dart';
 
@@ -33,6 +35,7 @@ class _PowWashAppState extends State<PowWashApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => UserController()),
         Provider<ChatApiClient>.value(value: _apiClient),
         ChangeNotifierProvider(create: (_) => InboxController(apiClient: _apiClient)),
         ChangeNotifierProvider(create: (_) => ProfileController()),
@@ -40,8 +43,24 @@ class _PowWashAppState extends State<PowWashApp> {
       child: MaterialApp(
         title: 'PowWash Workspace',
         theme: buildPowWashTheme(),
-        home: const ChatListScreen(),
+        home: const _AppRouter(),
       ),
+    );
+  }
+}
+
+class _AppRouter extends StatelessWidget {
+  const _AppRouter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<UserController>(
+      builder: (context, users, _) {
+        if (!users.isSignedIn) {
+          return const UserSelectionScreen();
+        }
+        return const ChatListScreen();
+      },
     );
   }
 }

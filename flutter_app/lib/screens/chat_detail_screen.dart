@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../controllers/conversation_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../controllers/user_controller.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
 import '../services/chat_api_client.dart';
@@ -17,6 +18,7 @@ class ChatDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final apiClient = context.read<ChatApiClient>();
+    final initialResponderId = context.read<UserController>().respondingUser?.id;
 
     return ChangeNotifierProvider(
       key: ValueKey(summary.id),
@@ -24,6 +26,7 @@ class ChatDetailScreen extends StatelessWidget {
         apiClient: apiClient,
         conversationId: summary.id,
         initialDisplayName: summary.displayName,
+        initialResponderId: initialResponderId,
       ),
       child: _ConversationWorkspace(summary: summary),
     );
@@ -128,8 +131,13 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
 
   @override
   Widget build(BuildContext context) {
+    final respondingUserId = context.select<UserController, String?>(
+      (users) => users.respondingUser?.id,
+    );
+
     return Consumer<ConversationController>(
       builder: (context, controller, _) {
+        controller.updateResponder(respondingUserId);
         final messages = controller.messages;
         final aiDraft = controller.aiDraft;
 
@@ -302,14 +310,74 @@ class _ChatHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
+        const _RespondingUserSelector(),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _PersonaBadge(isEnabled: controller.aiEnabled),
-            const SizedBox(width: 12),
             _AutoReplySwitch(
               value: controller.aiEnabled,
               onChanged: controller.toggleAi,
             ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _RespondingUserSelector extends StatelessWidget {
+  const _RespondingUserSelector();
+
+  @override
+  Widget build(BuildContext context) {
+    final userController = context.watch<UserController>();
+    final users = userController.availableUsers;
+    if (users.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'AI replies as',
+          style: TextStyle(
+            color: Color(0xFF8696A0),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final user in users)
+              Builder(
+                builder: (context) {
+                  final isSelected = userController.isRespondingUser(user);
+                  final labelText = userController.isCurrentUser(user)
+                      ? '${user.displayName} (You)'
+                      : user.displayName;
+                  return ChoiceChip(
+                    selected: isSelected,
+                    onSelected: (_) => userController.switchRespondingUser(user.id),
+                    backgroundColor: const Color(0x33202C33),
+                    selectedColor: const Color(0xFF00A884),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    label: Text(
+                      labelText,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : const Color(0xFFE9EDEF),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ],
@@ -402,19 +470,39 @@ class _AutoReplySwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Switch(
-          value: value,
-          onChanged: (next) => onChanged(next),
-          activeColor: const Color(0xFF00A884),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0x33202C33),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x33243038)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 260),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Switch(
+              value: value,
+              onChanged: (next) => onChanged(next),
+              activeColor: const Color(0xFF00A884),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Auto replies for this chat',
+                style: const TextStyle(
+                  color: Color(0xFFE9EDEF),
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
-        const Text(
-          'Auto replies for this chat',
-          style: TextStyle(color: Color(0xFFE9EDEF), fontWeight: FontWeight.w600),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -511,7 +599,8 @@ class _ComposerBarState extends State<_ComposerBar> {
                       final text = widget.textController.text.trim();
                       if (text.isEmpty) return;
                       widget.onSend();
-                      await widget.controller.sendMessage(text);
+                      final senderId = context.read<UserController>().currentUser?.id;
+                      await widget.controller.sendMessage(text, senderId: senderId);
                       if (mounted) {
                         widget.textController.clear();
                       }

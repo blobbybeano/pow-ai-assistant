@@ -11,7 +11,8 @@ class ConversationController extends ChangeNotifier {
     required this.apiClient,
     required this.conversationId,
     required this.initialDisplayName,
-  }) {
+    String? initialResponderId,
+  }) : _responderId = initialResponderId {
     _loadConversation();
     _pollingTimer = Timer.periodic(const Duration(seconds: 6), (_) => _loadConversation());
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -34,6 +35,7 @@ class ConversationController extends ChangeNotifier {
   bool _cancellingPendingAi = false;
   Object? _error;
   String? _aiDraft;
+  String? _responderId;
 
   ConversationDetail? get detail => _detail;
   bool get isLoading => _loading;
@@ -44,6 +46,7 @@ class ConversationController extends ChangeNotifier {
   bool get aiEnabled => _detail?.aiEnabled ?? true;
   String get displayName => _detail?.displayName ?? initialDisplayName;
   String? get aiDraft => _aiDraft;
+  String? get responderId => _responderId;
 
   List<ChatMessage> get messages => _detail?.messages ?? [];
 
@@ -84,7 +87,11 @@ class ConversationController extends ChangeNotifier {
   Future<void> toggleAi(bool value) async {
     final previous = aiEnabled;
     try {
-      final result = await apiClient.setAiEnabled(conversationId, value);
+      final result = await apiClient.setAiEnabled(
+        conversationId,
+        value,
+        responderId: _responderId,
+      );
       _detail = _detail?.copyWith(aiEnabled: result);
       if (result) {
         _aiDraft = null;
@@ -100,13 +107,17 @@ class ConversationController extends ChangeNotifier {
     }
   }
 
-  Future<void> sendMessage(String text) async {
+  Future<void> sendMessage(String text, {String? senderId}) async {
     if (text.trim().isEmpty) return;
     _sending = true;
     notifyListeners();
 
     try {
-      await apiClient.sendManualMessage(conversationId: conversationId, text: text);
+      await apiClient.sendManualMessage(
+        conversationId: conversationId,
+        text: text,
+        senderId: senderId,
+      );
       _aiDraft = null;
       await _loadConversation(force: true);
     } catch (error) {
@@ -121,7 +132,10 @@ class ConversationController extends ChangeNotifier {
     _drafting = true;
     notifyListeners();
     try {
-      final draft = await apiClient.fetchAiDraft(conversationId);
+      final draft = await apiClient.fetchAiDraft(
+        conversationId,
+        responderId: _responderId,
+      );
       _aiDraft = draft;
     } catch (error) {
       _error = error;
@@ -134,6 +148,17 @@ class ConversationController extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  void updateResponder(String? userId) {
+    if (_responderId == userId) {
+      return;
+    }
+    _responderId = userId;
+    if (_aiDraft != null) {
+      _aiDraft = null;
+      notifyListeners();
+    }
   }
 
   Future<void> _loadConversation({bool force = false}) async {

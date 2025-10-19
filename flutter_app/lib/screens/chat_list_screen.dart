@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../controllers/inbox_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../controllers/user_controller.dart';
 import '../models/conversation.dart';
 import '../widgets/conversation_tile.dart';
 import 'chat_detail_screen.dart';
@@ -30,6 +31,7 @@ class _ChatListScaffold extends StatelessWidget {
             backgroundColor: const Color(0xFF111B21),
             foregroundColor: const Color(0xFFE9EDEF),
             actions: [
+              const _UserSwitcherButton(),
               IconButton(
                 icon: const Icon(Icons.more_vert_rounded),
                 onPressed: () => _showSettingsSheet(context, inbox.conversations),
@@ -168,6 +170,68 @@ void _showSettingsSheet(BuildContext context, List<ConversationSummary> conversa
       return _ProfileSettingsSheet(conversations: conversations);
     },
   );
+}
+
+class _UserSwitcherButton extends StatelessWidget {
+  const _UserSwitcherButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final userController = context.watch<UserController>();
+    final currentUser = userController.currentUser;
+    final users = userController.availableUsers;
+
+    return PopupMenuButton<String>(
+      tooltip: 'Switch profile',
+      onSelected: (value) {
+        if (value == '_logout') {
+          userController.signOut();
+        } else {
+          userController.signIn(value);
+        }
+      },
+      itemBuilder: (context) {
+        return [
+          for (final user in users)
+            PopupMenuItem<String>(
+              value: user.id,
+              child: Row(
+                children: [
+                  if (userController.isCurrentUser(user))
+                    const Icon(Icons.check, size: 18)
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      user.displayName,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const PopupMenuDivider(),
+          const PopupMenuItem<String>(
+            value: '_logout',
+            child: Text('Log out'),
+          ),
+        ];
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: CircleAvatar(
+          radius: 16,
+          backgroundColor: const Color(0x33243038),
+          foregroundColor: const Color(0xFFE9EDEF),
+          child: Text(
+            currentUser?.initials ?? '–',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ProfileSettingsSheet extends StatefulWidget {

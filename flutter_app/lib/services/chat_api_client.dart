@@ -45,11 +45,18 @@ class ChatApiClient {
     return ConversationDetail.fromJson(payload);
   }
 
-  Future<bool> setAiEnabled(String conversationId, bool enabled) async {
+  Future<bool> setAiEnabled(
+    String conversationId,
+    bool enabled, {
+    String? responderId,
+  }) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/toggle-ai'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'enabled': enabled}),
+      body: json.encode({
+        'enabled': enabled,
+        if (responderId != null) 'responderId': responderId,
+      }),
     );
     if (response.statusCode != 200) {
       throw Exception('Unable to toggle AI (${response.statusCode})');
@@ -61,11 +68,15 @@ class ChatApiClient {
   Future<String> sendManualMessage({
     required String conversationId,
     required String text,
+    String? senderId,
   }) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/messages'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'text': text}),
+      body: json.encode({
+        'text': text,
+        if (senderId != null) 'senderId': senderId,
+      }),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to send message (${response.statusCode})');
@@ -86,9 +97,13 @@ class ChatApiClient {
     }
   }
 
-  Future<String> fetchAiDraft(String conversationId) async {
+  Future<String> fetchAiDraft(String conversationId, {String? responderId}) async {
+    final body = responderId != null ? json.encode({'responderId': responderId}) : null;
+    final headers = body != null ? {'Content-Type': 'application/json'} : null;
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/ai-draft'),
+      headers: headers,
+      body: body,
     );
     if (response.statusCode != 200) {
       throw Exception('AI draft failed (${response.statusCode})');
