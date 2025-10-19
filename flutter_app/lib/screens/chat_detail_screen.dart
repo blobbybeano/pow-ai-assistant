@@ -2,293 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/conversation_controller.dart';
-import '../controllers/inbox_controller.dart';
+import '../controllers/profile_controller.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
 import '../services/chat_api_client.dart';
-import '../widgets/conversation_tile.dart';
+import '../widgets/avatar_circle.dart';
 import '../widgets/message_bubble.dart';
 
-class WorkspaceScreen extends StatefulWidget {
-  const WorkspaceScreen({super.key});
+class ChatDetailScreen extends StatelessWidget {
+  const ChatDetailScreen({required this.summary, super.key});
 
-  @override
-  State<WorkspaceScreen> createState() => _WorkspaceScreenState();
-}
-
-class _WorkspaceScreenState extends State<WorkspaceScreen> {
-  String? _activeConversationId;
+  final ConversationSummary summary;
 
   @override
   Widget build(BuildContext context) {
-    final background = const Color(0xFF0B141A);
+    final apiClient = context.read<ChatApiClient>();
 
-    return Scaffold(
-      backgroundColor: background,
-      body: SafeArea(
-        child: Container(
-          color: background,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxWidth < 760;
-              return Consumer<InboxController>(
-                builder: (context, inbox, _) {
-                  final conversations = inbox.conversations;
-                  ConversationSummary? activeSummary;
-
-                  if (conversations.isNotEmpty) {
-                    activeSummary = conversations.firstWhere(
-                      (summary) => summary.id == _activeConversationId,
-                      orElse: () => conversations.first,
-                    );
-
-                    if (_activeConversationId != activeSummary.id) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        setState(() => _activeConversationId = activeSummary!.id);
-                      });
-                    }
-                  } else if (_activeConversationId != null) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
-                      setState(() => _activeConversationId = null);
-                    });
-                  }
-
-                  final sidebar = _Sidebar(
-                    controller: inbox,
-                    activeConversationId: _activeConversationId,
-                    onSelect: (summary) {
-                      if (_activeConversationId == summary.id) return;
-                      setState(() => _activeConversationId = summary.id);
-                    },
-                  );
-
-                  final apiClient = context.read<ChatApiClient>();
-
-                  final summary = activeSummary;
-                  final conversationPane = summary == null
-                      ? const _EmptyConversationPane()
-                      : ChangeNotifierProvider(
-                          key: ValueKey(summary.id),
-                          create: (_) => ConversationController(
-                            apiClient: apiClient,
-                            conversationId: summary.id,
-                            initialDisplayName: summary.displayName,
-                          ),
-                          child: _ConversationWorkspace(
-                            placeholderName: summary.displayName,
-                          ),
-                        );
-
-                  if (isCompact) {
-                    return Column(
-                      children: [
-                        SizedBox(height: 320, child: sidebar),
-                        const Divider(height: 1, color: Color(0x22E9EDEF)),
-                        Expanded(child: conversationPane),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      SizedBox(width: 320, child: sidebar),
-                      const VerticalDivider(width: 1, color: Color(0x22E9EDEF)),
-                      Expanded(child: conversationPane),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
-        ),
+    return ChangeNotifierProvider(
+      key: ValueKey(summary.id),
+      create: (_) => ConversationController(
+        apiClient: apiClient,
+        conversationId: summary.id,
+        initialDisplayName: summary.displayName,
       ),
-    );
-  }
-}
-
-class _Sidebar extends StatelessWidget {
-  const _Sidebar({
-    required this.controller,
-    required this.activeConversationId,
-    required this.onSelect,
-  });
-
-  final InboxController controller;
-  final String? activeConversationId;
-  final ValueChanged<ConversationSummary> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF111B21), Color(0xFF0B141A)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pow Team Chat',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFE9EDEF),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Switch between teammates to steer the conversation.',
-              style: TextStyle(
-                color: Color(0xFF8696A0),
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: controller.isLoading && controller.conversations.isEmpty
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Color(0xFF00A884)),
-                      ),
-                    )
-                  : controller.error != null && controller.conversations.isEmpty
-                      ? _SidebarError(error: controller.error!, onRetry: controller.refresh)
-                      : RefreshIndicator(
-                          backgroundColor: const Color(0xFF111B21),
-                          color: const Color(0xFF00A884),
-                          onRefresh: controller.refresh,
-                          child: controller.conversations.isEmpty
-                              ? ListView(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  children: const [
-                                    SizedBox(height: 160),
-                                    _SidebarEmptyState(),
-                                  ],
-                                )
-                              : ListView.separated(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  itemCount: controller.conversations.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    final summary = controller.conversations[index];
-                                    return ConversationTile(
-                                      summary: summary,
-                                      isSelected: summary.id == activeConversationId,
-                                      onTap: () => onSelect(summary),
-                                    );
-                                  },
-                                ),
-                        ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SidebarError extends StatelessWidget {
-  const _SidebarError({required this.error, required this.onRetry});
-
-  final Object error;
-  final Future<void> Function() onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.wifi_off, size: 40, color: Color(0xFF8696A0)),
-        const SizedBox(height: 12),
-        const Text(
-          'Unable to load inbox',
-          style: TextStyle(
-            color: Color(0xFFE9EDEF),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '$error',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFF8696A0), height: 1.4),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Retry'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00A884),
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SidebarEmptyState extends StatelessWidget {
-  const _SidebarEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: const [
-        Icon(Icons.chat_bubble_outline, size: 60, color: Color(0xFF8696A0)),
-        SizedBox(height: 16),
-        Text(
-          'No conversations yet',
-          style: TextStyle(
-            color: Color(0xFFE9EDEF),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: 8),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            'Messages from your Twilio sandbox will show up here instantly.',
-            style: TextStyle(color: Color(0xFF8696A0), height: 1.4),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyConversationPane extends StatelessWidget {
-  const _EmptyConversationPane();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF111B21),
-      ),
-      child: const Center(
-        child: Text(
-          'Select a teammate to view the conversation',
-          style: TextStyle(color: Color(0xFF8696A0), fontSize: 16),
-        ),
-      ),
+      child: _ConversationWorkspace(summary: summary),
     );
   }
 }
 
 class _ConversationWorkspace extends StatefulWidget {
-  const _ConversationWorkspace({required this.placeholderName});
+  const _ConversationWorkspace({required this.summary});
 
-  final String placeholderName;
+  final ConversationSummary summary;
 
   @override
   State<_ConversationWorkspace> createState() => _ConversationWorkspaceState();
@@ -297,19 +42,39 @@ class _ConversationWorkspace extends StatefulWidget {
 class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
   final TextEditingController _composerController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _shouldAutoScroll = true;
+  int _lastMessageCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScrollPosition);
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_handleScrollPosition);
     _composerController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _handleScrollPosition() {
     if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final current = _scrollController.offset;
+    const threshold = 96.0;
+    _shouldAutoScroll = current >= maxScroll - threshold;
+  }
+
+  void _maybeScrollToBottom({bool force = false}) {
+    if (!_scrollController.hasClients) return;
+    if (!force && !_shouldAutoScroll) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    if (maxScroll <= 0) return;
     _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 300),
+      maxScroll,
+      duration: const Duration(milliseconds: 280),
       curve: Curves.easeOut,
     );
   }
@@ -349,6 +114,7 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                       _composerController.text = draft;
                       _composerController.selection =
                           TextSelection.collapsed(offset: draft.length);
+                      _shouldAutoScroll = true;
                     });
                   },
                 )
@@ -367,16 +133,28 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
         final messages = controller.messages;
         final aiDraft = controller.aiDraft;
 
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        if (_lastMessageCount != messages.length) {
+          final shouldForce = _shouldAutoScroll || _lastMessageCount == 0;
+          _lastMessageCount = messages.length;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _maybeScrollToBottom(force: shouldForce);
+          });
+        }
 
-        return Container(
-          decoration: const BoxDecoration(color: Color(0xFF111B21)),
-          child: Column(
+        return Scaffold(
+          backgroundColor: const Color(0xFF0B141A),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF111B21),
+            foregroundColor: const Color(0xFFE9EDEF),
+            automaticallyImplyLeading: Navigator.of(context).canPop(),
+            titleSpacing: 0,
+            title: _ChatHeader(controller: controller, summary: widget.summary),
+          ),
+          body: Column(
             children: [
-              _WorkspaceHeader(controller: controller, placeholderName: widget.placeholderName),
               if (controller.error != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: _ErrorBanner(
                     error: controller.error!,
                     onDismissed: controller.clearError,
@@ -397,8 +175,8 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                           onRefresh: controller.refresh,
                           child: ListView(
                             controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                             physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                             children: messages.isEmpty
                                 ? const [
                                     SizedBox(height: 160),
@@ -411,7 +189,7 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
               ),
               if (!controller.aiEnabled)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: FilledButton.icon(
@@ -425,6 +203,7 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                                   _composerController.text = draft;
                                   _composerController.selection =
                                       TextSelection.collapsed(offset: draft.length);
+                                  _shouldAutoScroll = true;
                                 });
                               }
                             },
@@ -441,7 +220,7 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                 ),
               if (aiDraft != null && !controller.aiEnabled)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: _AiDraftPreview(
                     draft: aiDraft,
                     onEdit: () {
@@ -449,15 +228,17 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                         _composerController.text = aiDraft;
                         _composerController.selection =
                             TextSelection.collapsed(offset: aiDraft.length);
+                        _shouldAutoScroll = true;
                       });
                     },
                   ),
                 ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: _ComposerBar(
                   controller: controller,
                   textController: _composerController,
+                  onSend: () => setState(() => _shouldAutoScroll = true),
                 ),
               ),
             ],
@@ -468,68 +249,70 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
   }
 }
 
-class _WorkspaceHeader extends StatelessWidget {
-  const _WorkspaceHeader({required this.controller, required this.placeholderName});
+class _ChatHeader extends StatelessWidget {
+  const _ChatHeader({required this.controller, required this.summary});
 
   final ConversationController controller;
-  final String placeholderName;
+  final ConversationSummary summary;
 
   @override
   Widget build(BuildContext context) {
-    final name = controller.displayName.isEmpty ? placeholderName : controller.displayName;
+    final name = controller.displayName.isEmpty ? summary.displayName : controller.displayName;
     final subtitle = controller.detail?.phoneNumber ?? controller.conversationId;
+    final photoUrl = context.select<ProfileController, String?>(
+      (profile) => profile.photoFor(summary.id),
+    );
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      decoration: const BoxDecoration(
-        color: Color(0xFF111B21),
-        border: Border(bottom: BorderSide(color: Color(0x1A8696A0))),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Color(0xFFE9EDEF),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            AvatarCircle(
+              label: name,
+              size: 44,
+              image: photoUrl != null ? NetworkImage(photoUrl) : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Color(0xFFE9EDEF),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(color: Color(0xFF8696A0), fontSize: 13),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Color(0xFF8696A0), fontSize: 13),
+                  ),
+                ],
               ),
-              _InboxAiToggle(
-                enabled: controller.aiEnabled,
-                onToggle: controller.toggleAi,
-                busy: controller.isDrafting || controller.isCancellingPendingAi,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _PersonaBadge(isEnabled: controller.aiEnabled),
-              const SizedBox(width: 12),
-              _AutoReplySwitch(
-                value: controller.aiEnabled,
-                onChanged: controller.toggleAi,
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+            _InboxAiToggle(
+              enabled: controller.aiEnabled,
+              onToggle: controller.toggleAi,
+              busy: controller.isDrafting || controller.isCancellingPendingAi,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _PersonaBadge(isEnabled: controller.aiEnabled),
+            const SizedBox(width: 12),
+            _AutoReplySwitch(
+              value: controller.aiEnabled,
+              onChanged: controller.toggleAi,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -675,10 +458,15 @@ class _ErrorBanner extends StatelessWidget {
 }
 
 class _ComposerBar extends StatefulWidget {
-  const _ComposerBar({required this.controller, required this.textController});
+  const _ComposerBar({
+    required this.controller,
+    required this.textController,
+    required this.onSend,
+  });
 
   final ConversationController controller;
   final TextEditingController textController;
+  final VoidCallback onSend;
 
   @override
   State<_ComposerBar> createState() => _ComposerBarState();
@@ -706,7 +494,7 @@ class _ComposerBarState extends State<_ComposerBar> {
                 minLines: 1,
                 style: const TextStyle(color: Color(0xFFE9EDEF), height: 1.4),
                 decoration: const InputDecoration(
-                  hintText: 'Share an update as the selected teammate',
+                  hintText: 'Type a message',
                   hintStyle: TextStyle(color: Color(0xFF8696A0)),
                   border: InputBorder.none,
                   isCollapsed: true,
@@ -720,7 +508,9 @@ class _ComposerBarState extends State<_ComposerBar> {
               onPressed: isSending
                   ? null
                   : () async {
-                      final text = widget.textController.text;
+                      final text = widget.textController.text.trim();
+                      if (text.isEmpty) return;
+                      widget.onSend();
                       await widget.controller.sendMessage(text);
                       if (mounted) {
                         widget.textController.clear();

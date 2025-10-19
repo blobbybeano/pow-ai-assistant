@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'controllers/inbox_controller.dart';
-import 'screens/workspace_screen.dart';
+import 'controllers/profile_controller.dart';
+import 'screens/chat_list_screen.dart';
 import 'services/chat_api_client.dart';
 import 'theme/app_theme.dart';
 
@@ -34,11 +35,12 @@ class _PowWashAppState extends State<PowWashApp> {
       providers: [
         Provider<ChatApiClient>.value(value: _apiClient),
         ChangeNotifierProvider(create: (_) => InboxController(apiClient: _apiClient)),
+        ChangeNotifierProvider(create: (_) => ProfileController()),
       ],
       child: MaterialApp(
         title: 'PowWash Workspace',
         theme: buildPowWashTheme(),
-        home: const WorkspaceScreen(),
+        home: const ChatListScreen(),
       ),
     );
   }

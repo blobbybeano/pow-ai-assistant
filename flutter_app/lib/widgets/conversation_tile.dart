@@ -10,12 +10,14 @@ class ConversationTile extends StatelessWidget {
     required this.summary,
     required this.onTap,
     this.isSelected = false,
+    this.avatarImage,
     super.key,
   });
 
   final ConversationSummary summary;
   final VoidCallback onTap;
   final bool isSelected;
+  final ImageProvider<Object>? avatarImage;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,7 @@ class ConversationTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AvatarCircle(label: summary.displayName, size: 44),
+            AvatarCircle(label: summary.displayName, size: 44, image: avatarImage),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

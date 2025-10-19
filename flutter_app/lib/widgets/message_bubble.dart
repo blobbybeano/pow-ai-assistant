@@ -57,10 +57,24 @@ class MessageBubble extends StatelessWidget {
     final alignment = isInbound ? Alignment.centerLeft : Alignment.centerRight;
     final statusLabel = message.statusLabel();
     final isDrafting = message.isDrafting;
+    final isPendingAi = message.author == 'ai' && message.isPending;
 
-    final bubbleColor = isInbound ? const Color(0xFF202C33) : const Color(0xFF005C4B);
-    final authorColor = isInbound ? const Color(0xFF00A884) : Colors.white;
-    final textColor = Colors.white;
+    final bubbleColor = isPendingAi
+        ? const Color(0xFFFFC857)
+        : isInbound
+            ? const Color(0xFF202C33)
+            : const Color(0xFF005C4B);
+    final authorColor = isPendingAi
+        ? const Color(0xFF7A5800)
+        : isInbound
+            ? const Color(0xFF00A884)
+            : Colors.white;
+    final textColor = isPendingAi ? const Color(0xFF2A1A00) : Colors.white;
+    final borderColor = isPendingAi
+        ? const Color(0xFFFFE29F)
+        : isInbound
+            ? const Color(0x1A8696A0)
+            : const Color(0x3300A884);
 
     return Align(
       alignment: alignment,
@@ -80,9 +94,7 @@ class MessageBubble extends StatelessWidget {
             bottomLeft: const Radius.circular(18),
             bottomRight: const Radius.circular(18),
           ),
-          border: Border.all(
-            color: isInbound ? const Color(0x1A8696A0) : const Color(0x3300A884),
-          ),
+          border: Border.all(color: borderColor),
         ),
         child: Column(
           crossAxisAlignment:
@@ -90,7 +102,7 @@ class MessageBubble extends StatelessWidget {
           children: [
             if (isDrafting)
               TypingIndicator(
-                dotColor: isInbound ? authorColor : Colors.white,
+                dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
               )
             else if (message.text.isNotEmpty)
               Text(

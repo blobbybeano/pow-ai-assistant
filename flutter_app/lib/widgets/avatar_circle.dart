@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
 
 class AvatarCircle extends StatelessWidget {
-  const AvatarCircle({required this.label, this.size = 48, super.key});
+  const AvatarCircle({
+    required this.label,
+    this.size = 48,
+    this.image,
+    super.key,
+  });
 
   final String label;
   final double size;
+  final ImageProvider<Object>? image;
 
   @override
   Widget build(BuildContext context) {
+    if (image != null) {
+      return CircleAvatar(
+        radius: size / 2,
+        backgroundColor: Colors.transparent,
+        backgroundImage: image,
+      );
+    }
+
     final colors = _gradientFor(label);
     return Container(
       width: size,
