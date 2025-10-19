@@ -12,36 +12,52 @@
           "text": "Hey PowWash! Can I get pricing for a full patio wash this weekend?",
           "author": "customer",
           "direction": "inbound",
-          "timestamp": "2025-10-16T21:47:01.057855+00:00",
+          "timestamp": "2025-01-16T21:47:01.057855+00:00",
           "via": "whatsapp",
-          "transportSid": null
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-01-16T21:47:01.057855+00:00",
+          "error": null
         },
         {
           "id": "db163ec7-aa03-4fc7-9157-181fe380b32d",
           "text": "Hi Alex! A full patio wash starts at $180. Would you like me to reserve a Saturday afternoon slot?",
           "author": "ai",
           "direction": "outbound",
-          "timestamp": "2025-10-16T21:47:01.057965+00:00",
+          "timestamp": "2025-01-16T21:47:01.057965+00:00",
           "via": "whatsapp",
-          "transportSid": null
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-01-16T21:47:01.057965+00:00",
+          "error": null
         },
         {
           "id": "e4024058-d8a6-47fa-970f-5a72d7aa2e00",
           "text": "That sounds great. Let's do 2pm if it's available.",
           "author": "customer",
           "direction": "inbound",
-          "timestamp": "2025-10-16T21:47:01.057970+00:00",
+          "timestamp": "2025-01-16T21:49:01.057970+00:00",
           "via": "whatsapp",
-          "transportSid": null
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-01-16T21:49:01.057970+00:00",
+          "error": null
         },
         {
           "id": "a64948e9-18f5-4077-8b56-a57f7f1b747d",
           "text": "2pm this Saturday is open. I'll pencil you in and send a confirmation shortly!",
           "author": "ai",
           "direction": "outbound",
-          "timestamp": "2025-10-16T21:47:01.057978+00:00",
+          "timestamp": "2025-01-16T21:49:01.057978+00:00",
           "via": "whatsapp",
-          "transportSid": null
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-01-16T21:49:01.057978+00:00",
+          "error": null
         }
       ]
     },
@@ -57,72 +73,26 @@
           "text": "Can someone help with a quote for cleaning 3 storefront windows?",
           "author": "customer",
           "direction": "inbound",
-          "timestamp": "2025-10-16T21:47:01.057984+00:00",
+          "timestamp": "2025-01-16T21:47:01.057984+00:00",
           "via": "whatsapp",
-          "transportSid": null
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-01-16T21:47:01.057984+00:00",
+          "error": null
         },
         {
           "id": "037345d8-efc1-4600-99d3-40eabb87f1d5",
           "text": "Thanks for reaching out! A PowWash specialist will reply shortly.",
           "author": "system",
           "direction": "outbound",
-          "timestamp": "2025-10-16T21:47:01.057987+00:00",
+          "timestamp": "2025-01-16T21:47:01.057987+00:00",
           "via": "whatsapp",
-          "transportSid": null
-        }
-      ]
-    },
-    "": {
-      "id": "",
-      "phoneNumber": "",
-      "displayName": "",
-      "aiEnabled": true,
-      "unreadCount": 1,
-      "messages": [
-        {
-          "id": "01d60682-5994-4e90-a034-817ee7ce2812",
-          "text": "hello from me",
-          "author": "customer",
-          "direction": "inbound",
-          "timestamp": "2025-10-16T22:35:47.685710+00:00",
-          "via": "whatsapp",
-          "transportSid": null
-        },
-        {
-          "id": "90a8546d-a545-40e4-a272-1eac80c81835",
-          "text": "Hello! \ud83d\ude0a Thanks for reaching out to PowWash! How can we help you with your exterior cleaning needs today? If you\u2019re looking for a quote, let us know what surfaces you need cleaned and any details about size or access. Looking forward to hearing from you!\n\nBest,  \nPowWash Team",
-          "author": "ai",
-          "direction": "outbound",
-          "timestamp": "2025-10-16T22:35:51.928917+00:00",
-          "via": "whatsapp",
-          "transportSid": null
-        }
-      ]
-    },
-    "+447565708252": {
-      "id": "+447565708252",
-      "phoneNumber": "+447565708252",
-      "displayName": "Ben",
-      "aiEnabled": true,
-      "unreadCount": 1,
-      "messages": [
-        {
-          "id": "4e5e195c-efaa-48ec-a93d-3f3cc9bb874b",
-          "text": "Hi there",
-          "author": "customer",
-          "direction": "inbound",
-          "timestamp": "2025-10-16T22:43:49.616681+00:00",
-          "via": "whatsapp",
-          "transportSid": null
-        },
-        {
-          "id": "aa549ac7-fdba-4d37-b958-be64ee6fcb0e",
-          "text": "Hello! \ud83d\ude0a How can we help you today with your exterior cleaning needs? If you're looking for a quote, just let us know what you need and any details about your property! \n\nLooking forward to hearing from you!\n\nPowWash Team",
-          "author": "ai",
-          "direction": "outbound",
-          "timestamp": "2025-10-16T22:43:52.570762+00:00",
-          "via": "whatsapp",
-          "transportSid": null
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-01-16T21:47:01.057987+00:00",
+          "error": null
         }
       ]
     }

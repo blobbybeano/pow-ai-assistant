@@ -43,6 +43,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return Consumer<ConversationController>(
       builder: (context, controller, _) {
         final messages = controller.messages;
+        final pendingAi = controller.pendingAiMessage;
         final aiDraft = controller.aiDraft;
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,6 +115,48 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         tooltip: 'Dismiss',
                       ),
                     ],
+                  ),
+                ),
+              if (pendingAi != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF246BFD).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: const Icon(Icons.schedule_send, color: Color(0xFF246BFD)),
+                      title: Text(
+                        'AI reply queued',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0F3D91),
+                            ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (pendingAi.statusLabel() != null)
+                            Text(
+                              pendingAi.statusLabel()!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: const Color(0xFF0F3D91)),
+                            ),
+                          const SizedBox(height: 6),
+                          Text(
+                            pendingAi.text,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: Colors.black87, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               Expanded(

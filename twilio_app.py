@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
+import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Set
 
 from flask import Flask, Response, abort, jsonify, request
 from twilio.twiml.messaging_response import MessagingResponse
@@ -26,6 +28,12 @@ if not twilio_messenger:
     )
 
 ACK_MESSAGE = "Thanks for reaching out! A PowWash specialist will reply shortly."
+AI_ACK_MESSAGE = (
+    "Thanks! Pow AI is drafting a reply now and will message you in about a minute."
+)
+AI_AUTOREPLY_DELAY_SECONDS = 60
+
+_scheduled_message_ids: Set[str] = set()
 
 
 def _build_reply(inbound_text: str) -> str:
@@ -47,6 +55,97 @@ def _build_reply(inbound_text: str) -> str:
 
 def _conversation_id(from_number: str) -> str:
     return from_number.replace("whatsapp:", "")
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _schedule_ai_delivery(
+    conversation_id: str,
+    message_id: str,
+    body: str,
+    *,
+    scheduled_for: datetime,
+) -> None:
+    if message_id in _scheduled_message_ids:
+        return
+
+    delay = max(0.0, (scheduled_for - datetime.now(timezone.utc)).total_seconds())
+
+    def _deliver() -> None:
+        if not twilio_messenger:
+            logging.warning(
+                "Twilio credentials missing; marking AI reply as failed for %s", conversation_id
+            )
+            conversation_store.update_message(
+                conversation_id,
+                message_id,
+                status="failed",
+                sent_at=_iso_now(),
+                error="Twilio credentials are not configured for outbound messaging",
+            )
+            _scheduled_message_ids.discard(message_id)
+            return
+
+        try:
+            sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=body)
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to send scheduled AI reply via Twilio")
+            conversation_store.update_message(
+                conversation_id,
+                message_id,
+                status="failed",
+                sent_at=_iso_now(),
+                error=str(exc),
+            )
+        else:
+            conversation_store.update_message(
+                conversation_id,
+                message_id,
+                status="sent",
+                sent_at=_iso_now(),
+                transport_sid=sid,
+            )
+        finally:
+            _scheduled_message_ids.discard(message_id)
+
+    timer = threading.Timer(delay, _deliver)
+    timer.daemon = True
+    timer.start()
+    _scheduled_message_ids.add(message_id)
+
+
+def _bootstrap_pending_messages() -> None:
+    for conversation_id, message in conversation_store.pending_scheduled_messages():
+        if message.scheduled_send_at:
+            try:
+                scheduled_for = datetime.fromisoformat(message.scheduled_send_at)
+            except ValueError:
+                scheduled_for = datetime.now(timezone.utc) + timedelta(
+                    seconds=AI_AUTOREPLY_DELAY_SECONDS
+                )
+        else:
+            scheduled_for = datetime.now(timezone.utc) + timedelta(
+                seconds=AI_AUTOREPLY_DELAY_SECONDS
+            )
+            conversation_store.update_message(
+                conversation_id,
+                message.id,
+                status="scheduled",
+                sent_at=None,
+                scheduled_send_at=scheduled_for.isoformat(),
+            )
+        _schedule_ai_delivery(
+            conversation_id,
+            message.id,
+            message.text,
+            scheduled_for=scheduled_for,
+        )
+
+
+# Kick off any AI replies that were awaiting delivery when the server restarts.
+_bootstrap_pending_messages()
 
 
 @app.post("/twilio/whatsapp")
@@ -74,14 +173,31 @@ def whatsapp_webhook() -> Response:
     response = MessagingResponse()
 
     if ai_enabled:
-        reply_text = _build_reply(inbound_text)
+        response.message(AI_ACK_MESSAGE)
         conversation_store.record_message(
+            conversation_id,
+            text=AI_ACK_MESSAGE,
+            author="system",
+            direction="outbound",
+            sent_at=_iso_now(),
+        )
+
+        reply_text = _build_reply(inbound_text)
+        send_after = datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
+        scheduled_message = conversation_store.record_message(
             conversation_id,
             text=reply_text,
             author="ai",
             direction="outbound",
+            status="scheduled",
+            scheduled_send_at=send_after.isoformat(),
         )
-        response.message(reply_text)
+        _schedule_ai_delivery(
+            conversation_id,
+            scheduled_message.id,
+            reply_text,
+            scheduled_for=send_after,
+        )
     else:
         response.message(ACK_MESSAGE)
         conversation_store.record_message(
@@ -89,6 +205,7 @@ def whatsapp_webhook() -> Response:
             text=ACK_MESSAGE,
             author="system",
             direction="outbound",
+            sent_at=_iso_now(),
         )
 
     return Response(str(response), mimetype="application/xml")
@@ -149,6 +266,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
         author="agent",
         direction="outbound",
         transport_sid=sid,
+        sent_at=_iso_now(),
     )
 
     return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})

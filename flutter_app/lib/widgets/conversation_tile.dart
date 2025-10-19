@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/conversation.dart';
+import '../models/message.dart';
 import 'avatar_circle.dart';
 
 class ConversationTile extends StatelessWidget {
@@ -17,9 +18,9 @@ class ConversationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lastMessage = summary.lastMessage;
-    final subtitle = lastMessage?.text ?? 'New conversation';
+    final subtitle = _buildSubtitle(lastMessage);
     final timestamp = lastMessage != null
-        ? DateFormat('MMM d, h:mm a').format(lastMessage.timestamp)
+        ? DateFormat('MMM d, h:mm a').format(lastMessage.displayTimestamp)
         : '';
 
     return ListTile(
@@ -83,6 +84,15 @@ class ConversationTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _buildSubtitle(ChatMessage? message) {
+  if (message == null) return 'New conversation';
+  final statusLabel = message.statusLabel();
+  if (statusLabel != null && !message.isInbound) {
+    return '$statusLabel • ${message.text}';
+  }
+  return message.text;
 }
 
 class _AiBadge extends StatelessWidget {

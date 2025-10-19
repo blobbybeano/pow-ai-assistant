@@ -27,6 +27,10 @@ class MessageRecord:
     timestamp: str
     via: str = "whatsapp"
     transport_sid: Optional[str] = None
+    status: str = "sent"  # sent | scheduled | failed | draft | sending
+    scheduled_send_at: Optional[str] = None
+    sent_at: Optional[str] = None
+    error: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -37,7 +41,23 @@ class MessageRecord:
             "timestamp": self.timestamp,
             "via": self.via,
             "transportSid": self.transport_sid,
+            "status": self.status,
+            "scheduledSendAt": self.scheduled_send_at,
+            "sentAt": self.sent_at,
+            "error": self.error,
         }
+
+    def effective_datetime(self) -> datetime:
+        """Return the best timestamp to represent this message chronologically."""
+
+        for candidate in (self.sent_at, self.scheduled_send_at, self.timestamp):
+            if candidate:
+                try:
+                    return datetime.fromisoformat(candidate)
+                except ValueError:
+                    continue
+        # Fallback to now if parsing fails
+        return datetime.now(tz=timezone.utc)
 
 
 @dataclass
@@ -114,6 +134,10 @@ class ConversationStore:
                         timestamp=msg.get("timestamp", _utc_now()),
                         via=msg.get("via", "whatsapp"),
                         transport_sid=msg.get("transportSid"),
+                        status=msg.get("status", "sent"),
+                        scheduled_send_at=msg.get("scheduledSendAt"),
+                        sent_at=msg.get("sentAt"),
+                        error=msg.get("error"),
                     )
                     for msg in record.get("messages", [])
                 ],
@@ -141,7 +165,11 @@ class ConversationStore:
                 convo.to_summary()
                 for convo in sorted(
                     self._conversations.values(),
-                    key=lambda c: c.last_message().timestamp if c.last_message() else "",
+                    key=lambda c: (
+                        c.last_message().effective_datetime()
+                        if c.last_message()
+                        else datetime.fromtimestamp(0, tz=timezone.utc)
+                    ),
                     reverse=True,
                 )
             ]
@@ -204,6 +232,10 @@ class ConversationStore:
         transport_sid: Optional[str] = None,
         profile_name: Optional[str] = None,
         increment_unread: bool = False,
+        status: str = "sent",
+        scheduled_send_at: Optional[str] = None,
+        sent_at: Optional[str] = None,
+        error: Optional[str] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
@@ -219,6 +251,10 @@ class ConversationStore:
             timestamp=_utc_now(),
             via=via,
             transport_sid=transport_sid,
+            status=status,
+            scheduled_send_at=scheduled_send_at,
+            sent_at=sent_at,
+            error=error,
         )
 
         with self._lock:
@@ -301,17 +337,82 @@ class ConversationStore:
             )
 
             for author, direction, text in payload.get("messages", []):
+                sent_at = _utc_now()
                 convo.messages.append(
                     MessageRecord(
                         id=str(uuid4()),
                         text=text,
                         author=author,
                         direction=direction,
-                        timestamp=_utc_now(),
+                        timestamp=sent_at,
+                        sent_at=sent_at,
                     )
                 )
 
             self._conversations[phone] = convo
+
+    def pending_scheduled_messages(self) -> List[tuple[str, MessageRecord]]:
+        """Return copies of AI messages that are scheduled for delivery."""
+
+        with self._lock:
+            pending: List[tuple[str, MessageRecord]] = []
+            for convo in self._conversations.values():
+                for message in convo.messages:
+                    if message.author == "ai" and message.status == "scheduled":
+                        pending.append(
+                            (
+                                convo.id,
+                                MessageRecord(
+                                    id=message.id,
+                                    text=message.text,
+                                    author=message.author,
+                                    direction=message.direction,
+                                    timestamp=message.timestamp,
+                                    via=message.via,
+                                    transport_sid=message.transport_sid,
+                                    status=message.status,
+                                    scheduled_send_at=message.scheduled_send_at,
+                                    sent_at=message.sent_at,
+                                    error=message.error,
+                                ),
+                            )
+                        )
+            return pending
+
+    def update_message(
+        self,
+        conversation_id: str,
+        message_id: str,
+        *,
+        status: Optional[str] = None,
+        sent_at: Optional[str] = None,
+        transport_sid: Optional[str] = None,
+        error: Optional[str] = None,
+        scheduled_send_at: Optional[str] = None,
+    ) -> Optional[MessageRecord]:
+        """Update a specific message record and persist the store."""
+
+        with self._lock:
+            convo = self._conversations.get(conversation_id)
+            if not convo:
+                return None
+
+            for message in convo.messages:
+                if message.id == message_id:
+                    if status is not None:
+                        message.status = status
+                    if sent_at is not None:
+                        message.sent_at = sent_at
+                    if transport_sid is not None:
+                        message.transport_sid = transport_sid
+                    if error is not None:
+                        message.error = error
+                    if scheduled_send_at is not None:
+                        message.scheduled_send_at = scheduled_send_at
+                    self._persist()
+                    return message
+
+        return None
 
 
 # Convenience singleton -------------------------------------------------------

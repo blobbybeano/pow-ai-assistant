@@ -39,6 +39,15 @@ class ConversationController extends ChangeNotifier {
 
   List<ChatMessage> get messages => _detail?.messages ?? [];
 
+  ChatMessage? get pendingAiMessage {
+    for (final message in messages.reversed) {
+      if (message.author == 'ai' && message.isScheduled) {
+        return message;
+      }
+    }
+    return null;
+  }
+
   Future<void> refresh() => _loadConversation(force: true);
 
   Future<void> toggleAi(bool value) async {

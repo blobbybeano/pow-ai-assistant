@@ -52,6 +52,8 @@ class MessageBubble extends StatelessWidget {
 
     final isInbound = message.isInbound;
     final alignment = isInbound ? Alignment.centerLeft : Alignment.centerRight;
+    final statusLabel = message.statusLabel();
+
     return Align(
       alignment: alignment,
       child: Container(
@@ -130,7 +132,39 @@ class MessageBubble extends StatelessWidget {
                       ),
                 ),
               ],
-            )
+            ),
+            if (statusLabel != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment:
+                    isInbound ? MainAxisAlignment.start : MainAxisAlignment.end,
+                children: [
+                  Icon(
+                    message.isFailed
+                        ? Icons.error_outline
+                        : Icons.schedule_outlined,
+                    size: 14,
+                    color: isInbound
+                        ? const Color(0xFF246BFD)
+                        : Colors.white.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      statusLabel,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isInbound
+                                ? const Color(0xFF246BFD)
+                                : Colors.white.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w600,
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              )
+            ]
           ],
         ),
       ),
