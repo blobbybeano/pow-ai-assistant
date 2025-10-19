@@ -28,44 +28,56 @@
             <p id="activeRole" class="workspace__subtitle"></p>
           </div>
           <div class="workspace__actions">
-            <label class="toggle">
-              <input type="checkbox" id="globalAiToggle" checked />
-              <span class="toggle__track"></span>
-              <span class="toggle__label">Enable AI</span>
-            </label>
+            <button
+              type="button"
+              id="inboxAiToggle"
+              class="ai-inbox-toggle"
+              aria-pressed="true"
+            >
+              <span class="ai-inbox-toggle__status">Inbox AI: On</span>
+            </button>
             <div class="persona-switcher" id="aiPersonaSwitcher"></div>
             <label class="toggle">
               <input type="checkbox" id="autoToggle" checked />
               <span class="toggle__track"></span>
               <span class="toggle__label">Auto replies for this chat</span>
             </label>
+            <button
+              type="button"
+              class="settings-button"
+              id="settingsButton"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+              aria-controls="settingsOverlay"
+            >
+              <span class="settings-button__icon" aria-hidden="true"></span>
+              <span class="settings-button__label">Settings</span>
+            </button>
           </div>
         </header>
         <section class="messages" id="messageList"></section>
-        <section class="ai-preview hidden" id="aiPreview">
-          <button class="ai-preview__pill" id="openPreview" type="button">
-            Edit before sending
-          </button>
-          <div class="ai-preview__panel hidden" id="aiPreviewPanel">
-            <div class="ai-preview__bubble">
-              <div class="ai-preview__persona">
-                <img src="" alt="" id="aiPreviewAvatar" class="ai-preview__avatar" />
-                <div class="ai-preview__meta">
-                  <span class="ai-preview__name" id="aiPreviewName"></span>
-                  <span class="ai-preview__tone" id="aiPreviewTone"></span>
-                </div>
-              </div>
-              <div class="ai-preview__content">
-                <div class="ai-preview__typing" id="previewTypingIndicator">
-                  <span></span><span></span><span></span>
-                </div>
-                <textarea id="previewEditor" rows="6"></textarea>
+        <section class="ai-preview hidden" id="aiPreview" aria-live="polite">
+          <div class="ai-preview__bubble">
+            <div class="ai-preview__persona">
+              <img src="" alt="" id="aiPreviewAvatar" class="ai-preview__avatar" />
+              <div class="ai-preview__meta">
+                <span class="ai-preview__name" id="aiPreviewName"></span>
+                <span class="ai-preview__tone" id="aiPreviewTone"></span>
               </div>
             </div>
+            <div class="ai-preview__content">
+              <div class="ai-preview__typing" id="previewTypingIndicator">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="ai-preview__display" id="previewDisplay"></div>
+              <textarea id="previewEditor" rows="5"></textarea>
+            </div>
             <div class="ai-preview__actions">
-              <button class="btn btn--primary" id="sendPreview">Send</button>
-              <button class="btn" id="cancelPreview">Cancel reply</button>
-              <button class="btn" id="closePreview" type="button">Close</button>
+              <button class="btn" id="editPreview" type="button">Edit</button>
+              <div class="ai-preview__action-group">
+                <button class="btn btn--primary" id="sendPreview" type="button">Send</button>
+                <button class="btn" id="cancelPreview" type="button">Cancel</button>
+              </div>
             </div>
           </div>
         </section>
@@ -78,6 +90,23 @@
           <button class="btn btn--primary" id="sendButton">Send</button>
         </footer>
       </main>
+    </div>
+    <div class="settings-overlay" id="settingsOverlay" role="dialog" aria-modal="true">
+      <div class="settings-panel">
+        <header class="settings-panel__header">
+          <h3>Workspace settings</h3>
+          <button
+            type="button"
+            class="settings-panel__close"
+            id="closeSettings"
+            aria-label="Close settings"
+          ></button>
+        </header>
+        <p class="settings-panel__description">
+          Update teammate details and choose profile pictures for your workspace.
+        </p>
+        <form class="settings-form" id="settingsForm"></form>
+      </div>
     </div>
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
   </body>
