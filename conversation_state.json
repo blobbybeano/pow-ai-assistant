@@ -219,6 +219,32 @@
           "scheduledSendAt": null,
           "sentAt": "2025-10-19T21:01:11.584935+00:00",
           "error": null
+        },
+        {
+          "id": "3ab00ff0-a21f-4364-9d7d-665cb7f18da8",
+          "text": "Thanks, and how much would a two car patio cost?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-19T23:08:38.204385+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "b716050e-8b75-446d-9628-a7902c165c21",
+          "text": "Hi there! To provide you with an accurate quote for your two-car patio, could you let me know the surface type (is it paving or decking?), the size in square metres, and any access considerations? \n\nOur Patio Refresh service starts at \u00a395 for up to 40m\u00b2, which includes a pressure wash and chemical treatment to lift dirt and algae. \n\nFeel free to send over any photos if you have them! Looking forward to helping you out!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-19T23:08:38.205692+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM63e396914bc9861a13531bfbfa8d4548",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-19T23:11:41.271926+00:00",
+          "sentAt": "2025-10-19T23:11:41.719864+00:00",
+          "error": null
         }
       ]
     }
