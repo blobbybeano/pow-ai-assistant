@@ -30,10 +30,8 @@ if not twilio_messenger:
     )
 
 ACK_MESSAGE = "Thanks for reaching out! A PowWash specialist will reply shortly."
-AI_ACK_MESSAGE = (
-    "Thanks! Pow AI is drafting a reply now and will message you in about a minute."
-)
-AI_AUTOREPLY_DELAY_SECONDS = 60
+AI_ACK_MESSAGE = "Thanks! Pow AI is drafting a reply now and will message you shortly."
+AI_AUTOREPLY_DELAY_SECONDS = 180
 
 _scheduled_message_ids: Set[str] = set()
 
@@ -76,6 +74,11 @@ def _schedule_ai_delivery(
     delay = max(0.0, (scheduled_for - datetime.now(timezone.utc)).total_seconds())
 
     def _deliver() -> None:
+        message_snapshot = conversation_store.get_message(conversation_id, message_id)
+        if not message_snapshot or message_snapshot.status != "scheduled":
+            _scheduled_message_ids.discard(message_id)
+            return
+
         if not twilio_messenger:
             logging.warning(
                 "Twilio credentials missing; marking AI reply as failed for %s", conversation_id
@@ -176,27 +179,37 @@ def whatsapp_webhook() -> Response:
 
     if ai_enabled:
         response.message(AI_ACK_MESSAGE)
-        conversation_store.record_message(
+        drafting_message = conversation_store.record_message(
             conversation_id,
-            text=AI_ACK_MESSAGE,
-            author="system",
-            direction="outbound",
-            sent_at=_iso_now(),
-        )
-
-        reply_text = _build_reply(inbound_text)
-        send_after = datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
-        scheduled_message = conversation_store.record_message(
-            conversation_id,
-            text=reply_text,
+            text="",
             author="ai",
             direction="outbound",
+            status="drafting",
+        )
+
+        try:
+            reply_text = _build_reply(inbound_text)
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to build AI reply")
+            conversation_store.update_message(
+                conversation_id,
+                drafting_message.id,
+                status="failed",
+                error=str(exc),
+            )
+            return Response(str(response), mimetype="application/xml")
+
+        send_after = datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
+        conversation_store.update_message(
+            conversation_id,
+            drafting_message.id,
+            text=reply_text,
             status="scheduled",
             scheduled_send_at=send_after.isoformat(),
         )
         _schedule_ai_delivery(
             conversation_id,
-            scheduled_message.id,
+            drafting_message.id,
             reply_text,
             scheduled_for=send_after,
         )
@@ -272,6 +285,16 @@ def api_send_manual_message(conversation_id: str) -> Response:
     )
 
     return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})
+
+
+@app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")
+def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
+    message = conversation_store.cancel_scheduled_message(conversation_id, message_id)
+    if message is None:
+        abort(404, description="Scheduled AI message not found")
+
+    _scheduled_message_ids.discard(message_id)
+    return jsonify({"status": "cancelled", "message": message.to_dict()})
 
 
 @app.post("/api/conversations/<conversation_id>/ai-draft")

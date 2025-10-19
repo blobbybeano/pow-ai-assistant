@@ -74,6 +74,18 @@ class ChatApiClient {
     return payload['sid'] as String? ?? '';
   }
 
+  Future<void> cancelScheduledMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final response = await _client.post(
+      _uri('/api/conversations/$conversationId/messages/$messageId/cancel'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cancel AI message (${response.statusCode})');
+    }
+  }
+
   Future<String> fetchAiDraft(String conversationId) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/ai-draft'),

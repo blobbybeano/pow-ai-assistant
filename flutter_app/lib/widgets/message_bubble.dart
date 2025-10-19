@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/message.dart';
+import 'typing_indicator.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -53,6 +54,7 @@ class MessageBubble extends StatelessWidget {
     final isInbound = message.isInbound;
     final alignment = isInbound ? Alignment.centerLeft : Alignment.centerRight;
     final statusLabel = message.statusLabel();
+    final isDrafting = message.isDrafting;
 
     return Align(
       alignment: alignment,
@@ -91,13 +93,20 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment:
               isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
           children: [
-            Text(
-              message.text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isInbound ? Colors.black87 : Colors.white,
-                    height: 1.4,
-                  ),
-            ),
+            if (isDrafting)
+              TypingIndicator(
+                dotColor: isInbound
+                    ? const Color(0xFF246BFD)
+                    : Colors.white.withValues(alpha: 0.9),
+              )
+            else if (message.text.isNotEmpty)
+              Text(
+                message.text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isInbound ? Colors.black87 : Colors.white,
+                      height: 1.4,
+                    ),
+              ),
             const SizedBox(height: 6),
             Row(
               mainAxisSize: MainAxisSize.min,

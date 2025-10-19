@@ -14,6 +14,11 @@ class ConversationController extends ChangeNotifier {
   }) {
     _loadConversation();
     _pollingTimer = Timer.periodic(const Duration(seconds: 6), (_) => _loadConversation());
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (pendingAiMessage != null) {
+        notifyListeners();
+      }
+    });
   }
 
   final ChatApiClient apiClient;
@@ -21,10 +26,12 @@ class ConversationController extends ChangeNotifier {
   final String initialDisplayName;
 
   Timer? _pollingTimer;
+  Timer? _countdownTimer;
   ConversationDetail? _detail;
   bool _loading = false;
   bool _sending = false;
   bool _drafting = false;
+  bool _cancellingPendingAi = false;
   Object? _error;
   String? _aiDraft;
 
@@ -32,6 +39,7 @@ class ConversationController extends ChangeNotifier {
   bool get isLoading => _loading;
   bool get isSending => _sending;
   bool get isDrafting => _drafting;
+  bool get isCancellingPendingAi => _cancellingPendingAi;
   Object? get error => _error;
   bool get aiEnabled => _detail?.aiEnabled ?? true;
   String get displayName => _detail?.displayName ?? initialDisplayName;
@@ -41,7 +49,7 @@ class ConversationController extends ChangeNotifier {
 
   ChatMessage? get pendingAiMessage {
     for (final message in messages.reversed) {
-      if (message.author == 'ai' && message.isScheduled) {
+      if (message.author == 'ai' && (message.isScheduled || message.isDrafting)) {
         return message;
       }
     }
@@ -49,6 +57,29 @@ class ConversationController extends ChangeNotifier {
   }
 
   Future<void> refresh() => _loadConversation(force: true);
+
+  Future<String?> cancelPendingAiMessage() async {
+    final pending = pendingAiMessage;
+    if (pending == null) return null;
+    final draftText = pending.text;
+    _cancellingPendingAi = true;
+    notifyListeners();
+    try {
+      await apiClient.cancelScheduledMessage(
+        conversationId: conversationId,
+        messageId: pending.id,
+      );
+      await _loadConversation(force: true);
+      return draftText;
+    } catch (error) {
+      _error = error;
+      notifyListeners();
+      return null;
+    } finally {
+      _cancellingPendingAi = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> toggleAi(bool value) async {
     final previous = aiEnabled;
@@ -124,6 +155,7 @@ class ConversationController extends ChangeNotifier {
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 }

@@ -27,7 +27,7 @@ class MessageRecord:
     timestamp: str
     via: str = "whatsapp"
     transport_sid: Optional[str] = None
-    status: str = "sent"  # sent | scheduled | failed | draft | sending
+    status: str = "sent"  # sent | scheduled | failed | draft | sending | drafting | cancelled
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
@@ -379,11 +379,38 @@ class ConversationStore:
                         )
             return pending
 
+    def get_message(self, conversation_id: str, message_id: str) -> Optional[MessageRecord]:
+        """Return a specific message from a conversation without mutating state."""
+
+        with self._lock:
+            convo = self._conversations.get(conversation_id)
+            if not convo:
+                return None
+
+            for message in convo.messages:
+                if message.id == message_id:
+                    return MessageRecord(
+                        id=message.id,
+                        text=message.text,
+                        author=message.author,
+                        direction=message.direction,
+                        timestamp=message.timestamp,
+                        via=message.via,
+                        transport_sid=message.transport_sid,
+                        status=message.status,
+                        scheduled_send_at=message.scheduled_send_at,
+                        sent_at=message.sent_at,
+                        error=message.error,
+                    )
+
+        return None
+
     def update_message(
         self,
         conversation_id: str,
         message_id: str,
         *,
+        text: Optional[str] = None,
         status: Optional[str] = None,
         sent_at: Optional[str] = None,
         transport_sid: Optional[str] = None,
@@ -399,6 +426,8 @@ class ConversationStore:
 
             for message in convo.messages:
                 if message.id == message_id:
+                    if text is not None:
+                        message.text = text
                     if status is not None:
                         message.status = status
                     if sent_at is not None:
@@ -409,6 +438,28 @@ class ConversationStore:
                         message.error = error
                     if scheduled_send_at is not None:
                         message.scheduled_send_at = scheduled_send_at
+                    self._persist()
+                    return message
+
+        return None
+
+    def cancel_scheduled_message(
+        self, conversation_id: str, message_id: str
+    ) -> Optional[MessageRecord]:
+        """Mark a scheduled AI message as cancelled."""
+
+        with self._lock:
+            convo = self._conversations.get(conversation_id)
+            if not convo:
+                return None
+
+            for message in convo.messages:
+                if message.id == message_id and message.author == "ai":
+                    if message.status not in {"scheduled", "drafting"}:
+                        return None
+                    message.status = "cancelled"
+                    message.scheduled_send_at = None
+                    message.error = "Cancelled by agent"
                     self._persist()
                     return message
 

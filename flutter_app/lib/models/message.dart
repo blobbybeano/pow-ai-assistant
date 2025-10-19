@@ -39,11 +39,11 @@ class ChatMessage {
   final String direction;
   final DateTime timestamp;
   final String via;
-   final String status;
-   final DateTime? scheduledSendAt;
-   final DateTime? sentAt;
+  final String status;
+  final DateTime? scheduledSendAt;
+  final DateTime? sentAt;
   final String? transportSid;
-   final String? error;
+  final String? error;
 
   bool get isInbound => direction == 'inbound';
 
@@ -53,10 +53,14 @@ class ChatMessage {
 
   bool get isScheduled => status == 'scheduled';
   bool get isFailed => status == 'failed';
-  bool get isPending => status == 'scheduled' || status == 'sending';
+  bool get isDrafting => status == 'drafting';
+  bool get isCancelled => status == 'cancelled';
+  bool get isPending => status == 'scheduled' || status == 'sending' || isDrafting;
 
   String? statusLabel() {
     switch (status) {
+      case 'drafting':
+        return 'Drafting reply…';
       case 'scheduled':
         if (scheduledSendAt == null) return 'Scheduled to send soon';
         final now = DateTime.now();
@@ -64,17 +68,15 @@ class ChatMessage {
         if (diff.inSeconds <= 0) {
           return 'Sending shortly…';
         }
-        if (diff.inMinutes >= 1) {
-          final minutes = diff.inMinutes;
-          final seconds = diff.inSeconds.remainder(60);
-          if (seconds == 0) {
-            return 'Sending in $minutes min';
-          }
-          return 'Sending in $minutes:${seconds.toString().padLeft(2, '0')}';
-        }
-        return 'Sending in ${diff.inSeconds}s';
+        final totalSeconds = diff.inSeconds;
+        final minutes = totalSeconds ~/ 60;
+        final seconds = totalSeconds % 60;
+        final secondsLabel = seconds.toString().padLeft(2, '0');
+        return 'Sending in $minutes:$secondsLabel';
       case 'failed':
         return error != null && error!.isNotEmpty ? 'Failed: $error' : 'Failed to send';
+      case 'cancelled':
+        return error != null && error!.isNotEmpty ? error : 'Cancelled';
       case 'sending':
         return 'Sending…';
       default:

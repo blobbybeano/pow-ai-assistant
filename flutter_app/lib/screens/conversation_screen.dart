@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../controllers/conversation_controller.dart';
 import '../models/message.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/typing_indicator.dart';
 
 class ConversationScreenArgs {
   const ConversationScreenArgs({
@@ -147,13 +148,66 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                   ?.copyWith(color: const Color(0xFF0F3D91)),
                             ),
                           const SizedBox(height: 6),
-                          Text(
-                            pendingAi.text,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: Colors.black87, height: 1.4),
-                          ),
+                          if (pendingAi.isDrafting)
+                            Row(
+                              children: [
+                                const TypingIndicator(dotColor: Color(0xFF0F3D91)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Pow AI is drafting a reply…',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: Colors.black87, height: 1.4),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Text(
+                              pendingAi.text,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: Colors.black87, height: 1.4),
+                            ),
+                          if (pendingAi.isScheduled) ...[
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: controller.isCancellingPendingAi
+                                    ? null
+                                    : () async {
+                                        final text = await controller.cancelPendingAiMessage();
+                                        if (!mounted) return;
+                                        if (text != null) {
+                                          setState(() {
+                                            _composerController.text = text;
+                                            _composerController.selection =
+                                                TextSelection.collapsed(offset: text.length);
+                                          });
+                                        }
+                                      },
+                                icon: controller.isCancellingPendingAi
+                                    ? const SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.edit_outlined),
+                                label: const Text('Edit before sending'),
+                              ),
+                            ),
+                            Text(
+                              'This message will auto-send unless you edit or reply manually.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.black54),
+                            ),
+                          ],
                         ],
                       ),
                     ),
