@@ -7,11 +7,13 @@ class MessageBubble extends StatelessWidget {
   const MessageBubble({
     required this.message,
     required this.isGrouped,
+    this.action,
     super.key,
   });
 
   final ChatMessage message;
   final bool isGrouped;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +175,14 @@ class MessageBubble extends StatelessWidget {
                   ),
                 ],
               )
+            ],
+            if (action != null) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment:
+                    isInbound ? Alignment.centerLeft : Alignment.centerRight,
+                child: action!,
+              ),
             ]
           ],
         ),

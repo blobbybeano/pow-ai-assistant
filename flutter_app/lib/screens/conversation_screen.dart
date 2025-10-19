@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../controllers/conversation_controller.dart';
 import '../models/message.dart';
 import '../widgets/message_bubble.dart';
-import '../widgets/typing_indicator.dart';
 
 class ConversationScreenArgs {
   const ConversationScreenArgs({
@@ -37,6 +36,86 @@ class _ConversationScreenState extends State<ConversationScreen> {
     _composerController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  List<Widget> _buildMessageWidgets({
+    required List<ChatMessage> messages,
+    required ConversationController controller,
+    required ChatMessage? pendingAi,
+  }) {
+    final widgets = <Widget>[];
+    DateTime? lastDay;
+
+    for (var i = 0; i < messages.length; i++) {
+      final message = messages[i];
+      final isNewDay = lastDay == null || !_isSameDay(lastDay!, message.timestamp);
+      if (isNewDay) {
+        widgets.add(_DayDivider(date: message.timestamp));
+        lastDay = message.timestamp;
+      }
+
+      final previous = i > 0 ? messages[i - 1] : null;
+      final isGrouped = previous != null &&
+          previous.author == message.author &&
+          _isSameDay(previous.timestamp, message.timestamp);
+
+      Widget? action;
+      final isPendingAiMessage = pendingAi != null &&
+          pendingAi.id == message.id &&
+          message.author == 'ai' &&
+          message.isScheduled;
+
+      if (isPendingAiMessage) {
+        final isInbound = message.isInbound;
+        final foregroundColor =
+            isInbound ? const Color(0xFF246BFD) : Colors.white;
+
+        action = TextButton.icon(
+          onPressed: controller.isCancellingPendingAi
+              ? null
+              : () async {
+                  final text = await controller.cancelPendingAiMessage();
+                  if (!mounted) return;
+                  if (text != null) {
+                    setState(() {
+                      _composerController.text = text;
+                      _composerController.selection =
+                          TextSelection.collapsed(offset: text.length);
+                    });
+                  }
+                },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            foregroundColor: foregroundColor,
+            textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          icon: controller.isCancellingPendingAi
+              ? SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(foregroundColor),
+                  ),
+                )
+              : const Icon(Icons.edit_outlined, size: 16),
+          label: const Text('Edit before sending'),
+        );
+      }
+
+      widgets.add(
+        MessageBubble(
+          message: message,
+          isGrouped: isGrouped,
+          action: action,
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   @override
@@ -118,101 +197,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     ],
                   ),
                 ),
-              if (pendingAi != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF246BFD).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: const Icon(Icons.schedule_send, color: Color(0xFF246BFD)),
-                      title: Text(
-                        'AI reply queued',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF0F3D91),
-                            ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (pendingAi.statusLabel() != null)
-                            Text(
-                              pendingAi.statusLabel()!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: const Color(0xFF0F3D91)),
-                            ),
-                          const SizedBox(height: 6),
-                          if (pendingAi.isDrafting)
-                            Row(
-                              children: [
-                                const TypingIndicator(dotColor: Color(0xFF0F3D91)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Pow AI is drafting a reply…',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.black87, height: 1.4),
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            Text(
-                              pendingAi.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.black87, height: 1.4),
-                            ),
-                          if (pendingAi.isScheduled) ...[
-                            const SizedBox(height: 12),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton.icon(
-                                onPressed: controller.isCancellingPendingAi
-                                    ? null
-                                    : () async {
-                                        final text = await controller.cancelPendingAiMessage();
-                                        if (!mounted) return;
-                                        if (text != null) {
-                                          setState(() {
-                                            _composerController.text = text;
-                                            _composerController.selection =
-                                                TextSelection.collapsed(offset: text.length);
-                                          });
-                                        }
-                                      },
-                                icon: controller.isCancellingPendingAi
-                                    ? const SizedBox(
-                                        height: 16,
-                                        width: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.edit_outlined),
-                                label: const Text('Edit before sending'),
-                              ),
-                            ),
-                            Text(
-                              'This message will auto-send unless you edit or reply manually.',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: Colors.black54),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -235,7 +219,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                     SizedBox(height: 160),
                                     _NoMessagesHint(),
                                   ]
-                                : _buildMessageWidgets(messages),
+                                : _buildMessageWidgets(
+                                    messages: messages,
+                                    controller: controller,
+                                    pendingAi: pendingAi,
+                                  ),
                           ),
                         ),
                 ),
@@ -317,25 +305,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
       },
     );
   }
-}
-
-List<Widget> _buildMessageWidgets(List<ChatMessage> messages) {
-  final widgets = <Widget>[];
-  DateTime? lastDay;
-  for (var i = 0; i < messages.length; i++) {
-    final message = messages[i];
-    final isNewDay = lastDay == null || !_isSameDay(lastDay!, message.timestamp);
-    if (isNewDay) {
-      widgets.add(_DayDivider(date: message.timestamp));
-      lastDay = message.timestamp;
-    }
-    final previous = i > 0 ? messages[i - 1] : null;
-    final isGrouped = previous != null &&
-        previous.author == message.author &&
-        _isSameDay(previous.timestamp, message.timestamp);
-    widgets.add(MessageBubble(message: message, isGrouped: isGrouped));
-  }
-  return widgets;
 }
 
 bool _isSameDay(DateTime a, DateTime b) {

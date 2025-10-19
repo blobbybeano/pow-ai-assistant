@@ -30,7 +30,6 @@ if not twilio_messenger:
     )
 
 ACK_MESSAGE = "Thanks for reaching out! A PowWash specialist will reply shortly."
-AI_ACK_MESSAGE = "Thanks! Pow AI is drafting a reply now and will message you shortly."
 AI_AUTOREPLY_DELAY_SECONDS = 180
 
 _scheduled_message_ids: Set[str] = set()
@@ -178,7 +177,7 @@ def whatsapp_webhook() -> Response:
     response = MessagingResponse()
 
     if ai_enabled:
-        response.message(AI_ACK_MESSAGE)
+        response.message(ACK_MESSAGE)
         drafting_message = conversation_store.record_message(
             conversation_id,
             text="",
