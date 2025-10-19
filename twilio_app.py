@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Set
 
 from flask import Flask, Response, abort, jsonify, request
+from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auto_responder import generate_reply
@@ -17,6 +18,7 @@ from twilio_helpers import TwilioMessenger
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 PRICE_LIST_PATH = Path("price_list.json")
 TONE_PROFILE_PATH = Path("tone_profile.md")
