@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Set
 
-from flask import Flask, Response, abort, jsonify, render_template, request
+from flask import Flask, Response, abort, jsonify, request
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
@@ -33,12 +33,6 @@ ACK_MESSAGE = "Thanks for reaching out! A PowWash specialist will reply shortly.
 AI_AUTOREPLY_DELAY_SECONDS = 180
 
 _scheduled_message_ids: Set[str] = set()
-
-
-@app.get("/")
-def workspace() -> str:
-    """Serve the WhatsApp-style workspace UI."""
-    return render_template("index.html")
 
 
 def _build_reply(inbound_text: str) -> str:

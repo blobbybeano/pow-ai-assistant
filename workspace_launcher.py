@@ -31,7 +31,7 @@ class FlaskServer:
     def start(self) -> None:
         print(f"[server] Starting Twilio webhook + REST API on {self.url}")
         self._thread.start()
-        print(f"[server] Workspace UI available at {self.url}/")
+        print(f"[server] API root available at {self.url}/")
 
     def stop(self) -> None:
         print("[server] Shutting down Flask server …")

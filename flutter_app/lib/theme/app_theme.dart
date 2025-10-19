@@ -2,67 +2,96 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 ThemeData buildPowWashTheme() {
+  const background = Color(0xFF0B141A);
+  const surface = Color(0xFF111B21);
+  const surfaceAlt = Color(0xFF202C33);
+  const accent = Color(0xFF00A884);
+  const textPrimary = Color(0xFFE9EDEF);
+  const textMuted = Color(0xFF8696A0);
+
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF246BFD),
-    brightness: Brightness.light,
+    seedColor: accent,
+    brightness: Brightness.dark,
+    background: background,
+    surface: surface,
   ).copyWith(
-    surface: Colors.white,
-    surfaceContainerLowest: const Color(0xFFF5F7FA),
+    primary: accent,
+    onPrimary: Colors.white,
+    secondary: const Color(0xFF008068),
+    onSecondary: Colors.white,
+    outline: const Color(0x338696A0),
+    surfaceContainerLowest: surfaceAlt,
+    error: const Color(0xFFF15C6D),
+    onError: Colors.white,
   );
 
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: background,
+    canvasColor: background,
   );
 
-  final textTheme = GoogleFonts.interTextTheme(base.textTheme).copyWith(
+  final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
+    bodyColor: textPrimary,
+    displayColor: textPrimary,
+  ).copyWith(
     titleLarge: GoogleFonts.inter(
       fontWeight: FontWeight.w700,
       fontSize: 22,
-      color: colorScheme.onSurface,
+      color: textPrimary,
     ),
     bodyMedium: GoogleFonts.inter(
       fontSize: 15,
-      color: const Color(0xFF1D1E20),
+      color: textPrimary,
+    ),
+    bodySmall: GoogleFonts.inter(
+      fontSize: 13,
+      color: textMuted,
     ),
   );
 
   return base.copyWith(
-    colorScheme: colorScheme,
     textTheme: textTheme,
-    scaffoldBackgroundColor: const Color(0xFFF5F7FA),
     appBarTheme: AppBarTheme(
-      backgroundColor: colorScheme.surface,
-      foregroundColor: colorScheme.onSurface,
+      backgroundColor: surface,
+      foregroundColor: textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
       titleTextStyle: GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
+        color: textPrimary,
       ),
     ),
-    cardTheme: CardThemeData(
-      color: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-    ),
-    chipTheme: ChipThemeData(
-      backgroundColor: colorScheme.primaryContainer,
-      side: const BorderSide(style: BorderStyle.none),
-      shape: const StadiumBorder(),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      labelStyle: GoogleFonts.inter(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onPrimaryContainer,
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
+        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
       ),
     ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: textPrimary,
+        side: const BorderSide(color: Color(0x338696A0)),
+        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      ),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) return accent;
+        return const Color(0xFFE9EDEF);
+      }),
+      trackColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) return accent.withOpacity(0.4);
+        return const Color(0x338696A0);
+      }),
+    ),
+    dividerColor: const Color(0x338696A0),
+    dialogBackgroundColor: surface,
+    cardColor: surfaceAlt,
   );
 }

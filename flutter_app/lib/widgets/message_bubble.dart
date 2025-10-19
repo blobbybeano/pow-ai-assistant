@@ -58,38 +58,31 @@ class MessageBubble extends StatelessWidget {
     final statusLabel = message.statusLabel();
     final isDrafting = message.isDrafting;
 
+    final bubbleColor = isInbound ? const Color(0xFF202C33) : const Color(0xFF005C4B);
+    final authorColor = isInbound ? const Color(0xFF00A884) : Colors.white;
+    final textColor = Colors.white;
+
     return Align(
       alignment: alignment,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 320),
+        constraints: const BoxConstraints(maxWidth: 360),
         margin: EdgeInsets.only(
           top: isGrouped ? 4 : 12,
-          left: isInbound ? 12 : 48,
-          right: isInbound ? 48 : 12,
+          left: isInbound ? 12 : 64,
+          right: isInbound ? 64 : 12,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isInbound ? Colors.white : null,
-          gradient: isInbound
-              ? null
-              : const LinearGradient(
-                  colors: [Color(0xFF246BFD), Color(0xFF4CC9F0)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+          color: bubbleColor,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(isInbound ? 0 : 20),
-            topRight: Radius.circular(isInbound ? 20 : 0),
-            bottomLeft: const Radius.circular(20),
-            bottomRight: const Radius.circular(20),
+            topLeft: Radius.circular(isInbound ? 4 : 18),
+            topRight: Radius.circular(isInbound ? 18 : 4),
+            bottomLeft: const Radius.circular(18),
+            bottomRight: const Radius.circular(18),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
+          border: Border.all(
+            color: isInbound ? const Color(0x1A8696A0) : const Color(0x3300A884),
+          ),
         ),
         child: Column(
           crossAxisAlignment:
@@ -97,19 +90,17 @@ class MessageBubble extends StatelessWidget {
           children: [
             if (isDrafting)
               TypingIndicator(
-                dotColor: isInbound
-                    ? const Color(0xFF246BFD)
-                    : Colors.white.withValues(alpha: 0.9),
+                dotColor: isInbound ? authorColor : Colors.white,
               )
             else if (message.text.isNotEmpty)
               Text(
                 message.text,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isInbound ? Colors.black87 : Colors.white,
-                      height: 1.4,
+                      color: textColor,
+                      height: 1.5,
                     ),
               ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment:
@@ -118,34 +109,28 @@ class MessageBubble extends StatelessWidget {
                 Icon(
                   _iconForAuthor(message.author),
                   size: 14,
-                  color: isInbound
-                      ? const Color(0xFF246BFD)
-                      : Colors.white.withValues(alpha: 0.85),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _authorLabel(message.author),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isInbound
-                            ? const Color(0xFF246BFD)
-                            : Colors.white.withValues(alpha: 0.85),
-                        fontWeight: FontWeight.w600,
-                      ),
+                  color: authorColor,
                 ),
                 const SizedBox(width: 6),
                 Text(
+                  _authorLabel(message.author),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: authorColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(width: 8),
+                Text(
                   message.formattedTime(),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isInbound
-                            ? Colors.black45
-                            : Colors.white.withValues(alpha: 0.85),
+                        color: const Color(0xFFB9C5CC),
                         fontWeight: FontWeight.w600,
                       ),
                 ),
               ],
             ),
             if (statusLabel != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment:
@@ -156,18 +141,14 @@ class MessageBubble extends StatelessWidget {
                         ? Icons.error_outline
                         : Icons.schedule_outlined,
                     size: 14,
-                    color: isInbound
-                        ? const Color(0xFF246BFD)
-                        : Colors.white.withValues(alpha: 0.85),
+                    color: authorColor,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       statusLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: isInbound
-                                ? const Color(0xFF246BFD)
-                                : Colors.white.withValues(alpha: 0.85),
+                            color: authorColor,
                             fontWeight: FontWeight.w600,
                           ),
                       overflow: TextOverflow.ellipsis,
@@ -177,7 +158,7 @@ class MessageBubble extends StatelessWidget {
               )
             ],
             if (action != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Align(
                 alignment:
                     isInbound ? Alignment.centerLeft : Alignment.centerRight,

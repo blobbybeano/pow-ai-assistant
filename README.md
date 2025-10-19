@@ -68,10 +68,12 @@ for local development.
 ## Flutter workspace
 
 The Flutter client lives in [`flutter_app/`](flutter_app/README.md) and mirrors a
-WhatsApp-style inbox for PowWash operators. It polls the REST API for
-conversations, lets agents toggle AI auto-replies per contact, and supports
-manual outbound messaging when Twilio credentials are present. The launcher
-described above runs the same `flutter run` workflow you would execute manually.
+WhatsApp-style inbox for PowWash operators. It now ships with the same split
+pane layout as the earlier web prototype, so the in-app experience matches what
+teammates see in demos. The client polls the REST API for conversations, lets
+agents toggle AI auto-replies per contact, and supports manual outbound
+messaging when Twilio credentials are present. The launcher described above runs
+the same `flutter run` workflow you would execute manually.
 
 ## Additional utilities
 
@@ -79,8 +81,5 @@ described above runs the same `flutter run` workflow you would execute manually.
   recent subject lines. Install dependencies with `pip install -r
   requirements.txt` and run `python gmail_subjects.py` to complete the OAuth
   flow.
-* **`app.py`** – Minimal Flask app serving a static prototype workspace. Useful
-  for quick UI experiments outside of Flutter.
-
 Update `price_list.json` and `tone_profile.md` to keep the AI output aligned
 with your current services and brand voice.

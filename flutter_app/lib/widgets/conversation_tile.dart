@@ -9,78 +9,109 @@ class ConversationTile extends StatelessWidget {
   const ConversationTile({
     required this.summary,
     required this.onTap,
+    this.isSelected = false,
     super.key,
   });
 
   final ConversationSummary summary;
   final VoidCallback onTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
     final lastMessage = summary.lastMessage;
     final subtitle = _buildSubtitle(lastMessage);
     final timestamp = lastMessage != null
-        ? DateFormat('MMM d, h:mm a').format(lastMessage.displayTimestamp)
+        ? DateFormat('h:mm a').format(lastMessage.displayTimestamp)
         : '';
 
-    return ListTile(
+    final backgroundColor = isSelected ? const Color(0x3320A884) : const Color(0x14202C33);
+    final borderColor = isSelected ? const Color(0x6600A884) : Colors.transparent;
+
+    return InkWell(
       onTap: onTap,
-      leading: AvatarCircle(label: summary.displayName),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              summary.displayName,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (timestamp.isNotEmpty)
-            Text(
-              timestamp,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.black54),
-            ),
-        ],
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(color: Colors.black54),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 1.5),
         ),
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _AiBadge(isEnabled: summary.aiEnabled),
-          if (summary.unreadCount > 0)
-            Container(
-              margin: const EdgeInsets.only(top: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFF246BFD),
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-              child: Text(
-                summary.unreadCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AvatarCircle(label: summary.displayName, size: 44),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          summary.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFE9EDEF),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      if (timestamp.isNotEmpty)
+                        Text(
+                          timestamp,
+                          style: const TextStyle(
+                            color: Color(0xFF8696A0),
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF8696A0),
+                      fontSize: 13,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _AiBadge(isEnabled: summary.aiEnabled),
+                      const Spacer(),
+                      if (summary.unreadCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF00A884),
+                            borderRadius: BorderRadius.all(Radius.circular(999)),
+                          ),
+                          child: Text(
+                            summary.unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -108,15 +139,16 @@ class _AiBadge extends StatelessWidget {
         Icon(
           isEnabled ? Icons.bolt : Icons.bolt_outlined,
           size: 16,
-          color: isEnabled ? const Color(0xFF246BFD) : Colors.grey,
+          color: isEnabled ? const Color(0xFF00A884) : const Color(0xFF8696A0),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
           isEnabled ? 'AI on' : 'AI off',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: Colors.black54, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Color(0xFF8696A0),
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
         ),
       ],
     );
