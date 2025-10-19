@@ -58,8 +58,15 @@ class ConversationController extends ChangeNotifier {
 
   Future<void> refresh() => _loadConversation(force: true);
 
-  Future<String?> cancelPendingAiMessage() async {
-    final pending = pendingAiMessage;
+  Future<String?> cancelPendingAiMessage(String messageId) async {
+    ChatMessage? pending;
+    for (final message in messages.reversed) {
+      if (message.id == messageId) {
+        pending = message;
+        break;
+      }
+    }
+    pending ??= pendingAiMessage;
     if (pending == null) return null;
     final draftText = pending.text;
     _cancellingPendingAi = true;

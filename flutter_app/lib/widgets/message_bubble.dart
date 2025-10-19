@@ -55,6 +55,8 @@ class MessageBubble extends StatelessWidget {
     final alignment = isInbound ? Alignment.centerLeft : Alignment.centerRight;
     final statusLabel = message.statusLabel();
     final isDrafting = message.isDrafting;
+    final displayAuthor =
+        message.author == 'ai' && message.isPending ? 'agent' : message.author;
 
     return Align(
       alignment: alignment,
@@ -114,7 +116,7 @@ class MessageBubble extends StatelessWidget {
                   isInbound ? MainAxisAlignment.start : MainAxisAlignment.end,
               children: [
                 Icon(
-                  _iconForAuthor(message.author),
+                  _iconForAuthor(displayAuthor),
                   size: 14,
                   color: isInbound
                       ? const Color(0xFF246BFD)
@@ -122,7 +124,7 @@ class MessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  _authorLabel(message.author),
+                  _authorLabel(displayAuthor),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isInbound
                             ? const Color(0xFF246BFD)

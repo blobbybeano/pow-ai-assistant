@@ -60,7 +60,7 @@ class ChatMessage {
   String? statusLabel() {
     switch (status) {
       case 'drafting':
-        return 'Drafting reply…';
+        return 'Agent is typing…';
       case 'scheduled':
         if (scheduledSendAt == null) return 'Scheduled to send soon';
         final now = DateTime.now();
