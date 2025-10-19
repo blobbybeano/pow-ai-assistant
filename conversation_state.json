@@ -95,6 +95,67 @@
           "error": null
         }
       ]
+    },
+    "+447565708252": {
+      "id": "+447565708252",
+      "phoneNumber": "+447565708252",
+      "displayName": "Ben",
+      "aiEnabled": true,
+      "unreadCount": 0,
+      "messages": [
+        {
+          "id": "d8509fad-b56f-47a3-a86c-7868585610c3",
+          "text": "Hi",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-19T11:47:13.497838+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "f14bacc9-ac91-4942-8579-94ab0f9d91d8",
+          "text": "Thanks! Pow AI is drafting a reply now and will message you in about a minute.",
+          "author": "system",
+          "direction": "outbound",
+          "timestamp": "2025-10-19T11:47:13.498465+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-10-19T11:47:13.498432+00:00",
+          "error": null
+        },
+        {
+          "id": "7576d4ef-deab-4691-b069-d2c811ed2fe2",
+          "text": "Any reply gere big balls?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-19T12:19:58.181307+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "806b6353-793e-4338-be3b-c8952bcc92a8",
+          "text": "Hi there! It seems like your message might have gotten a bit mixed up. If you\u2019re looking for a quote for our exterior cleaning services, I\u2019d love to help! \n\nCould you please share a bit more about what you need? For example, the type of surface you want cleaned (like a driveway, patio, roof, or gutters), the size of the area, and any access considerations. Also, let me know your preferred times for the service!\n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-19T12:19:58.182504+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMa3bcba5139004b32284c4932282e3f6d",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-19T12:23:02.319758+00:00",
+          "sentAt": "2025-10-19T12:23:02.713831+00:00",
+          "error": null
+        }
+      ]
     }
   }
 }
