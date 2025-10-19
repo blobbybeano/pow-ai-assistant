@@ -96,7 +96,10 @@ function getDefaultAIPersonaId() {
 let activeParticipantId = humanParticipants[0].id;
 let activeAIPersonaId = getDefaultAIPersonaId();
 let autoRepliesEnabled = true;
+let previousAutoRepliesEnabled = autoRepliesEnabled;
+let aiEnabled = true;
 let pendingAI = null;
+let typingMessageId = null;
 
 const messageList = document.querySelector('#messageList');
 const participantList = document.querySelector('#participantList');
@@ -105,15 +108,19 @@ const activeName = document.querySelector('#activeName');
 const activeRole = document.querySelector('#activeRole');
 const messageInput = document.querySelector('#messageInput');
 const sendButton = document.querySelector('#sendButton');
+const globalAiToggle = document.querySelector('#globalAiToggle');
 const autoToggle = document.querySelector('#autoToggle');
 const aiPreview = document.querySelector('#aiPreview');
-const typingIndicator = document.querySelector('#typingIndicator');
-const previewText = document.querySelector('#previewText');
+const openPreviewButton = document.querySelector('#openPreview');
+const previewPanel = document.querySelector('#aiPreviewPanel');
+const previewTypingIndicator = document.querySelector('#previewTypingIndicator');
+const previewEditor = document.querySelector('#previewEditor');
 const aiPreviewName = document.querySelector('#aiPreviewName');
 const aiPreviewTone = document.querySelector('#aiPreviewTone');
 const aiPreviewAvatar = document.querySelector('#aiPreviewAvatar');
 const sendPreview = document.querySelector('#sendPreview');
 const cancelPreview = document.querySelector('#cancelPreview');
+const closePreviewButton = document.querySelector('#closePreview');
 
 const initialAIPersonaId = activeAIPersonaId;
 
@@ -275,6 +282,74 @@ function updateAIPreviewPersona(persona) {
   }
 }
 
+function openPreviewPanel() {
+  if (!previewPanel || !openPreviewButton || openPreviewButton.disabled) {
+    return;
+  }
+
+  previewPanel.classList.remove('hidden');
+  if (previewEditor && !previewEditor.disabled) {
+    previewEditor.focus();
+  }
+}
+
+function closePreviewPanel() {
+  if (!previewPanel) {
+    return;
+  }
+
+  previewPanel.classList.add('hidden');
+}
+
+function resetPreview() {
+  if (aiPreview) {
+    aiPreview.classList.add('hidden');
+  }
+  if (openPreviewButton) {
+    openPreviewButton.disabled = true;
+  }
+  if (previewPanel) {
+    previewPanel.classList.add('hidden');
+  }
+  if (previewTypingIndicator) {
+    previewTypingIndicator.style.display = 'inline-flex';
+  }
+  if (previewEditor) {
+    previewEditor.value = '';
+    previewEditor.placeholder = '';
+    previewEditor.disabled = true;
+  }
+}
+
+function addTypingIndicator(persona) {
+  const source = persona ?? getActiveAIPersona();
+  if (!source) {
+    return;
+  }
+
+  removeTypingIndicator();
+
+  typingMessageId = crypto.randomUUID();
+  messages.push({
+    id: typingMessageId,
+    senderId: source.id,
+    isTyping: true,
+    timestamp: Date.now(),
+  });
+}
+
+function removeTypingIndicator() {
+  if (!typingMessageId) {
+    return;
+  }
+
+  const index = messages.findIndex((message) => message.id === typingMessageId);
+  if (index >= 0) {
+    messages.splice(index, 1);
+  }
+  typingMessageId = null;
+}
+
 function setActiveAIPersona(id) {
   const persona = aiPersonaFor(id);
   if (!persona || activeAIPersonaId === id) {
@@ -311,7 +386,11 @@ function renderMessages() {
       item.className = 'message';
       item.classList.add(outbound ? 'is-outbound' : 'is-inbound');
 
-      if (participant?.isAI) {
+      if (message.isTyping) {
+        item.classList.add('is-typing');
+      }
+
+      if (participant?.isAI && !message.isTyping) {
         item.classList.add('is-ai');
         const personaHeader = document.createElement('div');
         personaHeader.className = 'message__persona';
@@ -339,7 +418,7 @@ function renderMessages() {
 
         personaHeader.append(avatar, meta);
         item.append(personaHeader);
-      } else {
+      } else if (!message.isTyping) {
         const author = document.createElement('span');
         author.className = 'message__author';
         author.textContent = participant?.name ?? 'Unknown';
@@ -348,14 +427,21 @@ function renderMessages() {
 
       const bubble = document.createElement('div');
       bubble.className = 'message__bubble';
-      bubble.textContent = message.text;
-      bubble.style.backgroundImage = outbound
-        ? bubbleBackground(participant)
-        : undefined;
+      if (message.isTyping) {
+        bubble.classList.add('message__bubble--typing');
+        bubble.innerHTML = '<span></span><span></span><span></span>';
+      } else {
+        bubble.textContent = message.text;
+        bubble.style.backgroundImage = outbound
+          ? bubbleBackground(participant)
+          : undefined;
+      }
 
       const timestamp = document.createElement('span');
       timestamp.className = 'message__time';
-      timestamp.textContent = formatTime(message.timestamp);
+      timestamp.textContent = message.isTyping
+        ? ''
+        : formatTime(message.timestamp);
 
       item.append(bubble, timestamp);
       messageList.append(item);
@@ -377,30 +463,53 @@ function setActiveParticipant(id) {
 }
 
 function cancelAIResponse() {
-  if (!pendingAI) {
-    aiPreview.classList.add('hidden');
-    updateAIPreviewPersona(getActiveAIPersona());
-    return;
+  const hadPending = Boolean(pendingAI) || Boolean(typingMessageId);
+
+  if (pendingAI) {
+    clearTimeout(pendingAI.timer);
+    clearTimeout(pendingAI.previewTimer);
+    pendingAI = null;
   }
 
-  clearTimeout(pendingAI.timer);
-  clearTimeout(pendingAI.previewTimer);
-  pendingAI = null;
-  aiPreview.classList.add('hidden');
-  typingIndicator.style.display = 'flex';
-  previewText.textContent = '';
+  removeTypingIndicator();
+  resetPreview();
   updateAIPreviewPersona(getActiveAIPersona());
+
+  if (hadPending) {
+    renderMessages();
+  }
 }
 
 function showAIPreview(content) {
+  if (!aiPreview) {
+    return;
+  }
+
   aiPreview.classList.remove('hidden');
   updateAIPreviewPersona(getActiveAIPersona());
-  if (content) {
-    typingIndicator.style.display = 'none';
-    previewText.textContent = content;
-  } else {
-    typingIndicator.style.display = 'flex';
-    previewText.textContent = '';
+
+  if (openPreviewButton) {
+    openPreviewButton.disabled = !content;
+  }
+
+  if (previewTypingIndicator) {
+    previewTypingIndicator.style.display = content ? 'none' : 'inline-flex';
+  }
+
+  if (previewEditor) {
+    if (content) {
+      previewEditor.disabled = false;
+      previewEditor.placeholder = '';
+      previewEditor.value = content;
+    } else {
+      previewEditor.disabled = true;
+      previewEditor.placeholder = 'Generating reply…';
+      previewEditor.value = '';
+    }
+  }
+
+  if (!content) {
+    closePreviewPanel();
   }
 }
 
@@ -425,7 +534,7 @@ function generateAIResponse(text, persona) {
 
 function scheduleAIResponse(triggerText) {
   cancelAIResponse();
-  if (!autoRepliesEnabled) {
+  if (!autoRepliesEnabled || !aiEnabled) {
     return;
   }
 
@@ -436,6 +545,8 @@ function scheduleAIResponse(triggerText) {
 
   updateAIPreviewPersona(persona);
   showAIPreview();
+  addTypingIndicator(persona);
+  renderMessages();
 
   pendingAI = {
     text: generateAIResponse(triggerText, persona),
@@ -446,8 +557,18 @@ function scheduleAIResponse(triggerText) {
   };
 
   pendingAI.timer = setTimeout(() => {
-    typingIndicator.style.display = 'flex';
+    if (!pendingAI) {
+      return;
+    }
+
+    if (previewTypingIndicator) {
+      previewTypingIndicator.style.display = 'inline-flex';
+    }
+
     pendingAI.previewTimer = setTimeout(() => {
+      if (!pendingAI) {
+        return;
+      }
       showAIPreview(pendingAI.text);
     }, 700);
   }, 400);
@@ -476,14 +597,30 @@ function commitPendingAI() {
     return;
   }
 
+  clearTimeout(pendingAI.timer);
+  clearTimeout(pendingAI.previewTimer);
+
+  const personaId = pendingAI.personaId ?? getActiveAIPersona().id;
+  const editedText =
+    previewEditor && !previewEditor.disabled
+      ? previewEditor.value.trim()
+      : '';
+  const textToSend = editedText || pendingAI.text;
+  if (!textToSend) {
+    return;
+  }
+
   messages.push({
     id: crypto.randomUUID(),
-    senderId: pendingAI.personaId ?? getActiveAIPersona().id,
-    text: pendingAI.text,
+    senderId: personaId,
+    text: textToSend,
     timestamp: Date.now(),
   });
 
-  cancelAIResponse();
+  pendingAI = null;
+  removeTypingIndicator();
+  resetPreview();
+  updateAIPreviewPersona(getActiveAIPersona());
   renderMessages();
 }
 
@@ -507,6 +644,7 @@ if (personaSwitcher) {
 
 autoToggle.addEventListener('change', (event) => {
   autoRepliesEnabled = event.target.checked;
+  previousAutoRepliesEnabled = autoRepliesEnabled;
   if (!autoRepliesEnabled) {
     cancelAIResponse();
   }
@@ -528,6 +666,58 @@ sendPreview.addEventListener('click', () => {
 cancelPreview.addEventListener('click', () => {
   cancelAIResponse();
 });
+
+if (openPreviewButton) {
+  openPreviewButton.addEventListener('click', openPreviewPanel);
+  openPreviewButton.disabled = true;
+}
+
+if (closePreviewButton) {
+  closePreviewButton.addEventListener('click', () => {
+    closePreviewPanel();
+  });
+}
+
+if (previewEditor) {
+  previewEditor.disabled = true;
+  previewEditor.addEventListener('input', () => {
+    if (pendingAI && !previewEditor.disabled) {
+      pendingAI.text = previewEditor.value;
+    }
+  });
+}
+
+if (globalAiToggle) {
+  aiEnabled = globalAiToggle.checked;
+  if (autoToggle) {
+    if (!aiEnabled) {
+      previousAutoRepliesEnabled = autoRepliesEnabled;
+      autoRepliesEnabled = false;
+      autoToggle.checked = false;
+      autoToggle.disabled = true;
+    }
+  }
+
+  globalAiToggle.addEventListener('change', (event) => {
+    aiEnabled = event.target.checked;
+    if (autoToggle) {
+      if (!aiEnabled) {
+        previousAutoRepliesEnabled = autoRepliesEnabled;
+        autoRepliesEnabled = false;
+        autoToggle.checked = false;
+        autoToggle.disabled = true;
+        cancelAIResponse();
+      } else {
+        autoToggle.disabled = false;
+        autoRepliesEnabled = previousAutoRepliesEnabled ?? true;
+        autoToggle.checked = autoRepliesEnabled;
+        previousAutoRepliesEnabled = autoRepliesEnabled;
+      }
+    } else if (!aiEnabled) {
+      cancelAIResponse();
+    }
+  });
+}
 
 renderParticipants();
 renderActiveParticipant();
