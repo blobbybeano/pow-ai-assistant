@@ -66,17 +66,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
                   final apiClient = context.read<ChatApiClient>();
 
-                  final conversationPane = activeSummary == null
+                  final summary = activeSummary;
+                  final conversationPane = summary == null
                       ? const _EmptyConversationPane()
                       : ChangeNotifierProvider(
-                          key: ValueKey(activeSummary.id),
+                          key: ValueKey(summary.id),
                           create: (_) => ConversationController(
                             apiClient: apiClient,
-                            conversationId: activeSummary.id,
-                            initialDisplayName: activeSummary.displayName,
+                            conversationId: summary.id,
+                            initialDisplayName: summary.displayName,
                           ),
                           child: _ConversationWorkspace(
-                            placeholderName: activeSummary.displayName,
+                            placeholderName: summary.displayName,
                           ),
                         );
 
