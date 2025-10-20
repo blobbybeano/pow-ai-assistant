@@ -5,7 +5,7 @@
       "phoneNumber": "+15551230001",
       "displayName": "Alex Martinez",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 0,
       "messages": [
         {
           "id": "d2e88624-7365-429f-a018-0ed05833a775",
@@ -100,7 +100,7 @@
       "id": "+447565708252",
       "phoneNumber": "+447565708252",
       "displayName": "Ben",
-      "aiEnabled": false,
+      "aiEnabled": true,
       "unreadCount": 0,
       "messages": [
         {
@@ -244,6 +244,58 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-19T23:11:41.271926+00:00",
           "sentAt": "2025-10-19T23:11:41.719864+00:00",
+          "error": null
+        },
+        {
+          "id": "c277e9cd-cfb2-4d9a-b224-3f6d42b3eb03",
+          "text": "Are you there",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T10:10:47.311858+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "345e81b8-2487-41ef-98bc-6bb54c1cbb79",
+          "text": "Thanks for reaching out! A PowWash specialist will reply shortly.",
+          "author": "system",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T10:10:47.313395+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-10-20T10:10:47.313360+00:00",
+          "error": null
+        },
+        {
+          "id": "d28d9db0-b559-4858-93eb-ba998303bc78",
+          "text": "Are you there",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T10:11:17.919953+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "88bacf6d-1013-44b3-b40a-8437092d0fee",
+          "text": "Hi there! Yes, I\u2019m here to help you with your exterior cleaning needs. What service are you interested in? If you could share a bit about the surface type, size, and any access considerations, I can provide a quote for you. Looking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T10:11:17.921651+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM4fa01b6598abcfe7135c52bb83b83714",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-20T10:14:20.953470+00:00",
+          "sentAt": "2025-10-20T10:14:21.320720+00:00",
           "error": null
         }
       ]
