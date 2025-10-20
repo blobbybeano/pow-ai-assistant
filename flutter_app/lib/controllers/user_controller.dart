@@ -44,6 +44,11 @@ class UserController extends ChangeNotifier {
   String? _currentUserId;
   String? _respondingUserId;
 
+  Set<String> get _knownAssignedConversationIds => _availableUsers
+      .expand((user) => user.assignedConversationIds)
+      .where((id) => id.isNotEmpty)
+      .toSet();
+
   List<AppUser> get availableUsers => List.unmodifiable(_availableUsers);
 
   AppUser? get currentUser {
@@ -82,7 +87,6 @@ class UserController extends ChangeNotifier {
   void signOut() {
     if (_currentUserId == null) return;
     _currentUserId = null;
-    _respondingUserId = null;
     notifyListeners();
   }
 
@@ -109,12 +113,19 @@ class UserController extends ChangeNotifier {
     AppUser? forUser,
   }) {
     final user = forUser ?? currentUser;
-    if (user == null || user.assignedConversationIds.isEmpty) {
+    if (user == null) {
       return const <ConversationSummary>[];
     }
     final assigned = user.assignedConversationIds.toSet();
+    final knownAssignments = _knownAssignedConversationIds;
     return conversations
-        .where((conversation) => assigned.contains(conversation.id))
+        .where((conversation) {
+          if (assigned.contains(conversation.id)) {
+            return true;
+          }
+          final isUnassigned = !knownAssignments.contains(conversation.id);
+          return isUnassigned;
+        })
         .toList();
   }
 
