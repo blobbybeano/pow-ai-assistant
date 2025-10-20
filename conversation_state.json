@@ -1,6 +1,6 @@
 {
   "settings": {
-    "defaultResponderId": "user-1"
+    "defaultResponderId": "user-2"
   },
   "conversations": {
     "+15551230001": {
@@ -10,6 +10,7 @@
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
       "unreadCount": 0,
+      "assignedResponderId": "user-1",
       "messages": [
         {
           "id": "25eb6fe5-c270-4dbc-943e-c0f19fcedcf4",
@@ -50,8 +51,7 @@
           "sentAt": "2025-01-17T14:02:00+00:00",
           "error": null
         }
-      ],
-      "assignedResponderId": "user-1"
+      ]
     },
     "+14085550100": {
       "id": "+14085550100",
@@ -60,6 +60,7 @@
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=2A9D8F&color=ffffff",
       "aiEnabled": false,
       "unreadCount": 0,
+      "assignedResponderId": "user-2",
       "messages": [
         {
           "id": "18269c1f-4d9f-4bcb-b052-adcd24f985eb",
@@ -100,8 +101,7 @@
           "sentAt": "2025-01-17T14:04:00+00:00",
           "error": null
         }
-      ],
-      "assignedResponderId": "user-2"
+      ]
     },
     "+447700900123": {
       "id": "+447700900123",
@@ -110,6 +110,7 @@
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Priya+Sharma&background=F4A261&color=ffffff",
       "aiEnabled": true,
       "unreadCount": 0,
+      "assignedResponderId": "user-3",
       "messages": [
         {
           "id": "81a592a3-d491-4cd3-a092-2057ae687335",
@@ -163,8 +164,7 @@
           "sentAt": "2025-10-20T12:57:06.803070+00:00",
           "error": null
         }
-      ],
-      "assignedResponderId": "user-3"
+      ]
     },
     "+16175550123": {
       "id": "+16175550123",
@@ -173,6 +173,7 @@
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Taylor+Chen&background=8ECAE6&color=ffffff",
       "aiEnabled": true,
       "unreadCount": 0,
+      "assignedResponderId": "user-4",
       "messages": [
         {
           "id": "eb790266-39a3-44d9-9db1-0bacec49d5d4",
@@ -213,9 +214,70 @@
           "sentAt": "2025-01-17T14:03:00+00:00",
           "error": null
         }
-      ],
-      "assignedResponderId": "user-4"
+      ]
+    },
+    "+447565708252": {
+      "id": "+447565708252",
+      "phoneNumber": "+447565708252",
+      "displayName": "Ben",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
+      "aiEnabled": true,
+      "unreadCount": 1,
+      "assignedResponderId": "user-2",
+      "messages": [
+        {
+          "id": "e8be7c1c-bd0a-4af0-9647-6cd7fe6e8992",
+          "text": "I would like a roof clean and a pressure wash",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T17:01:25.077037+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "f686430d-4c76-48ef-a802-ca5db20c1488",
+          "text": "Hi there! Thanks for reaching out about our cleaning services. \n\nFor the roof clean, we offer a Roof Soft Wash at \u00a3320, which includes a low-pressure biocide treatment to clear moss and prevent regrowth for 12 months. \n\nFor the pressure wash, could you let me know if you\u2019re looking for a driveway or patio clean? We have the Driveway Pressure Wash at \u00a3120 (up to 60m\u00b2) and the Patio Refresh at \u00a395 (up to 40m\u00b2).\n\nAlso, it would be great to know the size of the areas you'd like cleaned, any access considerations, and your preferred times for the service. Feel free to send any photos for a more accurate quote!\n\nLooking forward to your reply!\n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T17:01:25.078035+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM5e77df73b870a0d355b903df8ac83f1d",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-20T17:04:29.825111+00:00",
+          "sentAt": "2025-10-20T17:04:31.064532+00:00",
+          "error": null
+        },
+        {
+          "id": "36b5fdf2-5592-47ec-899f-fa18c5e192f4",
+          "text": "Oj",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T17:05:07.835411+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "4faba898-eba0-45cb-967f-080c3b6dddea",
+          "text": "Hello! \ud83d\udc4b How can we help you today? If you\u2019re looking for a quote on exterior cleaning, just let us know what you need and some details about your property. Looking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T17:05:07.838519+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-10-20T17:08:10.403435+00:00",
+          "sentAt": null,
+          "error": null
+        }
+      ]
     }
   }
 }
-
