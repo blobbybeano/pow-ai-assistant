@@ -8,7 +8,9 @@ import '../models/conversation.dart';
 import '../widgets/conversation_tile.dart';
 import '../widgets/pending_ai_banner.dart';
 import '../widgets/profile_settings_sheet.dart';
+import 'ai_training_dashboard_screen.dart';
 import 'chat_detail_screen.dart';
+import 'integration_settings_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -123,10 +125,35 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
               const _UserSwitcherButton(),
               IconButton(
                 icon: const Icon(Icons.settings),
-                onPressed: () => showProfileSettingsSheet(
-                  context,
-                  visibleConversations,
-                ),
+                onPressed: () async {
+                  final action = await showProfileSettingsSheet(
+                    context,
+                    visibleConversations,
+                  );
+                  if (!mounted) return;
+                  switch (action) {
+                    case ProfileSettingsAction.aiTrainingDashboard:
+                      if (!mounted) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AiTrainingDashboardScreen(
+                            conversations: visibleConversations,
+                          ),
+                        ),
+                      );
+                      break;
+                    case ProfileSettingsAction.integrationTokens:
+                      if (!mounted) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const IntegrationSettingsScreen(),
+                        ),
+                      );
+                      break;
+                    case null:
+                      break;
+                  }
+                },
                 tooltip: 'Settings',
               ),
             ],

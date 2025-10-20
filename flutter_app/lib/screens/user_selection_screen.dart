@@ -6,6 +6,8 @@ import '../controllers/user_controller.dart';
 import '../models/app_user.dart';
 import '../widgets/pending_ai_banner.dart';
 import '../widgets/profile_settings_sheet.dart';
+import 'ai_training_dashboard_screen.dart';
+import 'integration_settings_screen.dart';
 
 class UserSelectionScreen extends StatefulWidget {
   const UserSelectionScreen({super.key});
@@ -58,10 +60,33 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
-            onPressed: () => showProfileSettingsSheet(
-              context,
-              inbox.conversations,
-            ),
+            onPressed: () async {
+              final action = await showProfileSettingsSheet(
+                context,
+                inbox.conversations,
+              );
+              if (!mounted) return;
+              switch (action) {
+                case ProfileSettingsAction.aiTrainingDashboard:
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AiTrainingDashboardScreen(
+                        conversations: inbox.conversations,
+                      ),
+                    ),
+                  );
+                  break;
+                case ProfileSettingsAction.integrationTokens:
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const IntegrationSettingsScreen(),
+                    ),
+                  );
+                  break;
+                case null:
+                  break;
+              }
+            },
           ),
         ],
       ),

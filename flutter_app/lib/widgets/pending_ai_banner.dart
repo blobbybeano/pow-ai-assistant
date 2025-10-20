@@ -46,8 +46,8 @@ class PendingAiBanner extends StatelessWidget {
                       if (responder != null) ...[
                         const TextSpan(text: ' as '),
                         TextSpan(
-                          text: '>${responder!.displayName}<',
-                          style: const TextStyle(color: Color(0xFFFFD700)),
+                          text: responder!.displayName,
+                          style: const TextStyle(color: Color(0xFFE2B659)),
                         ),
                       ],
                     ],

@@ -11,6 +11,8 @@ import '../services/chat_api_client.dart';
 import '../widgets/avatar_circle.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/profile_settings_sheet.dart';
+import 'ai_training_dashboard_screen.dart';
+import 'integration_settings_screen.dart';
 
 class ChatDetailScreen extends StatelessWidget {
   const ChatDetailScreen({required this.summary, super.key});
@@ -168,10 +170,34 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
               IconButton(
                 icon: const Icon(Icons.settings),
                 tooltip: 'Settings',
-                onPressed: () {
+                onPressed: () async {
                   final conversations =
                       context.read<InboxController>().conversations;
-                  showProfileSettingsSheet(context, conversations);
+                  final action = await showProfileSettingsSheet(
+                    context,
+                    conversations,
+                  );
+                  if (!mounted) return;
+                  switch (action) {
+                    case ProfileSettingsAction.aiTrainingDashboard:
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AiTrainingDashboardScreen(
+                            conversations: conversations,
+                          ),
+                        ),
+                      );
+                      break;
+                    case ProfileSettingsAction.integrationTokens:
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const IntegrationSettingsScreen(),
+                        ),
+                      );
+                      break;
+                    case null:
+                      break;
+                  }
                 },
               ),
               _AiToggleAction(controller: controller),
