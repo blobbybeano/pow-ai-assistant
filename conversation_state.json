@@ -289,10 +289,10 @@
           "direction": "outbound",
           "timestamp": "2025-10-20T14:20:39.074655+00:00",
           "via": "whatsapp",
-          "transportSid": null,
-          "status": "scheduled",
+          "transportSid": "SM66a64307ca71e5e5ea20a176b0673816",
+          "status": "sent",
           "scheduledSendAt": "2025-10-20T14:23:42.544369+00:00",
-          "sentAt": null,
+          "sentAt": "2025-10-20T16:34:08.176519+00:00",
           "error": null
         }
       ]
