@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_user.dart';
 import '../models/conversation.dart';
 
 class PendingAiBanner extends StatelessWidget {
-  const PendingAiBanner({super.key, required this.summary, required this.onDismissed});
+  const PendingAiBanner({
+    super.key,
+    required this.summary,
+    required this.onDismissed,
+    this.responder,
+  });
 
   final ConversationSummary summary;
   final VoidCallback onDismissed;
+  final AppUser? responder;
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +35,22 @@ class PendingAiBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'AI is replying to ${summary.displayName}',
-                  style: const TextStyle(
-                    color: Color(0xFFE9EDEF),
-                    fontWeight: FontWeight.w600,
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      color: Color(0xFFE9EDEF),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    children: [
+                      TextSpan(text: 'AI is replying to ${summary.displayName}'),
+                      if (responder != null) ...[
+                        const TextSpan(text: ' as '),
+                        TextSpan(
+                          text: '>${responder!.displayName}<',
+                          style: const TextStyle(color: Color(0xFFFFD700)),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 if (messagePreview.isNotEmpty) ...[

@@ -78,6 +78,7 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: PendingAiBanner(
                   summary: summary,
+                  responder: userController.respondingUser,
                   onDismissed: () => _handleDismiss(summary.id),
                 ),
               ),

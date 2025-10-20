@@ -97,6 +97,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: PendingAiBanner(
                           summary: summary,
+                          responder: respondingUser,
                           onDismissed: () => _handleDismiss(summary.id),
                         ),
                       ),
