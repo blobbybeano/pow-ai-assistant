@@ -145,9 +145,18 @@ class _UserCard extends StatelessWidget {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: const Color(0x33243038),
+              radius: 26,
+              backgroundColor:
+                  user.photoUrl != null ? Colors.transparent : const Color(0x33243038),
               foregroundColor: const Color(0xFFE9EDEF),
-              child: Text(user.initials, style: const TextStyle(fontWeight: FontWeight.w600)),
+              backgroundImage:
+                  user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+              child: user.photoUrl != null
+                  ? null
+                  : Text(
+                      user.initials,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -227,14 +236,14 @@ class _AiResponderSelector extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF111B21),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x33243038)),
+        border: Border.all(color: const Color(0xFFE2B659), width: 1.5),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'AI will respond as',
+            'AI responding as',
             style: TextStyle(
               color: Color(0xFFE9EDEF),
               fontSize: 16,

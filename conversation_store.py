@@ -1,6 +1,8 @@
 """Conversation state management for WhatsApp/Twilio interactions."""
+
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -9,11 +11,41 @@ from threading import Lock
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+from urllib.parse import quote_plus
+
 
 def _utc_now() -> str:
     """Return the current UTC timestamp as an ISO formatted string."""
 
     return datetime.now(tz=timezone.utc).isoformat()
+
+
+_AVATAR_BACKGROUNDS = (
+    "0D8ABC",
+    "F4A261",
+    "2A9D8F",
+    "E76F51",
+    "8ECAE6",
+)
+
+
+def _generate_avatar(profile_name: Optional[str], phone_number: str) -> str:
+    """Return a deterministic avatar URL for a contact."""
+
+    base = (profile_name or phone_number or "PowWash").strip()
+    if not base:
+        base = phone_number or "PowWash"
+    encoded = quote_plus(base)
+    digest = hashlib.sha1(base.encode("utf-8")).digest()
+    color_index = digest[0] % len(_AVATAR_BACKGROUNDS)
+    color = _AVATAR_BACKGROUNDS[color_index]
+    return f"https://ui-avatars.com/api/?name={encoded}&background={color}&color=ffffff"
+
+
+def _is_placeholder_avatar(url: Optional[str]) -> bool:
+    if not url:
+        return False
+    return url.startswith("https://ui-avatars.com/")
 
 
 @dataclass
@@ -27,7 +59,9 @@ class MessageRecord:
     timestamp: str
     via: str = "whatsapp"
     transport_sid: Optional[str] = None
-    status: str = "sent"  # sent | scheduled | failed | draft | sending | drafting | cancelled
+    status: str = (
+        "sent"  # sent | scheduled | failed | draft | sending | drafting | cancelled
+    )
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
@@ -67,6 +101,7 @@ class ConversationRecord:
     id: str
     phone_number: str
     contact_name: Optional[str] = None
+    contact_photo_url: Optional[str] = None
     ai_enabled: bool = True
     unread_count: int = 0
     messages: List[MessageRecord] = field(default_factory=list)
@@ -80,6 +115,7 @@ class ConversationRecord:
             "id": self.id,
             "phoneNumber": self.phone_number,
             "displayName": self.contact_name or self.phone_number,
+            "profilePhotoUrl": self.contact_photo_url,
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "lastMessage": last_msg.to_dict() if last_msg else None,
@@ -90,6 +126,7 @@ class ConversationRecord:
             "id": self.id,
             "phoneNumber": self.phone_number,
             "displayName": self.contact_name or self.phone_number,
+            "profilePhotoUrl": self.contact_photo_url,
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "messages": [message.to_dict() for message in self.messages],
@@ -123,6 +160,7 @@ class ConversationStore:
                 id=convo_id,
                 phone_number=record.get("phoneNumber", convo_id),
                 contact_name=record.get("displayName"),
+                contact_photo_url=record.get("profilePhotoUrl"),
                 ai_enabled=record.get("aiEnabled", True),
                 unread_count=record.get("unreadCount", 0),
                 messages=[
@@ -142,6 +180,12 @@ class ConversationStore:
                     for msg in record.get("messages", [])
                 ],
             )
+
+            convo = self._conversations[convo_id]
+            if not convo.contact_photo_url:
+                convo.contact_photo_url = _generate_avatar(
+                    convo.contact_name, convo.phone_number
+                )
 
         if not self._conversations:
             self._seed_demo_conversations()
@@ -189,22 +233,45 @@ class ConversationStore:
             return convo.to_dict()
 
     def ensure_conversation(
-        self, conversation_id: str, *, profile_name: Optional[str], phone_number: str
+        self,
+        conversation_id: str,
+        *,
+        profile_name: Optional[str],
+        phone_number: str,
+        profile_photo_url: Optional[str] = None,
     ) -> ConversationRecord:
         with self._lock:
             convo = self._conversations.get(conversation_id)
             updated = False
             if not convo:
+                avatar = profile_photo_url or _generate_avatar(
+                    profile_name, phone_number
+                )
                 convo = ConversationRecord(
                     id=conversation_id,
                     phone_number=phone_number,
                     contact_name=profile_name,
+                    contact_photo_url=avatar,
                 )
                 self._conversations[conversation_id] = convo
                 updated = True
             else:
                 if profile_name and not convo.contact_name:
                     convo.contact_name = profile_name
+                    updated = True
+                    if _is_placeholder_avatar(convo.contact_photo_url):
+                        convo.contact_photo_url = _generate_avatar(
+                            profile_name, phone_number
+                        )
+
+                trimmed_photo = (profile_photo_url or "").strip() or None
+                if trimmed_photo and trimmed_photo != convo.contact_photo_url:
+                    convo.contact_photo_url = trimmed_photo
+                    updated = True
+                elif not convo.contact_photo_url:
+                    convo.contact_photo_url = _generate_avatar(
+                        convo.contact_name, phone_number
+                    )
                     updated = True
 
             if updated:
@@ -231,6 +298,7 @@ class ConversationStore:
         via: str = "whatsapp",
         transport_sid: Optional[str] = None,
         profile_name: Optional[str] = None,
+        profile_photo_url: Optional[str] = None,
         increment_unread: bool = False,
         status: str = "sent",
         scheduled_send_at: Optional[str] = None,
@@ -241,6 +309,7 @@ class ConversationStore:
             conversation_id,
             profile_name=profile_name,
             phone_number=conversation_id,
+            profile_photo_url=profile_photo_url,
         )
 
         message = MessageRecord(
@@ -285,6 +354,7 @@ class ConversationStore:
         demo_threads = {
             "+15551230001": {
                 "displayName": "Alex Martinez",
+                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
                 "aiEnabled": True,
                 "messages": [
                     (
@@ -311,17 +381,13 @@ class ConversationStore:
             },
             "+15551230002": {
                 "displayName": "Jordan Lee",
+                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=2A9D8F&color=ffffff",
                 "aiEnabled": False,
                 "messages": [
                     (
                         "customer",
                         "inbound",
                         "Can someone help with a quote for cleaning 3 storefront windows?",
-                    ),
-                    (
-                        "system",
-                        "outbound",
-                        "Thanks for reaching out! A PowWash specialist will reply shortly.",
                     ),
                 ],
             },
@@ -332,6 +398,8 @@ class ConversationStore:
                 id=phone,
                 phone_number=phone,
                 contact_name=payload.get("displayName"),
+                contact_photo_url=payload.get("profilePhotoUrl")
+                or _generate_avatar(payload.get("displayName"), phone),
                 ai_enabled=payload.get("aiEnabled", True),
                 unread_count=1,
             )
@@ -379,7 +447,9 @@ class ConversationStore:
                         )
             return pending
 
-    def get_message(self, conversation_id: str, message_id: str) -> Optional[MessageRecord]:
+    def get_message(
+        self, conversation_id: str, message_id: str
+    ) -> Optional[MessageRecord]:
         """Return a specific message from a conversation without mutating state."""
 
         with self._lock:
@@ -470,4 +540,3 @@ class ConversationStore:
 
 _STORE_PATH = Path("conversation_state.json")
 conversation_store = ConversationStore(_STORE_PATH)
-

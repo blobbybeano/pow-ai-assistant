@@ -1,4 +1,5 @@
 """Utilities for sending outbound WhatsApp messages via Twilio."""
+
 from __future__ import annotations
 
 import os
@@ -71,3 +72,29 @@ class TwilioMessenger:
 
         return message.sid
 
+    def send_typing_indicator(self, *, to: str, duration: int = 60) -> None:
+        """Send a typing indicator to a WhatsApp recipient via Twilio."""
+
+        to_address = to if to.startswith("whatsapp:") else f"whatsapp:{to}"
+
+        typing_resource = getattr(self._client.messages, "typing", None)
+        if typing_resource is None:
+            raise RuntimeError("Twilio client does not support typing indicators")
+
+        kwargs = {"to": to_address, "channel": "whatsapp", "duration": duration}
+
+        if self._config.messaging_service_sid:
+            kwargs["messaging_service_sid"] = self._config.messaging_service_sid
+        elif self._config.whatsapp_from:
+            kwargs["from_"] = self._config.whatsapp_from
+        else:
+            raise RuntimeError(
+                "Configure TWILIO_WHATSAPP_NUMBER or TWILIO_MESSAGING_SERVICE_SID to send typing indicators."
+            )
+
+        try:
+            typing_resource.create(**kwargs)
+        except TwilioRestException as exc:  # pragma: no cover - network side
+            raise RuntimeError(
+                f"Failed to send WhatsApp typing indicator: {exc.msg}"
+            ) from exc

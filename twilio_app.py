@@ -1,4 +1,5 @@
 """Twilio webhook + REST API backing the PowWash WhatsApp workspace."""
+
 from __future__ import annotations
 
 import logging
@@ -29,10 +30,12 @@ if not twilio_messenger:
         "Twilio credentials not detected. Manual outbound replies from the Flutter app will be disabled."
     )
 
-ACK_MESSAGE = "Thanks for reaching out! A PowWash specialist will reply shortly."
 AI_AUTOREPLY_DELAY_SECONDS = 180
+TYPING_INDICATOR_LEAD_SECONDS = 60
 
 _scheduled_message_ids: Set[str] = set()
+_typing_timers: Dict[str, threading.Timer] = {}
+_typing_timers_lock = threading.Lock()
 
 
 def _build_reply(inbound_text: str) -> str:
@@ -73,6 +76,7 @@ def _schedule_ai_delivery(
     delay = max(0.0, (scheduled_for - datetime.now(timezone.utc)).total_seconds())
 
     def _deliver() -> None:
+        _cancel_typing_indicator(message_id)
         message_snapshot = conversation_store.get_message(conversation_id, message_id)
         if not message_snapshot or message_snapshot.status != "scheduled":
             _scheduled_message_ids.discard(message_id)
@@ -80,7 +84,8 @@ def _schedule_ai_delivery(
 
         if not twilio_messenger:
             logging.warning(
-                "Twilio credentials missing; marking AI reply as failed for %s", conversation_id
+                "Twilio credentials missing; marking AI reply as failed for %s",
+                conversation_id,
             )
             conversation_store.update_message(
                 conversation_id,
@@ -118,6 +123,45 @@ def _schedule_ai_delivery(
     timer.daemon = True
     timer.start()
     _scheduled_message_ids.add(message_id)
+    _schedule_typing_indicator(conversation_id, message_id, scheduled_for=scheduled_for)
+
+
+def _schedule_typing_indicator(
+    conversation_id: str, message_id: str, *, scheduled_for: datetime
+) -> None:
+    if not twilio_messenger or not hasattr(twilio_messenger, "send_typing_indicator"):
+        return
+
+    trigger_at = scheduled_for - timedelta(seconds=TYPING_INDICATOR_LEAD_SECONDS)
+    now = datetime.now(timezone.utc)
+    delay = max(0.0, (trigger_at - now).total_seconds())
+
+    def _send_typing() -> None:
+        try:
+            twilio_messenger.send_typing_indicator(
+                to=conversation_id, duration=TYPING_INDICATOR_LEAD_SECONDS
+            )
+        except Exception:  # pragma: no cover - network dependent
+            logging.exception("Failed to send typing indicator via Twilio")
+        finally:
+            with _typing_timers_lock:
+                _typing_timers.pop(message_id, None)
+
+    timer = threading.Timer(delay, _send_typing)
+    timer.daemon = True
+    with _typing_timers_lock:
+        existing = _typing_timers.pop(message_id, None)
+        if existing:
+            existing.cancel()
+        _typing_timers[message_id] = timer
+    timer.start()
+
+
+def _cancel_typing_indicator(message_id: str) -> None:
+    with _typing_timers_lock:
+        timer = _typing_timers.pop(message_id, None)
+    if timer:
+        timer.cancel()
 
 
 def _bootstrap_pending_messages() -> None:
@@ -159,6 +203,9 @@ def whatsapp_webhook() -> Response:
     inbound_text = request.form.get("Body", "").strip()
     from_number = request.form.get("From", "")
     profile_name = request.form.get("ProfileName") or request.form.get("WaId")
+    profile_photo_url = request.form.get("ProfilePictureUrl") or request.form.get(
+        "ProfileImageUrl"
+    )
 
     conversation_id = _conversation_id(from_number)
 
@@ -168,6 +215,7 @@ def whatsapp_webhook() -> Response:
         author="customer",
         direction="inbound",
         profile_name=profile_name,
+        profile_photo_url=profile_photo_url,
         increment_unread=True,
     )
 
@@ -177,7 +225,6 @@ def whatsapp_webhook() -> Response:
     response = MessagingResponse()
 
     if ai_enabled:
-        response.message(ACK_MESSAGE)
         drafting_message = conversation_store.record_message(
             conversation_id,
             text="",
@@ -198,7 +245,9 @@ def whatsapp_webhook() -> Response:
             )
             return Response(str(response), mimetype="application/xml")
 
-        send_after = datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
+        send_after = datetime.now(timezone.utc) + timedelta(
+            seconds=AI_AUTOREPLY_DELAY_SECONDS
+        )
         conversation_store.update_message(
             conversation_id,
             drafting_message.id,
@@ -213,13 +262,9 @@ def whatsapp_webhook() -> Response:
             scheduled_for=send_after,
         )
     else:
-        response.message(ACK_MESSAGE)
-        conversation_store.record_message(
+        logging.info(
+            "AI disabled for conversation %s; awaiting manual follow-up",
             conversation_id,
-            text=ACK_MESSAGE,
-            author="system",
-            direction="outbound",
-            sent_at=_iso_now(),
         )
 
     return Response(str(response), mimetype="application/xml")
@@ -266,7 +311,10 @@ def api_send_manual_message(conversation_id: str) -> Response:
         abort(400, description="Message text is required")
 
     if not twilio_messenger:
-        abort(500, description="Twilio credentials are not configured for outbound messaging")
+        abort(
+            500,
+            description="Twilio credentials are not configured for outbound messaging",
+        )
 
     try:
         sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
@@ -293,6 +341,7 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
         abort(404, description="Scheduled AI message not found")
 
     _scheduled_message_ids.discard(message_id)
+    _cancel_typing_indicator(message_id)
     return jsonify({"status": "cancelled", "message": message.to_dict()})
 
 

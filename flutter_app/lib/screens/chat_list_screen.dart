@@ -44,6 +44,16 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
+          final profileController = context.read<ProfileController>();
+          for (final conversation in inbox.conversations) {
+            if (conversation.profilePhotoUrl != null) {
+              profileController.setPhoto(conversation.id, conversation.profilePhotoUrl);
+            }
+          }
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
           final activeIds = inbox.pendingAiConversations.map((summary) => summary.id).toSet();
           if (_dismissedPendingAi.any((id) => !activeIds.contains(id))) {
             setState(() {
@@ -133,7 +143,8 @@ class _ConversationListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profileController = context.watch<ProfileController>();
-    final photoUrl = profileController.photoFor(summary.id);
+    final fallbackPhoto = summary.profilePhotoUrl;
+    final photoUrl = profileController.photoFor(summary.id) ?? fallbackPhoto;
 
     return ConversationTile(
       summary: summary,

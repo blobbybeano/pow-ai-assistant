@@ -7,6 +7,7 @@ class ConversationSummary {
     required this.displayName,
     required this.aiEnabled,
     required this.unreadCount,
+    this.profilePhotoUrl,
     this.lastMessage,
   });
 
@@ -17,6 +18,7 @@ class ConversationSummary {
       displayName: json['displayName'] as String,
       aiEnabled: json['aiEnabled'] as bool? ?? true,
       unreadCount: json['unreadCount'] as int? ?? 0,
+      profilePhotoUrl: json['profilePhotoUrl'] as String?,
       lastMessage: json['lastMessage'] != null
           ? ChatMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
           : null,
@@ -28,6 +30,7 @@ class ConversationSummary {
   final String displayName;
   final bool aiEnabled;
   final int unreadCount;
+  final String? profilePhotoUrl;
   final ChatMessage? lastMessage;
 }
 
@@ -39,6 +42,7 @@ class ConversationDetail {
     required this.aiEnabled,
     required this.unreadCount,
     required this.messages,
+    this.profilePhotoUrl,
   });
 
   factory ConversationDetail.fromJson(Map<String, dynamic> json) {
@@ -52,6 +56,7 @@ class ConversationDetail {
       messages: messagesJson
           .map((message) => ChatMessage.fromJson(message as Map<String, dynamic>))
           .toList(),
+      profilePhotoUrl: json['profilePhotoUrl'] as String?,
     );
   }
 
@@ -61,4 +66,5 @@ class ConversationDetail {
   final bool aiEnabled;
   final int unreadCount;
   final List<ChatMessage> messages;
+  final String? profilePhotoUrl;
 }

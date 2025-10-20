@@ -275,16 +275,26 @@ class _ChatTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = controller.displayName.isEmpty ? summary.displayName : controller.displayName;
     final subtitle = controller.detail?.phoneNumber ?? controller.conversationId;
+    final fallbackPhoto = controller.detail?.profilePhotoUrl ?? summary.profilePhotoUrl;
     final photoUrl = context.select<ProfileController, String?>(
       (profile) => profile.photoFor(summary.id),
     );
+
+    if (fallbackPhoto != null && (photoUrl == null || photoUrl.isEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        context.read<ProfileController>().setPhoto(summary.id, fallbackPhoto);
+      });
+    }
+
+    final resolvedPhoto = photoUrl ?? fallbackPhoto;
 
     return Row(
       children: [
         AvatarCircle(
           label: name,
           size: 44,
-          image: photoUrl != null ? NetworkImage(photoUrl) : null,
+          image: resolvedPhoto != null ? NetworkImage(resolvedPhoto) : null,
         ),
         const SizedBox(width: 12),
         Expanded(

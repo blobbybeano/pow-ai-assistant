@@ -59,7 +59,8 @@
           "sentAt": "2025-01-16T21:49:01.057978+00:00",
           "error": null
         }
-      ]
+      ],
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff"
     },
     "+15551230002": {
       "id": "+15551230002",
@@ -80,21 +81,9 @@
           "scheduledSendAt": null,
           "sentAt": "2025-01-16T21:47:01.057984+00:00",
           "error": null
-        },
-        {
-          "id": "037345d8-efc1-4600-99d3-40eabb87f1d5",
-          "text": "Thanks for reaching out! A PowWash specialist will reply shortly.",
-          "author": "system",
-          "direction": "outbound",
-          "timestamp": "2025-01-16T21:47:01.057987+00:00",
-          "via": "whatsapp",
-          "transportSid": null,
-          "status": "sent",
-          "scheduledSendAt": null,
-          "sentAt": "2025-01-16T21:47:01.057987+00:00",
-          "error": null
         }
-      ]
+      ],
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=E76F51&color=ffffff"
     },
     "+447565708252": {
       "id": "+447565708252",
@@ -114,19 +103,6 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
-        },
-        {
-          "id": "f14bacc9-ac91-4942-8579-94ab0f9d91d8",
-          "text": "Thanks for reaching out! A PowWash specialist will reply shortly.",
-          "author": "system",
-          "direction": "outbound",
-          "timestamp": "2025-10-19T11:47:13.498465+00:00",
-          "via": "whatsapp",
-          "transportSid": null,
-          "status": "sent",
-          "scheduledSendAt": null,
-          "sentAt": "2025-10-19T11:47:13.498432+00:00",
           "error": null
         },
         {
@@ -260,19 +236,6 @@
           "error": null
         },
         {
-          "id": "345e81b8-2487-41ef-98bc-6bb54c1cbb79",
-          "text": "Thanks for reaching out! A PowWash specialist will reply shortly.",
-          "author": "system",
-          "direction": "outbound",
-          "timestamp": "2025-10-20T10:10:47.313395+00:00",
-          "via": "whatsapp",
-          "transportSid": null,
-          "status": "sent",
-          "scheduledSendAt": null,
-          "sentAt": "2025-10-20T10:10:47.313360+00:00",
-          "error": null
-        },
-        {
           "id": "d28d9db0-b559-4858-93eb-ba998303bc78",
           "text": "Are you there",
           "author": "customer",
@@ -298,7 +261,8 @@
           "sentAt": "2025-10-20T10:14:21.320720+00:00",
           "error": null
         }
-      ]
+      ],
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff"
     }
   }
 }

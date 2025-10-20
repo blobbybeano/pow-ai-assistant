@@ -186,7 +186,7 @@ class ConversationController extends ChangeNotifier {
 }
 
 extension on ConversationDetail {
-  ConversationDetail copyWith({bool? aiEnabled}) {
+  ConversationDetail copyWith({bool? aiEnabled, String? profilePhotoUrl}) {
     return ConversationDetail(
       id: id,
       phoneNumber: phoneNumber,
@@ -194,6 +194,7 @@ extension on ConversationDetail {
       aiEnabled: aiEnabled ?? this.aiEnabled,
       unreadCount: unreadCount,
       messages: List<ChatMessage>.from(messages),
+      profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
     );
   }
 }

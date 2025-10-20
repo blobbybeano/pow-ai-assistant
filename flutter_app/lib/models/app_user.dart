@@ -6,6 +6,7 @@ class AppUser {
     required this.displayName,
     this.email,
     this.avatarEmoji,
+    this.photoUrl,
     this.assignedConversationIds = const <String>[],
   });
 
@@ -13,6 +14,7 @@ class AppUser {
   final String displayName;
   final String? email;
   final String? avatarEmoji;
+  final String? photoUrl;
   final List<String> assignedConversationIds;
 
   String get initials {
@@ -36,6 +38,7 @@ class AppUser {
     String? displayName,
     String? email,
     String? avatarEmoji,
+    String? photoUrl,
     List<String>? assignedConversationIds,
   }) {
     return AppUser(
@@ -43,6 +46,7 @@ class AppUser {
       displayName: displayName ?? this.displayName,
       email: email ?? this.email,
       avatarEmoji: avatarEmoji ?? this.avatarEmoji,
+      photoUrl: photoUrl ?? this.photoUrl,
       assignedConversationIds:
           assignedConversationIds ?? this.assignedConversationIds,
     );
@@ -56,10 +60,17 @@ class AppUser {
         other.displayName == displayName &&
         other.email == email &&
         other.avatarEmoji == avatarEmoji &&
+        other.photoUrl == photoUrl &&
         listEquals(other.assignedConversationIds, assignedConversationIds);
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, displayName, email, avatarEmoji, Object.hashAll(assignedConversationIds));
+  int get hashCode => Object.hash(
+        id,
+        displayName,
+        email,
+        avatarEmoji,
+        photoUrl,
+        Object.hashAll(assignedConversationIds),
+      );
 }

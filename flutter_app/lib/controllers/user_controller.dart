@@ -14,24 +14,28 @@ class UserController extends ChangeNotifier {
       id: 'user-1',
       displayName: 'Alex Johnson',
       email: 'alex@example.com',
+      photoUrl: 'https://i.pravatar.cc/160?img=32',
       assignedConversationIds: ['+15551230001'],
     ),
     const AppUser(
       id: 'user-2',
       displayName: 'Blake Rivera',
       email: 'blake@example.com',
+      photoUrl: 'https://i.pravatar.cc/160?img=12',
       assignedConversationIds: ['+15551230002'],
     ),
     const AppUser(
       id: 'user-3',
       displayName: 'Casey Morgan',
       email: 'casey@example.com',
+      photoUrl: 'https://i.pravatar.cc/160?img=45',
       assignedConversationIds: ['+447565708252'],
     ),
     const AppUser(
       id: 'user-4',
       displayName: 'Devin Patel',
       email: 'devin@example.com',
+      photoUrl: 'https://i.pravatar.cc/160?img=18',
     ),
   ];
 
