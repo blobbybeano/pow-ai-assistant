@@ -31,11 +31,8 @@ if not twilio_messenger:
     )
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
-TYPING_INDICATOR_LEAD_SECONDS = 60
 
 _scheduled_message_ids: Set[str] = set()
-_typing_timers: Dict[str, threading.Timer] = {}
-_typing_timers_lock = threading.Lock()
 
 
 def _build_reply(inbound_text: str) -> str:
@@ -76,7 +73,6 @@ def _schedule_ai_delivery(
     delay = max(0.0, (scheduled_for - datetime.now(timezone.utc)).total_seconds())
 
     def _deliver() -> None:
-        _cancel_typing_indicator(message_id)
         message_snapshot = conversation_store.get_message(conversation_id, message_id)
         if not message_snapshot or message_snapshot.status != "scheduled":
             _scheduled_message_ids.discard(message_id)
@@ -123,45 +119,6 @@ def _schedule_ai_delivery(
     timer.daemon = True
     timer.start()
     _scheduled_message_ids.add(message_id)
-    _schedule_typing_indicator(conversation_id, message_id, scheduled_for=scheduled_for)
-
-
-def _schedule_typing_indicator(
-    conversation_id: str, message_id: str, *, scheduled_for: datetime
-) -> None:
-    if not twilio_messenger or not hasattr(twilio_messenger, "send_typing_indicator"):
-        return
-
-    trigger_at = scheduled_for - timedelta(seconds=TYPING_INDICATOR_LEAD_SECONDS)
-    now = datetime.now(timezone.utc)
-    delay = max(0.0, (trigger_at - now).total_seconds())
-
-    def _send_typing() -> None:
-        try:
-            twilio_messenger.send_typing_indicator(
-                to=conversation_id, duration=TYPING_INDICATOR_LEAD_SECONDS
-            )
-        except Exception:  # pragma: no cover - network dependent
-            logging.exception("Failed to send typing indicator via Twilio")
-        finally:
-            with _typing_timers_lock:
-                _typing_timers.pop(message_id, None)
-
-    timer = threading.Timer(delay, _send_typing)
-    timer.daemon = True
-    with _typing_timers_lock:
-        existing = _typing_timers.pop(message_id, None)
-        if existing:
-            existing.cancel()
-        _typing_timers[message_id] = timer
-    timer.start()
-
-
-def _cancel_typing_indicator(message_id: str) -> None:
-    with _typing_timers_lock:
-        timer = _typing_timers.pop(message_id, None)
-    if timer:
-        timer.cancel()
 
 
 def _bootstrap_pending_messages() -> None:
@@ -341,7 +298,6 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
         abort(404, description="Scheduled AI message not found")
 
     _scheduled_message_ids.discard(message_id)
-    _cancel_typing_indicator(message_id)
     return jsonify({"status": "cancelled", "message": message.to_dict()})
 
 

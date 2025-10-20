@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/conversation_controller.dart';
+import '../controllers/inbox_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../controllers/user_controller.dart';
 import '../models/conversation.dart';
@@ -9,6 +10,7 @@ import '../models/message.dart';
 import '../services/chat_api_client.dart';
 import '../widgets/avatar_circle.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/profile_settings_sheet.dart';
 
 class ChatDetailScreen extends StatelessWidget {
   const ChatDetailScreen({required this.summary, super.key});
@@ -163,6 +165,15 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
             titleSpacing: 0,
             title: _ChatTitle(controller: controller, summary: widget.summary),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.settings),
+                tooltip: 'Settings',
+                onPressed: () {
+                  final conversations =
+                      context.read<InboxController>().conversations;
+                  showProfileSettingsSheet(context, conversations);
+                },
+              ),
               _AiToggleAction(controller: controller),
             ],
           ),

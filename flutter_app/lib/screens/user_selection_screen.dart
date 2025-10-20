@@ -5,6 +5,7 @@ import '../controllers/inbox_controller.dart';
 import '../controllers/user_controller.dart';
 import '../models/app_user.dart';
 import '../widgets/pending_ai_banner.dart';
+import '../widgets/profile_settings_sheet.dart';
 
 class UserSelectionScreen extends StatefulWidget {
   const UserSelectionScreen({super.key});
@@ -48,6 +49,22 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B141A),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: const Color(0xFF111B21),
+        foregroundColor: const Color(0xFFE9EDEF),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () => showProfileSettingsSheet(
+              context,
+              inbox.conversations,
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
