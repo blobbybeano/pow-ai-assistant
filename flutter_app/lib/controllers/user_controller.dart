@@ -22,20 +22,21 @@ class UserController extends ChangeNotifier {
       displayName: 'Blake Rivera',
       email: 'blake@example.com',
       photoUrl: 'https://i.pravatar.cc/160?img=12',
-      assignedConversationIds: ['+15551230002'],
+      assignedConversationIds: ['+14085550100'],
     ),
     const AppUser(
       id: 'user-3',
       displayName: 'Casey Morgan',
       email: 'casey@example.com',
       photoUrl: 'https://i.pravatar.cc/160?img=45',
-      assignedConversationIds: ['+447565708252'],
+      assignedConversationIds: ['+447700900123'],
     ),
     const AppUser(
       id: 'user-4',
       displayName: 'Devin Patel',
       email: 'devin@example.com',
       photoUrl: 'https://i.pravatar.cc/160?img=18',
+      assignedConversationIds: ['+16175550123'],
     ),
   ];
 
@@ -103,13 +104,22 @@ class UserController extends ChangeNotifier {
     return responder != null && responder.id == user.id;
   }
 
-  int unreadEnquiriesFor(AppUser user, List<ConversationSummary> conversations) {
-    if (user.assignedConversationIds.isEmpty) {
-      return 0;
+  List<ConversationSummary> assignedConversations(
+    List<ConversationSummary> conversations, {
+    AppUser? forUser,
+  }) {
+    final user = forUser ?? currentUser;
+    if (user == null || user.assignedConversationIds.isEmpty) {
+      return const <ConversationSummary>[];
     }
-    final assignedIds = user.assignedConversationIds.toSet();
+    final assigned = user.assignedConversationIds.toSet();
     return conversations
-        .where((conversation) => assignedIds.contains(conversation.id))
+        .where((conversation) => assigned.contains(conversation.id))
+        .toList();
+  }
+
+  int unreadEnquiriesFor(AppUser user, List<ConversationSummary> conversations) {
+    return assignedConversations(conversations, forUser: user)
         .fold<int>(0, (total, conversation) => total + conversation.unreadCount);
   }
 }

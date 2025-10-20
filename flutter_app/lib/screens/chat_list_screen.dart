@@ -38,14 +38,18 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
   Widget build(BuildContext context) {
     return Consumer<InboxController>(
       builder: (context, inbox, _) {
-        final pendingSummaries = inbox.pendingAiConversations
+        final userController = context.watch<UserController>();
+        final visibleConversations =
+            userController.assignedConversations(inbox.conversations);
+        final pendingSummaries = userController
+            .assignedConversations(inbox.pendingAiConversations)
             .where((summary) => !_dismissedPendingAi.contains(summary.id))
             .toList();
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           final profileController = context.read<ProfileController>();
-          for (final conversation in inbox.conversations) {
+          for (final conversation in visibleConversations) {
             if (conversation.profilePhotoUrl != null) {
               profileController.setPhoto(conversation.id, conversation.profilePhotoUrl);
             }
@@ -54,7 +58,10 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          final activeIds = inbox.pendingAiConversations.map((summary) => summary.id).toSet();
+          final activeIds = userController
+              .assignedConversations(inbox.pendingAiConversations)
+              .map((summary) => summary.id)
+              .toSet();
           if (_dismissedPendingAi.any((id) => !activeIds.contains(id))) {
             setState(() {
               _dismissedPendingAi.removeWhere((id) => !activeIds.contains(id));
@@ -78,15 +85,17 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
           listChildren.add(const SizedBox(height: 12));
         }
 
-        if (inbox.isLoading && inbox.conversations.isEmpty) {
+        if (inbox.isLoading && visibleConversations.isEmpty) {
           listChildren.add(const _LoadingState());
-        } else if (inbox.error != null && inbox.conversations.isEmpty) {
+        } else if (inbox.error != null && visibleConversations.isEmpty) {
           listChildren.add(_ErrorState(error: inbox.error!, onRetry: inbox.refresh));
+        } else if (!inbox.isLoading && visibleConversations.isEmpty) {
+          listChildren.add(const _EmptyState());
         } else {
-          for (var i = 0; i < inbox.conversations.length; i++) {
-            final summary = inbox.conversations[i];
+          for (var i = 0; i < visibleConversations.length; i++) {
+            final summary = visibleConversations[i];
             listChildren.add(_ConversationListTile(summary: summary));
-            if (i != inbox.conversations.length - 1) {
+            if (i != visibleConversations.length - 1) {
               listChildren.add(const SizedBox(height: 12));
             }
           }
@@ -111,7 +120,7 @@ class _ChatListScaffoldState extends State<_ChatListScaffold> {
               const _UserSwitcherButton(),
               IconButton(
                 icon: const Icon(Icons.more_vert_rounded),
-                onPressed: () => _showSettingsSheet(context, inbox.conversations),
+                onPressed: () => _showSettingsSheet(context, visibleConversations),
                 tooltip: 'Settings',
               ),
             ],
@@ -215,6 +224,39 @@ class _ErrorState extends StatelessWidget {
               backgroundColor: const Color(0xFF00A884),
               foregroundColor: Colors.white,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 120),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.person_search_outlined, size: 42, color: Color(0xFF8696A0)),
+          SizedBox(height: 12),
+          Text(
+            'No assigned chats yet',
+            style: TextStyle(
+              color: Color(0xFFE9EDEF),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'When a customer thread is assigned to you, it will appear here automatically.',
+            style: TextStyle(color: Color(0xFF8696A0), height: 1.4),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

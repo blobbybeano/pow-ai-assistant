@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -351,49 +351,115 @@ class ConversationStore:
     def _seed_demo_conversations(self) -> None:
         """Populate the store with demo conversations for first-time setup."""
 
-        demo_threads = {
-            "+15551230001": {
+        demo_threads = [
+            {
+                "phone": "+15551230001",
                 "displayName": "Alex Martinez",
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
                 "aiEnabled": True,
+                "unreadCount": 1,
                 "messages": [
-                    (
-                        "customer",
-                        "inbound",
-                        "Hey PowWash! Can I get pricing for a full patio wash this weekend?",
-                    ),
-                    (
-                        "ai",
-                        "outbound",
-                        "Hi Alex! A full patio wash starts at $180. Would you like me to reserve a Saturday afternoon slot?",
-                    ),
-                    (
-                        "customer",
-                        "inbound",
-                        "That sounds great. Let's do 2pm if it's available.",
-                    ),
-                    (
-                        "ai",
-                        "outbound",
-                        "2pm this Saturday is open. I'll pencil you in and send a confirmation shortly!",
-                    ),
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Good morning! I'd like to get a quote for driveway cleaning next week.",
+                    },
+                    {
+                        "author": "ai",
+                        "direction": "outbound",
+                        "text": "Hi Alex! A driveway refresh for two cars starts at $150, and includes a degreasing pre-soak and rinse. Do you have a preferred day next week?",
+                    },
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Could you do Friday at 10am? I can send photos if helpful.",
+                    },
                 ],
             },
-            "+15551230002": {
+            {
+                "phone": "+14085550100",
                 "displayName": "Jordan Lee",
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=2A9D8F&color=ffffff",
                 "aiEnabled": False,
+                "unreadCount": 1,
                 "messages": [
-                    (
-                        "customer",
-                        "inbound",
-                        "Can someone help with a quote for cleaning 3 storefront windows?",
-                    ),
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Our café patio is getting slippery. Can you fit us in for a wash this Thursday?",
+                    },
+                    {
+                        "author": "ai",
+                        "direction": "outbound",
+                        "text": "Hi Jordan! We can usually fit patio treatments within 48 hours. Does late morning Thursday work for you?",
+                    },
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Late morning works, thanks!",
+                    },
                 ],
             },
-        }
+            {
+                "phone": "+447700900123",
+                "displayName": "Priya Sharma",
+                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Priya+Sharma&background=F4A261&color=ffffff",
+                "aiEnabled": True,
+                "unreadCount": 0,
+                "messages": [
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Hello! Looking for gutter cleaning for a two-storey semi-detached.",
+                    },
+                    {
+                        "author": "ai",
+                        "direction": "outbound",
+                        "text": "Hi Priya! A two-storey gutter clear is £95 and includes a downpipe flush and photo report. Want me to pencil you in for next week?",
+                    },
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Yes please, any availability on Tuesday morning?",
+                    },
+                    {
+                        "author": "ai",
+                        "direction": "outbound",
+                        "text": "Tuesday at 9am is open. I'll schedule the crew and send you a confirmation shortly!",
+                        "status": "scheduled",
+                        "scheduled_in_seconds": 240,
+                    },
+                ],
+            },
+            {
+                "phone": "+16175550123",
+                "displayName": "Taylor Chen",
+                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Taylor+Chen&background=8ECAE6&color=ffffff",
+                "aiEnabled": True,
+                "unreadCount": 1,
+                "messages": [
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Could you quote a roof softwash for a 1,600 sq ft home?",
+                    },
+                    {
+                        "author": "ai",
+                        "direction": "outbound",
+                        "text": "Hi Taylor! A roof softwash for that size starts at $420 and includes plant-safe pretreatment. Would you like me to arrange a site visit?",
+                    },
+                    {
+                        "author": "customer",
+                        "direction": "inbound",
+                        "text": "Yes, please schedule something next week.",
+                    },
+                ],
+            },
+        ]
 
-        for phone, payload in demo_threads.items():
+        now = datetime.now(timezone.utc)
+        for payload in demo_threads:
+            phone = payload["phone"]
             convo = ConversationRecord(
                 id=phone,
                 phone_number=phone,
@@ -401,19 +467,30 @@ class ConversationStore:
                 contact_photo_url=payload.get("profilePhotoUrl")
                 or _generate_avatar(payload.get("displayName"), phone),
                 ai_enabled=payload.get("aiEnabled", True),
-                unread_count=1,
+                unread_count=payload.get("unreadCount", 0),
             )
 
-            for author, direction, text in payload.get("messages", []):
-                sent_at = _utc_now()
+            message_time = now
+            for message_payload in payload.get("messages", []):
+                message_time += timedelta(seconds=30)
+                status = message_payload.get("status", "sent")
+                scheduled_send_at: Optional[str] = None
+                sent_at: Optional[str] = message_time.isoformat()
+                if status == "scheduled":
+                    delay = message_payload.get("scheduled_in_seconds", 180)
+                    scheduled_send_at = (message_time + timedelta(seconds=delay)).isoformat()
+                    sent_at = None
+
                 convo.messages.append(
                     MessageRecord(
                         id=str(uuid4()),
-                        text=text,
-                        author=author,
-                        direction=direction,
-                        timestamp=sent_at,
+                        text=message_payload["text"],
+                        author=message_payload["author"],
+                        direction=message_payload["direction"],
+                        timestamp=message_time.isoformat(),
                         sent_at=sent_at,
+                        status=status,
+                        scheduled_send_at=scheduled_send_at,
                     )
                 )
 

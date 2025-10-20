@@ -27,14 +27,18 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
     final userController = context.watch<UserController>();
     final inbox = context.watch<InboxController>();
     final users = userController.availableUsers;
-
-    final pendingSummaries = inbox.pendingAiConversations
+    final respondingUser = userController.respondingUser;
+    final pendingSummaries = userController
+        .assignedConversations(inbox.pendingAiConversations, forUser: respondingUser)
         .where((summary) => !_dismissedPendingAi.contains(summary.id))
         .toList();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final activeIds = inbox.pendingAiConversations.map((summary) => summary.id).toSet();
+      final activeIds = userController
+          .assignedConversations(inbox.pendingAiConversations, forUser: respondingUser)
+          .map((summary) => summary.id)
+          .toSet();
       if (_dismissedPendingAi.any((id) => !activeIds.contains(id))) {
         setState(() {
           _dismissedPendingAi.removeWhere((id) => !activeIds.contains(id));
