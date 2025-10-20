@@ -1,0 +1,65 @@
+import 'package:flutter/material.dart';
+
+import '../models/conversation.dart';
+
+class PendingAiBanner extends StatelessWidget {
+  const PendingAiBanner({super.key, required this.summary, required this.onDismissed});
+
+  final ConversationSummary summary;
+  final VoidCallback onDismissed;
+
+  @override
+  Widget build(BuildContext context) {
+    final messagePreview = summary.lastMessage?.text ?? '';
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0x332FC6B2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF00A884)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.smart_toy_rounded, color: Color(0xFF00A884)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'AI is replying to ${summary.displayName}',
+                  style: const TextStyle(
+                    color: Color(0xFFE9EDEF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (messagePreview.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    messagePreview,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFB6C1C9),
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            onPressed: onDismissed,
+            icon: const Icon(Icons.close, size: 20),
+            color: const Color(0xFF8696A0),
+            tooltip: 'Dismiss',
+          ),
+        ],
+      ),
+    );
+  }
+}

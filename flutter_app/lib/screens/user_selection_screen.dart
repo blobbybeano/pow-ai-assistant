@@ -1,16 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../controllers/inbox_controller.dart';
 import '../controllers/user_controller.dart';
 import '../models/app_user.dart';
+import '../widgets/pending_ai_banner.dart';
 
-class UserSelectionScreen extends StatelessWidget {
+class UserSelectionScreen extends StatefulWidget {
   const UserSelectionScreen({super.key});
+
+  @override
+  State<UserSelectionScreen> createState() => _UserSelectionScreenState();
+}
+
+class _UserSelectionScreenState extends State<UserSelectionScreen> {
+  final Set<String> _dismissedPendingAi = <String>{};
+
+  void _handleDismiss(String conversationId) {
+    setState(() {
+      _dismissedPendingAi.add(conversationId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final userController = context.watch<UserController>();
+    final inbox = context.watch<InboxController>();
     final users = userController.availableUsers;
+
+    final pendingSummaries = inbox.pendingAiConversations
+        .where((summary) => !_dismissedPendingAi.contains(summary.id))
+        .toList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final activeIds = inbox.pendingAiConversations.map((summary) => summary.id).toSet();
+      if (_dismissedPendingAi.any((id) => !activeIds.contains(id))) {
+        setState(() {
+          _dismissedPendingAi.removeWhere((id) => !activeIds.contains(id));
+        });
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B141A),
@@ -40,14 +70,30 @@ class UserSelectionScreen extends StatelessWidget {
                     style: TextStyle(color: Color(0xFF8696A0), height: 1.4),
                   ),
                   const SizedBox(height: 24),
+                  if (pendingSummaries.isNotEmpty) ...[
+                    ...pendingSummaries.map(
+                      (summary) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: PendingAiBanner(
+                          summary: summary,
+                          onDismissed: () => _handleDismiss(summary.id),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Flexible(
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
                         final user = users[index];
+                        final unread = inbox.isLoading
+                            ? null
+                            : userController.unreadEnquiriesFor(user, inbox.conversations);
                         return _UserCard(
                           user: user,
                           isActive: userController.isCurrentUser(user),
+                          notificationCount: unread,
                           onTap: () => userController.signIn(user.id),
                         );
                       },
@@ -66,11 +112,17 @@ class UserSelectionScreen extends StatelessWidget {
 }
 
 class _UserCard extends StatelessWidget {
-  const _UserCard({required this.user, required this.onTap, required this.isActive});
+  const _UserCard({
+    required this.user,
+    required this.onTap,
+    required this.isActive,
+    required this.notificationCount,
+  });
 
   final AppUser user;
   final VoidCallback onTap;
   final bool isActive;
+  final int? notificationCount;
 
   @override
   Widget build(BuildContext context) {
@@ -111,11 +163,41 @@ class _UserCard extends StatelessWidget {
                       style: const TextStyle(color: Color(0xFF8696A0), fontSize: 13),
                     ),
                   ],
+                  if ((notificationCount ?? 0) > 0) ...[
+                    const SizedBox(height: 8),
+                    _NotificationBadge(count: notificationCount!),
+                  ],
                 ],
               ),
             ),
             const Icon(Icons.chevron_right, color: Color(0xFF8696A0)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationBadge extends StatelessWidget {
+  const _NotificationBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2C34),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF00A884)),
+      ),
+      child: Text(
+        count == 1 ? '1 new enquiry' : '$count new enquiries',
+        style: const TextStyle(
+          color: Color(0xFFE9EDEF),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

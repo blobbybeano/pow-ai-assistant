@@ -1,15 +1,19 @@
+import 'package:flutter/foundation.dart';
+
 class AppUser {
   const AppUser({
     required this.id,
     required this.displayName,
     this.email,
     this.avatarEmoji,
+    this.assignedConversationIds = const <String>[],
   });
 
   final String id;
   final String displayName;
   final String? email;
   final String? avatarEmoji;
+  final List<String> assignedConversationIds;
 
   String get initials {
     if (avatarEmoji != null && avatarEmoji!.isNotEmpty) {
@@ -32,12 +36,15 @@ class AppUser {
     String? displayName,
     String? email,
     String? avatarEmoji,
+    List<String>? assignedConversationIds,
   }) {
     return AppUser(
       id: id ?? this.id,
       displayName: displayName ?? this.displayName,
       email: email ?? this.email,
       avatarEmoji: avatarEmoji ?? this.avatarEmoji,
+      assignedConversationIds:
+          assignedConversationIds ?? this.assignedConversationIds,
     );
   }
 
@@ -48,9 +55,11 @@ class AppUser {
         other.id == id &&
         other.displayName == displayName &&
         other.email == email &&
-        other.avatarEmoji == avatarEmoji;
+        other.avatarEmoji == avatarEmoji &&
+        listEquals(other.assignedConversationIds, assignedConversationIds);
   }
 
   @override
-  int get hashCode => Object.hash(id, displayName, email, avatarEmoji);
+  int get hashCode =>
+      Object.hash(id, displayName, email, avatarEmoji, Object.hashAll(assignedConversationIds));
 }

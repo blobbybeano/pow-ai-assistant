@@ -20,6 +20,14 @@ class InboxController extends ChangeNotifier {
   List<ConversationSummary> get conversations => _conversations;
   bool get isLoading => _loading;
   Object? get error => _error;
+  List<ConversationSummary> get pendingAiConversations => _conversations
+      .where(
+        (conversation) =>
+            conversation.lastMessage != null &&
+            conversation.lastMessage!.author == 'ai' &&
+            conversation.lastMessage!.isPending,
+      )
+      .toList();
 
   Future<void> refresh() => _refreshInbox(force: true);
 

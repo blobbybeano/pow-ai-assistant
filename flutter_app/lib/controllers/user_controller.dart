@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/app_user.dart';
+import '../models/conversation.dart';
 
 class UserController extends ChangeNotifier {
   UserController({List<AppUser>? availableUsers})
@@ -9,10 +10,29 @@ class UserController extends ChangeNotifier {
         _respondingUserId = null;
 
   static final List<AppUser> _defaultUsers = [
-    const AppUser(id: 'user-1', displayName: 'Alex Johnson', email: 'alex@example.com'),
-    const AppUser(id: 'user-2', displayName: 'Blake Rivera', email: 'blake@example.com'),
-    const AppUser(id: 'user-3', displayName: 'Casey Morgan', email: 'casey@example.com'),
-    const AppUser(id: 'user-4', displayName: 'Devin Patel', email: 'devin@example.com'),
+    const AppUser(
+      id: 'user-1',
+      displayName: 'Alex Johnson',
+      email: 'alex@example.com',
+      assignedConversationIds: ['+15551230001'],
+    ),
+    const AppUser(
+      id: 'user-2',
+      displayName: 'Blake Rivera',
+      email: 'blake@example.com',
+      assignedConversationIds: ['+15551230002'],
+    ),
+    const AppUser(
+      id: 'user-3',
+      displayName: 'Casey Morgan',
+      email: 'casey@example.com',
+      assignedConversationIds: ['+447565708252'],
+    ),
+    const AppUser(
+      id: 'user-4',
+      displayName: 'Devin Patel',
+      email: 'devin@example.com',
+    ),
   ];
 
   final List<AppUser> _availableUsers;
@@ -57,6 +77,7 @@ class UserController extends ChangeNotifier {
   void signOut() {
     if (_currentUserId == null) return;
     _currentUserId = null;
+    _respondingUserId = null;
     notifyListeners();
   }
 
@@ -76,5 +97,15 @@ class UserController extends ChangeNotifier {
   bool isRespondingUser(AppUser user) {
     final responder = respondingUser;
     return responder != null && responder.id == user.id;
+  }
+
+  int unreadEnquiriesFor(AppUser user, List<ConversationSummary> conversations) {
+    if (user.assignedConversationIds.isEmpty) {
+      return 0;
+    }
+    final assignedIds = user.assignedConversationIds.toSet();
+    return conversations
+        .where((conversation) => assignedIds.contains(conversation.id))
+        .fold<int>(0, (total, conversation) => total + conversation.unreadCount);
   }
 }

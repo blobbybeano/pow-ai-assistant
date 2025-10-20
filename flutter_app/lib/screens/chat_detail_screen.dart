@@ -154,9 +154,17 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
           appBar: AppBar(
             backgroundColor: const Color(0xFF111B21),
             foregroundColor: const Color(0xFFE9EDEF),
-            automaticallyImplyLeading: Navigator.of(context).canPop(),
+            automaticallyImplyLeading: false,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: 'Back',
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
             titleSpacing: 0,
-            title: _ChatHeader(controller: controller, summary: widget.summary),
+            title: _ChatTitle(controller: controller, summary: widget.summary),
+            actions: [
+              _AiToggleAction(controller: controller),
+            ],
           ),
           body: Column(
             children: [
@@ -257,8 +265,8 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
   }
 }
 
-class _ChatHeader extends StatelessWidget {
-  const _ChatHeader({required this.controller, required this.summary});
+class _ChatTitle extends StatelessWidget {
+  const _ChatTitle({required this.controller, required this.summary});
 
   final ConversationController controller;
   final ConversationSummary summary;
@@ -271,237 +279,78 @@ class _ChatHeader extends StatelessWidget {
       (profile) => profile.photoFor(summary.id),
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            AvatarCircle(
-              label: name,
-              size: 44,
-              image: photoUrl != null ? NetworkImage(photoUrl) : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      color: Color(0xFFE9EDEF),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Color(0xFF8696A0), fontSize: 13),
-                  ),
-                ],
+        AvatarCircle(
+          label: name,
+          size: 44,
+          image: photoUrl != null ? NetworkImage(photoUrl) : null,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  color: Color(0xFFE9EDEF),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            _InboxAiToggle(
-              enabled: controller.aiEnabled,
-              onToggle: controller.toggleAi,
-              busy: controller.isDrafting || controller.isCancellingPendingAi,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        const _RespondingUserSelector(),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _PersonaBadge(isEnabled: controller.aiEnabled),
-            _AutoReplySwitch(
-              value: controller.aiEnabled,
-              onChanged: controller.toggleAi,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _RespondingUserSelector extends StatelessWidget {
-  const _RespondingUserSelector();
-
-  @override
-  Widget build(BuildContext context) {
-    final userController = context.watch<UserController>();
-    final users = userController.availableUsers;
-    if (users.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'AI replies as',
-          style: TextStyle(
-            color: Color(0xFF8696A0),
-            fontWeight: FontWeight.w600,
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(color: Color(0xFF8696A0), fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final user in users)
-              Builder(
-                builder: (context) {
-                  final isSelected = userController.isRespondingUser(user);
-                  final labelText = userController.isCurrentUser(user)
-                      ? '${user.displayName} (You)'
-                      : user.displayName;
-                  return ChoiceChip(
-                    selected: isSelected,
-                    onSelected: (_) => userController.switchRespondingUser(user.id),
-                    backgroundColor: const Color(0x33202C33),
-                    selectedColor: const Color(0xFF00A884),
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    label: Text(
-                      labelText,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : const Color(0xFFE9EDEF),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
       ],
     );
   }
 }
 
-class _InboxAiToggle extends StatelessWidget {
-  const _InboxAiToggle({required this.enabled, required this.onToggle, this.busy = false});
+class _AiToggleAction extends StatelessWidget {
+  const _AiToggleAction({required this.controller});
 
-  final bool enabled;
-  final ValueChanged<bool> onToggle;
-  final bool busy;
+  final ConversationController controller;
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: busy ? null : () => onToggle(!enabled),
-      style: OutlinedButton.styleFrom(
-        backgroundColor: enabled ? const Color(0x3300A884) : const Color(0x33202C33),
-        foregroundColor: const Color(0xFFE9EDEF),
-        side: BorderSide(color: enabled ? const Color(0xFF00A884) : const Color(0xFF243038)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
+    final isBusy = controller.isDrafting || controller.isCancellingPendingAi;
+    final label = controller.aiEnabled ? 'AI on' : 'AI off';
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(enabled ? Icons.bolt : Icons.bolt_outlined, size: 18, color: const Color(0xFF00A884)),
-          const SizedBox(width: 8),
           Text(
-            'Inbox AI: ${enabled ? 'On' : 'Off'}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            label,
+            style: const TextStyle(
+              color: Color(0xFFE9EDEF),
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          const SizedBox(width: 8),
+          Switch.adaptive(
+            value: controller.aiEnabled,
+            onChanged: isBusy ? null : controller.toggleAi,
+            activeColor: const Color(0xFF00A884),
+          ),
+          if (isBusy) ...[
+            const SizedBox(width: 4),
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00A884)),
+            ),
+          ],
         ],
-      ),
-    );
-  }
-}
-
-class _PersonaBadge extends StatelessWidget {
-  const _PersonaBadge({required this.isEnabled});
-
-  final bool isEnabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0x33202C33),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFF243038)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: const Color(0x338696A0)),
-              ),
-              child: const Icon(Icons.bolt, color: Colors.white, size: 16),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isEnabled ? 'Default AI persona' : 'Manual replies',
-              style: const TextStyle(color: Color(0xFFE9EDEF), fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AutoReplySwitch extends StatelessWidget {
-  const _AutoReplySwitch({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0x33202C33),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x33243038)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 260),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: value,
-              onChanged: (next) => onChanged(next),
-              activeColor: const Color(0xFF00A884),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                'Auto replies for this chat',
-                style: const TextStyle(
-                  color: Color(0xFFE9EDEF),
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
