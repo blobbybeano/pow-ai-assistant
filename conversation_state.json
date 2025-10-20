@@ -4,6 +4,7 @@
       "id": "+15551230001",
       "phoneNumber": "+15551230001",
       "displayName": "Alex Martinez",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
       "unreadCount": 0,
       "messages": [
@@ -59,13 +60,13 @@
           "sentAt": "2025-01-16T21:49:01.057978+00:00",
           "error": null
         }
-      ],
-      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff"
+      ]
     },
     "+15551230002": {
       "id": "+15551230002",
       "phoneNumber": "+15551230002",
       "displayName": "Jordan Lee",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=E76F51&color=ffffff",
       "aiEnabled": false,
       "unreadCount": 1,
       "messages": [
@@ -82,13 +83,13 @@
           "sentAt": "2025-01-16T21:47:01.057984+00:00",
           "error": null
         }
-      ],
-      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=E76F51&color=ffffff"
+      ]
     },
     "+447565708252": {
       "id": "+447565708252",
       "phoneNumber": "+447565708252",
       "displayName": "Ben",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
       "unreadCount": 0,
       "messages": [
@@ -261,8 +262,7 @@
           "sentAt": "2025-10-20T10:14:21.320720+00:00",
           "error": null
         }
-      ],
-      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff"
+      ]
     }
   }
 }
