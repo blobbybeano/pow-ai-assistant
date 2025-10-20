@@ -6,7 +6,7 @@
       "displayName": "Alex Martinez",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 0,
       "messages": [
         {
           "id": "25eb6fe5-c270-4dbc-943e-c0f19fcedcf4",
@@ -55,7 +55,7 @@
       "displayName": "Jordan Lee",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=2A9D8F&color=ffffff",
       "aiEnabled": false,
-      "unreadCount": 1,
+      "unreadCount": 0,
       "messages": [
         {
           "id": "18269c1f-4d9f-4bcb-b052-adcd24f985eb",
@@ -152,10 +152,10 @@
           "direction": "outbound",
           "timestamp": "2025-01-17T14:05:00+00:00",
           "via": "whatsapp",
-          "transportSid": null,
-          "status": "scheduled",
+          "transportSid": "SMc94eb5451a5d8fcae9e17efe97210ed6",
+          "status": "sent",
           "scheduledSendAt": "2025-01-17T14:07:00+00:00",
-          "sentAt": null,
+          "sentAt": "2025-10-20T12:57:06.803070+00:00",
           "error": null
         }
       ]
@@ -166,7 +166,7 @@
       "displayName": "Taylor Chen",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Taylor+Chen&background=8ECAE6&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 0,
       "messages": [
         {
           "id": "eb790266-39a3-44d9-9db1-0bacec49d5d4",
@@ -205,6 +205,68 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:03:00+00:00",
+          "error": null
+        }
+      ]
+    },
+    "+447565708252": {
+      "id": "+447565708252",
+      "phoneNumber": "+447565708252",
+      "displayName": "Ben",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
+      "aiEnabled": true,
+      "unreadCount": 2,
+      "messages": [
+        {
+          "id": "82a374d8-cd63-4ec5-b606-32f573e549bb",
+          "text": "Hi can you help me",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T12:58:07.027509+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "07263f32-9faa-47b0-9889-6fdc05331c6a",
+          "text": "Of course! I'm here to help. What kind of exterior cleaning service are you interested in? If you could share a bit about your property\u2014like the type of surface, size, and any access considerations\u2014that would be great. Looking forward to your details!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T12:58:07.028837+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMb2370870f299bc2b53977b40de1b0d51",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-20T13:01:10.703286+00:00",
+          "sentAt": "2025-10-20T13:01:11.084055+00:00",
+          "error": null
+        },
+        {
+          "id": "54beca5d-273b-4ffb-99a8-83913b1b82e2",
+          "text": "Hi",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T12:59:51.820859+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "b92f5ef0-8b66-42ef-85d8-66fde1efc526",
+          "text": "Hello! \ud83d\ude0a How can we help you today? Are you looking for a quote on one of our exterior cleaning services? Just let us know what you need, and we can get started! \n\nLooking forward to hearing from you! \n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T12:59:51.822458+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM3dfee2a250a0db231fe4aba5871206e9",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-20T13:02:54.858381+00:00",
+          "sentAt": "2025-10-20T13:02:55.104777+00:00",
           "error": null
         }
       ]
