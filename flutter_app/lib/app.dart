@@ -35,9 +35,17 @@ class _PowWashAppState extends State<PowWashApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserController()),
         Provider<ChatApiClient>.value(value: _apiClient),
-        ChangeNotifierProvider(create: (_) => InboxController(apiClient: _apiClient)),
+        ChangeNotifierProvider(
+          create: (context) => UserController(
+            apiClient: context.read<ChatApiClient>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => InboxController(
+            apiClient: context.read<ChatApiClient>(),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => ProfileController()),
       ],
       child: MaterialApp(

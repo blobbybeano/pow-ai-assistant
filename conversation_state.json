@@ -1,4 +1,7 @@
 {
+  "settings": {
+    "defaultResponderId": "user-1"
+  },
   "conversations": {
     "+15551230001": {
       "id": "+15551230001",
@@ -47,7 +50,8 @@
           "sentAt": "2025-01-17T14:02:00+00:00",
           "error": null
         }
-      ]
+      ],
+      "assignedResponderId": "user-1"
     },
     "+14085550100": {
       "id": "+14085550100",
@@ -96,7 +100,8 @@
           "sentAt": "2025-01-17T14:04:00+00:00",
           "error": null
         }
-      ]
+      ],
+      "assignedResponderId": "user-2"
     },
     "+447700900123": {
       "id": "+447700900123",
@@ -158,7 +163,8 @@
           "sentAt": "2025-10-20T12:57:06.803070+00:00",
           "error": null
         }
-      ]
+      ],
+      "assignedResponderId": "user-3"
     },
     "+16175550123": {
       "id": "+16175550123",
@@ -207,95 +213,9 @@
           "sentAt": "2025-01-17T14:03:00+00:00",
           "error": null
         }
-      ]
-    },
-    "+447565708252": {
-      "id": "+447565708252",
-      "phoneNumber": "+447565708252",
-      "displayName": "Ben",
-      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
-      "aiEnabled": true,
-      "unreadCount": 3,
-      "messages": [
-        {
-          "id": "82a374d8-cd63-4ec5-b606-32f573e549bb",
-          "text": "Hi can you help me",
-          "author": "customer",
-          "direction": "inbound",
-          "timestamp": "2025-10-20T12:58:07.027509+00:00",
-          "via": "whatsapp",
-          "transportSid": null,
-          "status": "sent",
-          "scheduledSendAt": null,
-          "sentAt": null,
-          "error": null
-        },
-        {
-          "id": "07263f32-9faa-47b0-9889-6fdc05331c6a",
-          "text": "Of course! I'm here to help. What kind of exterior cleaning service are you interested in? If you could share a bit about your property\u2014like the type of surface, size, and any access considerations\u2014that would be great. Looking forward to your details!\n\nBest,  \nPowWash Team",
-          "author": "ai",
-          "direction": "outbound",
-          "timestamp": "2025-10-20T12:58:07.028837+00:00",
-          "via": "whatsapp",
-          "transportSid": "SMb2370870f299bc2b53977b40de1b0d51",
-          "status": "sent",
-          "scheduledSendAt": "2025-10-20T13:01:10.703286+00:00",
-          "sentAt": "2025-10-20T13:01:11.084055+00:00",
-          "error": null
-        },
-        {
-          "id": "54beca5d-273b-4ffb-99a8-83913b1b82e2",
-          "text": "Hi",
-          "author": "customer",
-          "direction": "inbound",
-          "timestamp": "2025-10-20T12:59:51.820859+00:00",
-          "via": "whatsapp",
-          "transportSid": null,
-          "status": "sent",
-          "scheduledSendAt": null,
-          "sentAt": null,
-          "error": null
-        },
-        {
-          "id": "b92f5ef0-8b66-42ef-85d8-66fde1efc526",
-          "text": "Hello! \ud83d\ude0a How can we help you today? Are you looking for a quote on one of our exterior cleaning services? Just let us know what you need, and we can get started! \n\nLooking forward to hearing from you! \n\nBest,  \nPowWash Team",
-          "author": "ai",
-          "direction": "outbound",
-          "timestamp": "2025-10-20T12:59:51.822458+00:00",
-          "via": "whatsapp",
-          "transportSid": "SM3dfee2a250a0db231fe4aba5871206e9",
-          "status": "sent",
-          "scheduledSendAt": "2025-10-20T13:02:54.858381+00:00",
-          "sentAt": "2025-10-20T13:02:55.104777+00:00",
-          "error": null
-        },
-        {
-          "id": "56a6fd95-1386-42b4-8a58-ce8238fcd472",
-          "text": "Hidd",
-          "author": "customer",
-          "direction": "inbound",
-          "timestamp": "2025-10-20T14:20:39.072429+00:00",
-          "via": "whatsapp",
-          "transportSid": null,
-          "status": "sent",
-          "scheduledSendAt": null,
-          "sentAt": null,
-          "error": null
-        },
-        {
-          "id": "fb38f461-03ed-4e05-8914-93d33add6ab8",
-          "text": "Hello! It looks like your message got cut off. How can I assist you today with your exterior cleaning needs? If you're looking for a quote, could you share a bit more about the surface you need cleaned, its size, and any access considerations? You can also check out our services and prices at www.powwash.co.uk. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
-          "author": "ai",
-          "direction": "outbound",
-          "timestamp": "2025-10-20T14:20:39.074655+00:00",
-          "via": "whatsapp",
-          "transportSid": "SM66a64307ca71e5e5ea20a176b0673816",
-          "status": "sent",
-          "scheduledSendAt": "2025-10-20T14:23:42.544369+00:00",
-          "sentAt": "2025-10-20T16:34:08.176519+00:00",
-          "error": null
-        }
-      ]
+      ],
+      "assignedResponderId": "user-4"
     }
   }
 }
+

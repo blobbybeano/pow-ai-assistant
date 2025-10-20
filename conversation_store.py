@@ -104,6 +104,7 @@ class ConversationRecord:
     contact_photo_url: Optional[str] = None
     ai_enabled: bool = True
     unread_count: int = 0
+    assigned_responder_id: Optional[str] = None
     messages: List[MessageRecord] = field(default_factory=list)
 
     def last_message(self) -> Optional[MessageRecord]:
@@ -118,6 +119,7 @@ class ConversationRecord:
             "profilePhotoUrl": self.contact_photo_url,
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
+            "assignedResponderId": self.assigned_responder_id,
             "lastMessage": last_msg.to_dict() if last_msg else None,
         }
 
@@ -129,6 +131,7 @@ class ConversationRecord:
             "profilePhotoUrl": self.contact_photo_url,
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
+            "assignedResponderId": self.assigned_responder_id,
             "messages": [message.to_dict() for message in self.messages],
         }
 
@@ -140,6 +143,7 @@ class ConversationStore:
         self._state_path = state_path
         self._lock = Lock()
         self._conversations: Dict[str, ConversationRecord] = {}
+        self._settings: Dict[str, Any] = {}
         self._load_state()
 
     # ------------------------------------------------------------------
@@ -155,6 +159,8 @@ class ConversationStore:
             except json.JSONDecodeError:
                 payload = {}
 
+        self._settings = payload.get("settings", {}) if isinstance(payload, dict) else {}
+
         for convo_id, record in payload.get("conversations", {}).items():
             self._conversations[convo_id] = ConversationRecord(
                 id=convo_id,
@@ -163,6 +169,7 @@ class ConversationStore:
                 contact_photo_url=record.get("profilePhotoUrl"),
                 ai_enabled=record.get("aiEnabled", True),
                 unread_count=record.get("unreadCount", 0),
+                assigned_responder_id=record.get("assignedResponderId"),
                 messages=[
                     MessageRecord(
                         id=msg.get("id", str(uuid4())),
@@ -193,10 +200,11 @@ class ConversationStore:
 
     def _persist(self) -> None:
         data = {
+            "settings": self._settings,
             "conversations": {
                 convo_id: convo.to_dict()
                 for convo_id, convo in self._conversations.items()
-            }
+            },
         }
         self._state_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -252,6 +260,7 @@ class ConversationStore:
                     phone_number=phone_number,
                     contact_name=profile_name,
                     contact_photo_url=avatar,
+                    assigned_responder_id=self.default_responder_id,
                 )
                 self._conversations[conversation_id] = convo
                 updated = True
@@ -274,6 +283,10 @@ class ConversationStore:
                     )
                     updated = True
 
+                if not convo.assigned_responder_id and self.default_responder_id:
+                    convo.assigned_responder_id = self.default_responder_id
+                    updated = True
+
             if updated:
                 self._persist()
             return convo
@@ -282,11 +295,55 @@ class ConversationStore:
         with self._lock:
             convo = self._conversations.setdefault(
                 conversation_id,
-                ConversationRecord(id=conversation_id, phone_number=conversation_id),
+                ConversationRecord(
+                    id=conversation_id,
+                    phone_number=conversation_id,
+                    assigned_responder_id=self.default_responder_id,
+                ),
             )
             convo.ai_enabled = enabled
             self._persist()
             return convo.ai_enabled
+
+    @property
+    def default_responder_id(self) -> Optional[str]:
+        value = self._settings.get("defaultResponderId")
+        if isinstance(value, str):
+            trimmed = value.strip()
+            return trimmed or None
+        return None
+
+    def set_default_responder(self, responder_id: Optional[str]) -> None:
+        with self._lock:
+            trimmed = (responder_id or "").strip()
+            if trimmed:
+                self._settings["defaultResponderId"] = trimmed
+            else:
+                self._settings.pop("defaultResponderId", None)
+            self._persist()
+
+    def assign_conversation(
+        self, conversation_id: str, responder_id: Optional[str]
+    ) -> Optional[str]:
+        if responder_id is None:
+            return None
+        responder = responder_id.strip()
+        if not responder:
+            return None
+        with self._lock:
+            convo = self._conversations.get(conversation_id)
+            if not convo:
+                convo = ConversationRecord(
+                    id=conversation_id,
+                    phone_number=conversation_id,
+                    assigned_responder_id=responder,
+                )
+                self._conversations[conversation_id] = convo
+            if convo.assigned_responder_id == responder:
+                return responder
+            convo.assigned_responder_id = responder
+            self._persist()
+            return responder
 
     def record_message(
         self,
@@ -358,6 +415,7 @@ class ConversationStore:
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
                 "aiEnabled": True,
                 "unreadCount": 1,
+                "assignedResponderId": "user-1",
                 "messages": [
                     {
                         "author": "customer",
@@ -382,6 +440,7 @@ class ConversationStore:
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=2A9D8F&color=ffffff",
                 "aiEnabled": False,
                 "unreadCount": 1,
+                "assignedResponderId": "user-2",
                 "messages": [
                     {
                         "author": "customer",
@@ -406,6 +465,7 @@ class ConversationStore:
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Priya+Sharma&background=F4A261&color=ffffff",
                 "aiEnabled": True,
                 "unreadCount": 0,
+                "assignedResponderId": "user-3",
                 "messages": [
                     {
                         "author": "customer",
@@ -437,6 +497,7 @@ class ConversationStore:
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Taylor+Chen&background=8ECAE6&color=ffffff",
                 "aiEnabled": True,
                 "unreadCount": 1,
+                "assignedResponderId": "user-4",
                 "messages": [
                     {
                         "author": "customer",
@@ -468,6 +529,7 @@ class ConversationStore:
                 or _generate_avatar(payload.get("displayName"), phone),
                 ai_enabled=payload.get("aiEnabled", True),
                 unread_count=payload.get("unreadCount", 0),
+                assigned_responder_id=payload.get("assignedResponderId"),
             )
 
             message_time = now
@@ -495,6 +557,9 @@ class ConversationStore:
                 )
 
             self._conversations[phone] = convo
+
+        if "defaultResponderId" not in self._settings:
+            self._settings["defaultResponderId"] = "user-1"
 
     def pending_scheduled_messages(self) -> List[tuple[str, MessageRecord]]:
         """Return copies of AI messages that are scheduled for delivery."""

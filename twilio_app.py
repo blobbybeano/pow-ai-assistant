@@ -176,6 +176,11 @@ def whatsapp_webhook() -> Response:
         increment_unread=True,
     )
 
+    if conversation_store.default_responder_id:
+        conversation_store.assign_conversation(
+            conversation_id, conversation_store.default_responder_id
+        )
+
     conversation_snapshot = conversation_store.get_conversation(conversation_id)
     ai_enabled = conversation_snapshot["aiEnabled"] if conversation_snapshot else True
 
@@ -237,6 +242,21 @@ def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/settings/responder")
+def api_get_default_responder() -> Response:
+    return jsonify({"defaultResponderId": conversation_store.default_responder_id})
+
+
+@app.post("/api/settings/responder")
+def api_set_default_responder() -> Response:
+    payload = request.get_json(silent=True) or {}
+    responder_id = payload.get("responderId")
+    if responder_id is not None and not isinstance(responder_id, str):
+        abort(400, description="responderId must be a string")
+    conversation_store.set_default_responder(responder_id)
+    return jsonify({"defaultResponderId": conversation_store.default_responder_id})
+
+
 @app.get("/api/conversations")
 def api_list_conversations() -> Response:
     conversations = conversation_store.list_conversations()
@@ -255,6 +275,9 @@ def api_get_conversation(conversation_id: str) -> Response:
 def api_toggle_ai(conversation_id: str) -> Response:
     payload = request.get_json(silent=True) or {}
     enabled = bool(payload.get("enabled", True))
+    responder_id = payload.get("responderId")
+    if responder_id:
+        conversation_store.assign_conversation(conversation_id, responder_id)
     result = conversation_store.set_ai_enabled(conversation_id, enabled)
     return jsonify({"enabled": result})
 

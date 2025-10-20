@@ -112,6 +112,30 @@ class ChatApiClient {
     return payload['draft'] as String;
   }
 
+  Future<String?> fetchDefaultResponderId() async {
+    final response = await _client.get(_uri('/api/settings/responder'));
+    if (response.statusCode != 200 && response.statusCode != 404) {
+      throw Exception('Failed to load responder preference (${response.statusCode})');
+    }
+    if (response.statusCode == 404 || response.body.isEmpty) {
+      return null;
+    }
+    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final value = payload['defaultResponderId'];
+    return value is String && value.isNotEmpty ? value : null;
+  }
+
+  Future<void> updateDefaultResponderId(String responderId) async {
+    final response = await _client.post(
+      _uri('/api/settings/responder'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'responderId': responderId}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to persist responder preference (${response.statusCode})');
+    }
+  }
+
   void close() {
     _client.close();
   }

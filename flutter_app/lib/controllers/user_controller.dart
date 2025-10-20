@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/app_user.dart';
 import '../models/conversation.dart';
+import '../services/chat_api_client.dart';
 
 class UserController extends ChangeNotifier {
-  UserController({List<AppUser>? availableUsers})
+  UserController({List<AppUser>? availableUsers, ChatApiClient? apiClient})
       : _availableUsers = availableUsers ?? _defaultUsers,
+        _apiClient = apiClient,
         _currentUserId = null,
-        _respondingUserId = null;
+        _respondingUserId = null {
+    _loadInitialResponder();
+  }
 
   static final List<AppUser> _defaultUsers = [
     const AppUser(
@@ -41,6 +47,7 @@ class UserController extends ChangeNotifier {
   ];
 
   final List<AppUser> _availableUsers;
+  final ChatApiClient? _apiClient;
   String? _currentUserId;
   String? _respondingUserId;
 
@@ -99,6 +106,7 @@ class UserController extends ChangeNotifier {
     }
     _respondingUserId = userId;
     notifyListeners();
+    _persistResponderPreference(userId);
   }
 
   bool isCurrentUser(AppUser user) => user.id == _currentUserId;
@@ -120,11 +128,15 @@ class UserController extends ChangeNotifier {
     final knownAssignments = _knownAssignedConversationIds;
     return conversations
         .where((conversation) {
+          final assignedResponder = conversation.assignedResponderId;
+          if (assignedResponder != null && assignedResponder.isNotEmpty) {
+            return assignedResponder == user.id;
+          }
           if (assigned.contains(conversation.id)) {
             return true;
           }
-          final isUnassigned = !knownAssignments.contains(conversation.id);
-          return isUnassigned;
+          final isUnassignedLegacy = !knownAssignments.contains(conversation.id);
+          return isUnassignedLegacy;
         })
         .toList();
   }
@@ -132,5 +144,42 @@ class UserController extends ChangeNotifier {
   int unreadEnquiriesFor(AppUser user, List<ConversationSummary> conversations) {
     return assignedConversations(conversations, forUser: user)
         .fold<int>(0, (total, conversation) => total + conversation.unreadCount);
+  }
+
+  void _loadInitialResponder() {
+    final client = _apiClient;
+    if (client == null) {
+      return;
+    }
+    Future.microtask(() async {
+      try {
+        final responderId = await client.fetchDefaultResponderId();
+        if (responderId == null) {
+          return;
+        }
+        if (!_availableUsers.any((user) => user.id == responderId)) {
+          return;
+        }
+        if (_respondingUserId == responderId) {
+          return;
+        }
+        _respondingUserId = responderId;
+        notifyListeners();
+      } catch (error) {
+        debugPrint('Failed to load responder preference: $error');
+      }
+    });
+  }
+
+  void _persistResponderPreference(String userId) {
+    final client = _apiClient;
+    if (client == null) {
+      return;
+    }
+    unawaited(
+      client.updateDefaultResponderId(userId).catchError(
+        (error) => debugPrint('Failed to persist responder preference: $error'),
+      ),
+    );
   }
 }

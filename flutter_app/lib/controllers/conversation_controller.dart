@@ -169,6 +169,9 @@ class ConversationController extends ChangeNotifier {
     try {
       final detail = await apiClient.fetchConversation(conversationId);
       _detail = detail;
+      if (_responderId == null && detail.assignedResponderId != null) {
+        _responderId = detail.assignedResponderId;
+      }
     } catch (error) {
       _error = error;
     } finally {
@@ -195,6 +198,7 @@ extension on ConversationDetail {
       unreadCount: unreadCount,
       messages: List<ChatMessage>.from(messages),
       profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
+      assignedResponderId: assignedResponderId,
     );
   }
 }
