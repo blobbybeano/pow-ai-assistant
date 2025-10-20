@@ -215,7 +215,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 2,
+      "unreadCount": 3,
       "messages": [
         {
           "id": "82a374d8-cd63-4ec5-b606-32f573e549bb",
@@ -267,6 +267,32 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T13:02:54.858381+00:00",
           "sentAt": "2025-10-20T13:02:55.104777+00:00",
+          "error": null
+        },
+        {
+          "id": "56a6fd95-1386-42b4-8a58-ce8238fcd472",
+          "text": "Hidd",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T14:20:39.072429+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "fb38f461-03ed-4e05-8914-93d33add6ab8",
+          "text": "Hello! It looks like your message got cut off. How can I assist you today with your exterior cleaning needs? If you're looking for a quote, could you share a bit more about the surface you need cleaned, its size, and any access considerations? You can also check out our services and prices at www.powwash.co.uk. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T14:20:39.074655+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-10-20T14:23:42.544369+00:00",
+          "sentAt": null,
           "error": null
         }
       ]
