@@ -222,7 +222,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 2,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -271,10 +271,36 @@
           "direction": "outbound",
           "timestamp": "2025-10-20T17:05:07.838519+00:00",
           "via": "whatsapp",
-          "transportSid": null,
-          "status": "scheduled",
+          "transportSid": "SMbf1f22f61d1b32662ac755eb2da18e21",
+          "status": "sent",
           "scheduledSendAt": "2025-10-20T17:08:10.403435+00:00",
+          "sentAt": "2025-10-20T17:13:47.947854+00:00",
+          "error": null
+        },
+        {
+          "id": "eda3aa71-bc08-4265-b6b6-3f0c7ddd2c29",
+          "text": "Remind me how much you quoted for the roof clean?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-20T17:14:30.253008+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
           "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "b52089bc-202d-4fe9-b901-9c67c2386a0a",
+          "text": "Hi there! The roof soft wash is priced at \u00a3320. This includes a low-pressure biocide treatment that clears moss and helps prevent regrowth for 12 months. \n\nTo give you the best quote, could you share a bit more about your roof? For instance, its size and any access considerations? \n\nLooking forward to your reply!\n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-20T17:14:30.255795+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM88f48833a8b4f461a943d90f6464296b",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-20T17:17:34.419799+00:00",
+          "sentAt": "2025-10-20T17:17:35.727663+00:00",
           "error": null
         }
       ]
