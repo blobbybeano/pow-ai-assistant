@@ -82,6 +82,12 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  _AiResponderSelector(
+                    users: users,
+                    selectedUserId: userController.respondingUser?.id,
+                    onChanged: userController.switchRespondingUser,
+                  ),
+                  const SizedBox(height: 24),
                   Flexible(
                     child: ListView.separated(
                       shrinkWrap: true,
@@ -199,6 +205,117 @@ class _NotificationBadge extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+class _AiResponderSelector extends StatelessWidget {
+  const _AiResponderSelector({
+    required this.users,
+    required this.selectedUserId,
+    required this.onChanged,
+  });
+
+  final List<AppUser> users;
+  final String? selectedUserId;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111B21),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x33243038)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'AI will respond as',
+            style: TextStyle(
+              color: Color(0xFFE9EDEF),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Incoming enquiries will be answered on behalf of the selected user.',
+            style: TextStyle(
+              color: Color(0xFF8696A0),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: users.any((user) => user.id == selectedUserId)
+                  ? selectedUserId
+                  : null,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8696A0)),
+              dropdownColor: const Color(0xFF111B21),
+              borderRadius: BorderRadius.circular(12),
+              style: const TextStyle(color: Color(0xFFE9EDEF)),
+              isExpanded: true,
+              items: users
+                  .map(
+                    (user) => DropdownMenuItem<String>(
+                      value: user.id,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: const Color(0x33243038),
+                            foregroundColor: const Color(0xFFE9EDEF),
+                            child: Text(
+                              user.initials,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user.displayName,
+                                  style: const TextStyle(
+                                    color: Color(0xFFE9EDEF),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (user.email != null)
+                                  Text(
+                                    user.email!,
+                                    style: const TextStyle(
+                                      color: Color(0xFF8696A0),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null && value != selectedUserId) {
+                  onChanged(value);
+                }
+              },
+              hint: const Text(
+                'Select a user',
+                style: TextStyle(color: Color(0xFF8696A0)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
