@@ -54,7 +54,16 @@ class PendingAiBanner extends StatelessWidget {
                   ),
                 ),
                 if (messagePreview.isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'AI response preview',
+                    style: TextStyle(
+                      color: Color(0xFF5BA4FF),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     messagePreview,
                     maxLines: 2,
