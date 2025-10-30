@@ -27,10 +27,31 @@
 
       <main>
         <section class="chat-pane" aria-label="Chat conversation">
-          <div id="chat-log" class="chat-log"></div>
+          <div class="chat-pane__header">
+            <div>
+              <h2>Conversation</h2>
+              <p>Share context or upload site photos to create an instant quote.</p>
+            </div>
+            <button type="button" id="clear-chat" class="ghost">Clear chat</button>
+          </div>
+          <div id="chat-log" class="chat-log">
+            <div id="empty-state" class="empty-state">
+              <h3>Ready when you are</h3>
+              <p>Describe the cleaning job or drop a few photos to see pricing suggestions here.</p>
+              <ul>
+                <li>Drag &amp; drop multiple images at once.</li>
+                <li>Mention surfaces or stubborn areas that need extra attention.</li>
+                <li>We’ll ask for more photos automatically if confidence is low.</li>
+              </ul>
+            </div>
+          </div>
           <form id="chat-form" class="chat-input" autocomplete="off">
             <div class="drop-zone" id="drop-zone">
-              <p>Drop images here or <span class="link">browse</span></p>
+              <div class="drop-zone__content">
+                <strong>Upload photos</strong>
+                <p>Drop images here or <span class="link">browse your files</span></p>
+                <small>JPEG, PNG, WEBP, or HEIC up to your configured size limit.</small>
+              </div>
               <input
                 type="file"
                 id="image-input"
@@ -40,11 +61,12 @@
               />
               <div id="preview-strip" class="preview-strip"></div>
             </div>
+            <label class="message-label" for="message">Message</label>
             <textarea
               id="message"
               name="message"
               rows="3"
-              placeholder="Type a message..."
+              placeholder="Type a note for the estimator..."
             ></textarea>
             <div class="chat-actions">
               <span id="upload-info" class="upload-info"></span>
@@ -53,82 +75,131 @@
           </form>
         </section>
 
-        <aside id="params-panel" class="params-panel" aria-label="Training and parameters">
-          <div class="panel-header">
-            <h2>Training &amp; Parameters</h2>
-            <button id="close-params" aria-label="Close panel">×</button>
-          </div>
-          <div class="panel-content">
-            <label>
-              <span>System Prompt</span>
-              <textarea id="system-prompt" rows="8"></textarea>
-            </label>
-
-            <label>
-              <span>Service Preset</span>
-              <select id="service-preset"></select>
-              <small id="service-focus"></small>
-            </label>
-
-            <fieldset>
-              <legend>Pricing</legend>
-              <div class="field-grid">
-                <label>
-                  <span>Base Call-out (£)</span>
-                  <input type="number" id="pricing-base" step="0.01" />
-                </label>
-                <label>
-                  <span>Rate per m² (£)</span>
-                  <input type="number" id="pricing-rate" step="0.01" />
-                </label>
-                <label>
-                  <span>Heavy Soiling Multiplier</span>
-                  <input type="number" id="pricing-heavy" step="0.01" />
-                </label>
-                <label>
-                  <span>Oil Stains Multiplier</span>
-                  <input type="number" id="pricing-oil" step="0.01" />
-                </label>
-                <label>
-                  <span>Algae/Biocide Multiplier</span>
-                  <input type="number" id="pricing-algae" step="0.01" />
-                </label>
-                <label>
-                  <span>Access Difficulty Multiplier</span>
-                  <input type="number" id="pricing-access" step="0.01" />
-                </label>
+        <aside class="sidebar" aria-label="Quote snapshot">
+          <section class="summary-card empty" id="summary-card">
+            <header>
+              <h2>Quote snapshot</h2>
+              <p id="summary-helper">Send a message to see the live quote overview.</p>
+            </header>
+            <div class="summary-metrics">
+              <div class="metric">
+                <span class="metric-label">Estimated price</span>
+                <span class="metric-value" id="summary-price">—</span>
               </div>
-            </fieldset>
+              <div class="metric">
+                <span class="metric-label">Service</span>
+                <span class="metric-value" id="summary-service">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Area</span>
+                <span class="metric-value" id="summary-area">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Confidence</span>
+                <span class="metric-value" id="summary-confidence">—</span>
+              </div>
+            </div>
+            <div class="summary-notes" id="summary-notes">
+              <h3>Highlights</h3>
+              <ul id="summary-highlights">
+                <li>No analysis yet.</li>
+              </ul>
+            </div>
+          </section>
 
-            <fieldset>
-              <legend>Coverage Policy</legend>
-              <label>
-                <span>Max Additional Photo Requests</span>
-                <input type="number" id="coverage-max" min="0" step="1" />
-              </label>
-              <label>
-                <span>Confidence Threshold</span>
-                <input type="number" id="coverage-confidence" min="0" max="1" step="0.05" />
-              </label>
-              <label>
-                <span>Max Image Size (MB)</span>
-                <input type="number" id="limit-image-size" min="1" step="1" />
-              </label>
-            </fieldset>
-
-            <label>
-              <span>Response Format</span>
-              <select id="response-format">
-                <option value="json">JSON Only</option>
-                <option value="json+explanation">JSON + Explanation</option>
-                <option value="markdown">Markdown</option>
-              </select>
-            </label>
-
-            <button id="save-params" class="primary">Apply &amp; Save</button>
-          </div>
+          <section class="tips-card">
+            <h3>Tips for better estimates</h3>
+            <ul>
+              <li>Capture wide shots plus any heavy staining or tricky access points.</li>
+              <li>Call out surfaces (block paving, render, decking) in your message.</li>
+              <li>Use the training panel to tweak pricing or service focus.</li>
+            </ul>
+            <button id="open-params-secondary" class="secondary" type="button">Adjust parameters</button>
+          </section>
         </aside>
       </main>
+
+      <div id="params-overlay" class="params-overlay" aria-hidden="true"></div>
+      <aside
+        id="params-panel"
+        class="params-panel"
+        aria-label="Training and parameters"
+        aria-hidden="true"
+      >
+        <div class="panel-header">
+          <h2>Training &amp; Parameters</h2>
+          <button id="close-params" aria-label="Close panel">×</button>
+        </div>
+        <div class="panel-content">
+          <label>
+            <span>System Prompt</span>
+            <textarea id="system-prompt" rows="8"></textarea>
+          </label>
+
+          <label>
+            <span>Service Preset</span>
+            <select id="service-preset"></select>
+            <small id="service-focus"></small>
+          </label>
+
+          <fieldset>
+            <legend>Pricing</legend>
+            <div class="field-grid">
+              <label>
+                <span>Base Call-out (£)</span>
+                <input type="number" id="pricing-base" step="0.01" />
+              </label>
+              <label>
+                <span>Rate per m² (£)</span>
+                <input type="number" id="pricing-rate" step="0.01" />
+              </label>
+              <label>
+                <span>Heavy Soiling Multiplier</span>
+                <input type="number" id="pricing-heavy" step="0.01" />
+              </label>
+              <label>
+                <span>Oil Stains Multiplier</span>
+                <input type="number" id="pricing-oil" step="0.01" />
+              </label>
+              <label>
+                <span>Algae/Biocide Multiplier</span>
+                <input type="number" id="pricing-algae" step="0.01" />
+              </label>
+              <label>
+                <span>Access Difficulty Multiplier</span>
+                <input type="number" id="pricing-access" step="0.01" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Coverage Policy</legend>
+            <label>
+              <span>Max Additional Photo Requests</span>
+              <input type="number" id="coverage-max" min="0" step="1" />
+            </label>
+            <label>
+              <span>Confidence Threshold</span>
+              <input type="number" id="coverage-confidence" min="0" max="1" step="0.05" />
+            </label>
+            <label>
+              <span>Max Image Size (MB)</span>
+              <input type="number" id="limit-image-size" min="1" step="1" />
+            </label>
+          </fieldset>
+
+          <label>
+            <span>Response Format</span>
+            <select id="response-format">
+              <option value="json">JSON Only</option>
+              <option value="json+explanation">JSON + Explanation</option>
+              <option value="markdown">Markdown</option>
+            </select>
+          </label>
+
+          <button id="save-params" class="primary" type="button">Apply &amp; Save</button>
+        </div>
+      </aside>
 
       <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 

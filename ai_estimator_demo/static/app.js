@@ -26,10 +26,27 @@ const coverageMax = document.getElementById('coverage-max');
 const coverageConfidence = document.getElementById('coverage-confidence');
 const responseFormat = document.getElementById('response-format');
 const limitImageSize = document.getElementById('limit-image-size');
+const emptyState = document.getElementById('empty-state');
+const summaryCard = document.getElementById('summary-card');
+const summaryPrice = document.getElementById('summary-price');
+const summaryService = document.getElementById('summary-service');
+const summaryArea = document.getElementById('summary-area');
+const summaryConfidence = document.getElementById('summary-confidence');
+const summaryHighlights = document.getElementById('summary-highlights');
+const summaryHelper = document.getElementById('summary-helper');
+const openParamsSecondary = document.getElementById('open-params-secondary');
+const paramsOverlay = document.getElementById('params-overlay');
+const clearChatBtn = document.getElementById('clear-chat');
 
 let sessionId = crypto.randomUUID();
 let currentParams = null;
 let activeUploads = [];
+
+const priceFormatter = new Intl.NumberFormat('en-GB', {
+  style: 'currency',
+  currency: 'GBP',
+  maximumFractionDigits: 2,
+});
 
 async function init() {
   try {
@@ -40,6 +57,7 @@ async function init() {
   } catch (err) {
     showToast(err.message, 'error');
   }
+  updateQuoteSummary();
 }
 
 function populateParams(params) {
@@ -82,6 +100,9 @@ function updateServiceFocus() {
 serviceSelect?.addEventListener('change', updateServiceFocus);
 
 function addMessageBubble(role, text, images = []) {
+  if (emptyState && !emptyState.classList.contains('hidden')) {
+    emptyState.classList.add('hidden');
+  }
   const group = document.createElement('div');
   group.className = `message-group ${role}`;
 
@@ -202,6 +223,7 @@ chatForm.addEventListener('submit', async (event) => {
     sessionId = data.session_id;
     const aiText = data.ai?.text || 'No response';
     addMessageBubble('ai', aiText, data.images || []);
+    updateQuoteSummary(data.ai);
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -225,6 +247,76 @@ function resetForm() {
   uploadInfo.textContent = '';
 }
 
+function updateQuoteSummary(aiPayload = null) {
+  if (!summaryCard) return;
+  if (!aiPayload || !aiPayload.json) {
+    summaryCard.classList.add('empty');
+    summaryPrice.textContent = '—';
+    summaryService.textContent = '—';
+    summaryArea.textContent = '—';
+    summaryConfidence.textContent = '—';
+    summaryHelper.textContent = 'Send a message to see the live quote overview.';
+    if (summaryHighlights) {
+      summaryHighlights.innerHTML = '';
+      const li = document.createElement('li');
+      li.textContent = 'No analysis yet.';
+      summaryHighlights.appendChild(li);
+    }
+    return;
+  }
+
+  const result = aiPayload.json || {};
+  summaryCard.classList.remove('empty');
+  summaryHelper.textContent = 'Latest AI estimate';
+
+  const price = typeof aiPayload.price_gbp === 'number' ? aiPayload.price_gbp : null;
+  summaryPrice.textContent = price !== null ? priceFormatter.format(price) : '—';
+
+  summaryService.textContent = result.service || '—';
+
+  const area = result.area_estimate_m2;
+  if (typeof area === 'number' && !Number.isNaN(area)) {
+    summaryArea.textContent = `${Math.round(area)} m²`;
+  } else {
+    summaryArea.textContent = '—';
+  }
+
+  const confidence = result.confidence;
+  if (typeof confidence === 'number' && !Number.isNaN(confidence)) {
+    summaryConfidence.textContent = `${Math.round(confidence * 100)}%`;
+  } else {
+    summaryConfidence.textContent = '—';
+  }
+
+  if (summaryHighlights) {
+    summaryHighlights.innerHTML = '';
+    const highlights = [];
+    if (result.summary) highlights.push(result.summary);
+    const issues = result.condition?.issues || [];
+    if (Array.isArray(issues) && issues.length) {
+      highlights.push(`Issues spotted: ${issues.join(', ')}`);
+    }
+    const missing = result.missing_sections || [];
+    if (Array.isArray(missing) && missing.length) {
+      highlights.push(`Missing coverage: ${missing.join(', ')}`);
+    }
+    if (result.needs_more_photos && result.next_request) {
+      highlights.push(result.next_request);
+    }
+    if (result.notes) highlights.push(result.notes);
+
+    if (!highlights.length) {
+      highlights.push('No additional notes.');
+    }
+
+    highlights.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      summaryHighlights.appendChild(li);
+    });
+  }
+}
+
 function showToast(message, variant = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${variant}`;
@@ -240,13 +332,28 @@ function showToast(message, variant = 'success') {
   setTimeout(() => toast.remove(), 3600);
 }
 
-toggleParamsBtn.addEventListener('click', () => {
-  paramsPanel.classList.toggle('active');
-});
+function openParamsPanel() {
+  if (!paramsPanel) return;
+  paramsPanel.classList.add('active');
+  paramsOverlay?.classList.add('active');
+  paramsPanel.setAttribute('aria-hidden', 'false');
+  paramsOverlay?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('drawer-open');
+}
 
-closeParamsBtn.addEventListener('click', () => {
-  paramsPanel.classList.remove('active');
-});
+function closeParamsPanel() {
+  paramsPanel?.classList.remove('active');
+  paramsOverlay?.classList.remove('active');
+  paramsPanel?.setAttribute('aria-hidden', 'true');
+  paramsOverlay?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('drawer-open');
+}
+
+toggleParamsBtn?.addEventListener('click', openParamsPanel);
+openParamsSecondary?.addEventListener('click', openParamsPanel);
+
+closeParamsBtn?.addEventListener('click', closeParamsPanel);
+paramsOverlay?.addEventListener('click', closeParamsPanel);
 
 saveParamsBtn.addEventListener('click', async () => {
   const payload = {
@@ -282,6 +389,7 @@ saveParamsBtn.addEventListener('click', async () => {
     const data = await res.json();
     currentParams = data.params;
     showToast('Parameters updated', 'success');
+    closeParamsPanel();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -299,12 +407,23 @@ lightbox.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') closeLightbox();
+  if (event.key === 'Escape') {
+    closeLightbox();
+    closeParamsPanel();
+  }
 });
 
 function closeLightbox() {
   lightbox.classList.remove('active');
   lightbox.setAttribute('aria-hidden', 'true');
 }
+
+clearChatBtn?.addEventListener('click', () => {
+  chatLog.querySelectorAll('.message-group').forEach((node) => node.remove());
+  if (emptyState) emptyState.classList.remove('hidden');
+  updateQuoteSummary();
+  sessionId = crypto.randomUUID();
+  resetForm();
+});
 
 init();

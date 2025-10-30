@@ -43,6 +43,53 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ai_estimator_demo")
 
 
+ESTIMATE_JSON_SCHEMA = {
+    "name": "powwash_estimate",
+    "schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "service": {"type": "string"},
+            "area_estimate_m2": {"type": "number", "minimum": 0},
+            "condition": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "dirt_level": {"type": "string"},
+                    "issues": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "default": [],
+                    },
+                },
+                "required": ["dirt_level", "issues"],
+            },
+            "missing_sections": {
+                "type": "array",
+                "items": {"type": "string"},
+                "default": [],
+            },
+            "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "needs_more_photos": {"type": "boolean"},
+            "next_request": {"type": ["string", "null"]},
+            "notes": {"type": "string", "default": ""},
+            "summary": {"type": "string"},
+        },
+        "required": [
+            "service",
+            "area_estimate_m2",
+            "condition",
+            "missing_sections",
+            "confidence",
+            "needs_more_photos",
+            "next_request",
+            "notes",
+            "summary",
+        ],
+    },
+}
+
+
 def load_defaults() -> Dict[str, Any]:
     with CONFIG_PATH.open("r", encoding="utf-8") as fh:
         return yaml.safe_load(fh)
@@ -230,14 +277,19 @@ class AIClient:
 
     def chat(self, system_prompt: str, user_parts: List[Dict[str, Any]], response_format: str) -> Dict[str, Any]:
         instructions = (
-            "Return a JSON object with keys: service, area_estimate_m2, condition {dirt_level, issues}, "
-            "missing_sections, confidence, needs_more_photos, next_request, notes, summary." \
-            "Ensure the JSON is valid and double-check the numbers."
+            "You are an assistant producing structured estimate JSON for exterior cleaning services. "
+            "Return an object with fields: service, area_estimate_m2, condition (dirt_level, issues array), "
+            "missing_sections array, confidence (0-1), needs_more_photos, next_request, notes, summary. "
+            "Always include a concise summary string."
         )
-        if response_format == "json+explanation":
+        response_kwargs: Dict[str, Any] = {}
+        if response_format == "json":
+            response_kwargs["response_format"] = {"type": "json_schema", "json_schema": ESTIMATE_JSON_SCHEMA}
+        elif response_format == "json+explanation":
             instructions += " After the JSON provide a short explanation prefixed by 'EXPLANATION:'."
         elif response_format == "markdown":
             instructions += " Format the response as JSON inside a fenced code block."
+
         response = self.client.responses.create(
             model="gpt-4.1-mini",
             input=[
@@ -245,6 +297,8 @@ class AIClient:
                 {"role": "system", "content": instructions},
                 {"role": "user", "content": user_parts},
             ],
+            max_output_tokens=800,
+            **response_kwargs,
         )
         if not response.output:
             raise RuntimeError("Empty response from model")
