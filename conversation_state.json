@@ -328,6 +328,84 @@
           "scheduledSendAt": "2025-10-24T13:11:41.669473+00:00",
           "sentAt": "2025-10-24T13:11:42.086672+00:00",
           "error": null
+        },
+        {
+          "id": "36a7b52e-66d4-4128-b89a-efb8f9ccf883",
+          "text": "Still working?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-24T14:01:59.781830+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "7c017df0-3eb6-48b8-a1cb-d7e9773f6c95",
+          "text": "Hello! Yes, we're here and ready to help you with your exterior cleaning needs. What service are you interested in? If you could share a bit about the surface type, size, access, and any preferred times for the job, that would be great! \n\nLooking forward to hearing from you! \n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-24T14:01:59.784478+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM33d7f12056535840d6a7a5e0049900c0",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-24T14:05:03.203182+00:00",
+          "sentAt": "2025-10-24T14:05:03.580524+00:00",
+          "error": null
+        },
+        {
+          "id": "c7b46a40-de8d-43fa-bb2a-788ff131b961",
+          "text": "Hi",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-25T22:20:57.189762+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "8a2a2736-949c-48ff-a5b8-2eab5c8a8175",
+          "text": "Hello! Thanks for reaching out to PowWash. How can I assist you today with your exterior cleaning needs? If you\u2019re looking for a quote, feel free to share some details about the surface type, size, and any access considerations. \ud83d\ude0a \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-25T22:20:57.191455+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMd0dcf7f8fb91261235b97cee8e62b4f0",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-25T22:24:00.601605+00:00",
+          "sentAt": "2025-10-25T22:24:01.051130+00:00",
+          "error": null
+        },
+        {
+          "id": "9a3d8335-63f5-488e-9cc0-909c8c102aca",
+          "text": "Can you give me a price for a pressure wash",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-10-25T22:21:51.672462+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "20dff686-7006-48ca-9876-d039cfa6a669",
+          "text": "Absolutely! We offer a couple of pressure washing services:\n\n1. **Driveway Pressure Wash** - \u00a3120 for a deep clean of block paving or concrete driveways (up to 60m\u00b2).\n2. **Patio Refresh** - \u00a395 for pressure washing and chemical treatment for patios or decking (up to 40m\u00b2).\n\nTo provide you with the best quote, could you let me know the type of surface you need cleaned, its size, and if there are any access considerations? Also, do you have a preferred time for the service? \n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-10-25T22:21:51.674359+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMf30a52f33729da31f0ed8fc3682b733d",
+          "status": "sent",
+          "scheduledSendAt": "2025-10-25T22:24:56.918639+00:00",
+          "sentAt": "2025-10-25T22:24:57.187699+00:00",
+          "error": null
         }
       ]
     }

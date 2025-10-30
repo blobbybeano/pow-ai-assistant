@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7b8e761-6fa5-4807-95c1-8c0e3056aedb" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/twillio_text_receiver.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conversation_state.json" beforeDir="false" afterPath="$PROJECT_DIR$/conversation_state.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,21 +32,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.app (1).executor&quot;: &quot;Run&quot;,
-    &quot;Python.app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.gmail_subjects.executor&quot;: &quot;Run&quot;,
-    &quot;Python.twilio_app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.twillio_setup.executor&quot;: &quot;Run&quot;,
-    &quot;Python.workspace_launcher.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.app (1).executor": "Run",
+    "Python.app.executor": "Run",
+    "Python.gmail_subjects.executor": "Run",
+    "Python.twilio_app.executor": "Run",
+    "Python.twillio_setup.executor": "Run",
+    "Python.twillio_text_receiver.executor": "Run",
+    "Python.workspace_launcher.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
-  <component name="RunManager" selected="Python.workspace_launcher">
+}]]></component>
+  <component name="RunManager" selected="Python.twillio_text_receiver">
     <configuration name="app (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="the-ai-customer-messaging-assistant" />
       <option name="ENV_FILES" value="" />
@@ -114,22 +117,20 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="twillio_setup" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="twillio_text_receiver" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="the-ai-customer-messaging-assistant" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="TWILIO_ACCOUNT_SID" value="ACcf6d43ffbd265a84d4a0ce93758a92fa7 " />
-        <env name="TWILIO_AUTH_TOKEN" value="d3caa490cadf3684c7ef7c7e68324be0" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/twillio_setup.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/twillio_text_receiver.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -161,19 +162,19 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.twillio_text_receiver" />
       <item itemvalue="Python.workspace_launcher" />
       <item itemvalue="Python.twilio_app" />
       <item itemvalue="Python.app" />
       <item itemvalue="Python.app (1)" />
-      <item itemvalue="Python.twillio_setup" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.twillio_text_receiver" />
         <item itemvalue="Python.workspace_launcher" />
         <item itemvalue="Python.app (1)" />
         <item itemvalue="Python.twilio_app" />
         <item itemvalue="Python.app" />
-        <item itemvalue="Python.twillio_setup" />
       </list>
     </recent_temporary>
   </component>

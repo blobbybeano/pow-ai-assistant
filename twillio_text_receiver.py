@@ -1,0 +1,86 @@
+from flask import Flask, request
+from twilio.rest import Client
+import threading
+import os
+
+# === Twilio credentials ===
+# 🔒 Recommended: set these as environment variables instead of hardcoding
+# export TWILIO_ACCOUNT_SID="ACxxxxxx"
+# export TWILIO_AUTH_TOKEN="xxxxxx"
+# export TWILIO_SMS_NUMBER="+4473xxxxxxx"
+# export TWILIO_WHATSAPP_NUMBER="whatsapp:+4473xxxxxxx"
+
+ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "ACcfd643ffbd265a8d4a0ce93758a92fa7")
+AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "1308a4bedef880bdd14c703196b7c634")
+TWILIO_SMS_NUMBER = os.getenv("TWILIO_SMS_NUMBER", "+447378581724")
+TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+447378581724")
+
+client = Client(ACCOUNT_SID, AUTH_TOKEN)
+app = Flask(__name__)
+
+# Store last incoming sender
+last_sender = None
+
+
+@app.route("/message", methods=["POST"])
+@app.route("/twilio/whatsapp", methods=["POST"])  # 👈 handles both possible webhook paths
+def message():
+    """Receive and print incoming messages from Twilio (SMS or WhatsApp)."""
+    global last_sender
+    sender = request.form.get("From")
+    body = request.form.get("Body")
+
+    print("\n📩 New message received!")
+    print(f"From: {sender}")
+    print(f"Body: {body}")
+
+    last_sender = sender  # Save for quick replies
+    return "Message received", 200
+
+
+def send_message():
+    """Allows manual sending of SMS or WhatsApp messages from the terminal."""
+    global last_sender
+    while True:
+        print("\nOptions:")
+        print("1. Reply to last sender")
+        print("2. Send new message")
+        choice = input("Select option (1 or 2): ").strip()
+
+        if choice == "1" and last_sender:
+            to = last_sender
+            print(f"Replying to {to}")
+        elif choice == "2":
+            msg_type = input("Send via [w]hatsapp or [s]ms? ").strip().lower()
+            to = input("Enter recipient number (with country code): ").strip()
+            if msg_type == "w":
+                to = f"whatsapp:{to}"
+        else:
+            print("⚠️ No recent sender to reply to.")
+            continue
+
+        body = input("Enter your message: ").strip()
+
+        # Choose the correct Twilio number
+        from_ = TWILIO_WHATSAPP_NUMBER if "whatsapp:" in to else TWILIO_SMS_NUMBER
+
+        try:
+            message = client.messages.create(from_=from_, to=to, body=body)
+            print(f"✅ Sent message (SID: {message.sid})")
+        except Exception as e:
+            print(f"❌ Failed to send message: {e}")
+
+
+def main():
+    # Run Flask server in background
+    threading.Thread(
+        target=lambda: app.run(host="0.0.0.0", port=5002, debug=False, use_reloader=False)
+    ).start()
+
+    print("🚀 Listening for incoming messages on http://127.0.0.1:5002/message or /twilio/whatsapp")
+    print("💬 You can reply or send new messages from this terminal.")
+    send_message()
+
+
+if __name__ == "__main__":
+    main()
