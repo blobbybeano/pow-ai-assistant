@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PowWash AI Estimator Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="logo">
+          <span class="logo-mark">PW</span>
+          <div class="logo-text">
+            <h1>PowWash AI Estimator</h1>
+            <p class="subtitle">Vision-enabled quoting sandbox</p>
+          </div>
+        </div>
+        <button id="toggle-params" class="toggle-params" aria-expanded="false">Training &amp; Parameters</button>
+      </header>
+      <main class="layout">
+        <section class="chat-panel" aria-label="Estimator conversation">
+          <div id="chat-stream" class="chat-stream" role="log" aria-live="polite"></div>
+          <form id="chat-form" class="chat-input" autocomplete="off">
+            <div class="input-toolbar">
+              <label class="file-input" for="file-picker">
+                <input id="file-picker" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden />
+                <span class="icon">📎</span>
+                <span>Add photos</span>
+              </label>
+              <div id="attachment-preview" class="attachment-preview"></div>
+            </div>
+            <textarea id="message" name="message" placeholder="Describe the project..." rows="3"></textarea>
+            <div class="form-actions">
+              <small>Press Enter to send • Shift+Enter for newline</small>
+              <button type="submit" class="send-btn">Send</button>
+            </div>
+          </form>
+        </section>
+        <aside id="params-panel" class="params-panel" aria-label="Training and parameter controls">
+          <div class="params-header">
+            <h2>Training &amp; Parameters</h2>
+            <button id="close-params" class="close-btn" aria-label="Close parameters">×</button>
+          </div>
+          <form id="params-form" class="params-form">
+            <section>
+              <label for="system-prompt">System Prompt</label>
+              <textarea id="system-prompt" name="system_prompt" rows="8"></textarea>
+            </section>
+            <section class="grid">
+              <div>
+                <label for="service-preset">Service Preset</label>
+                <select id="service-preset" name="service_preset">
+                  {% for key, svc in services.items() %}
+                  <option value="{{ key }}">{{ svc.label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label for="response-format">Response Format</label>
+                <select id="response-format" name="response_format">
+                  <option value="json">JSON only</option>
+                  <option value="markdown">JSON + Markdown summary</option>
+                  <option value="json+explanation">JSON + Explanation</option>
+                </select>
+              </div>
+            </section>
+            <section class="pricing">
+              <h3>Pricing</h3>
+              <div class="grid">
+                <div>
+                  <label for="base-callout">Base Call-out (£)</label>
+                  <input type="number" step="0.01" id="base-callout" />
+                </div>
+                <div>
+                  <label for="rate-per-m2">Rate per m² (£)</label>
+                  <input type="number" step="0.01" id="rate-per-m2" />
+                </div>
+              </div>
+              <div class="grid">
+                <div>
+                  <label for="mult-heavy">Heavy soiling multiplier</label>
+                  <input type="number" step="0.01" id="mult-heavy" />
+                </div>
+                <div>
+                  <label for="mult-oil">Oil stains multiplier</label>
+                  <input type="number" step="0.01" id="mult-oil" />
+                </div>
+                <div>
+                  <label for="mult-algae">Algae/biocide multiplier</label>
+                  <input type="number" step="0.01" id="mult-algae" />
+                </div>
+                <div>
+                  <label for="mult-access">Access difficulty multiplier</label>
+                  <input type="number" step="0.01" id="mult-access" />
+                </div>
+              </div>
+            </section>
+            <section class="coverage">
+              <h3>Coverage Policy</h3>
+              <div class="grid">
+                <div>
+                  <label for="max-photo-requests">Max additional photo requests</label>
+                  <input type="number" min="0" id="max-photo-requests" />
+                </div>
+                <div>
+                  <label for="confidence-threshold">Confidence threshold</label>
+                  <input type="number" step="0.05" min="0" max="1" id="confidence-threshold" />
+                </div>
+                <div>
+                  <label for="max-image-size">Max image size (MB)</label>
+                  <input type="number" step="0.5" min="1" id="max-image-size" />
+                </div>
+              </div>
+            </section>
+            <button type="submit" class="apply-btn">Apply changes</button>
+          </form>
+        </aside>
+      </main>
+    </div>
+    <div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+    <div id="lightbox" class="lightbox" hidden>
+      <button id="lightbox-close" class="lightbox-close" aria-label="Close image">×</button>
+      <img id="lightbox-image" alt="Preview" />
+    </div>
+    <script>window.__INITIAL_PARAMS__ = {{ params|tojson }};</script>
+    <script>window.__SERVICE_PRESETS__ = {{ services|tojson }};</script>
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </body>
+</html>

@@ -1,0 +1,98 @@
+model:
+  name: gpt-4-turbo
+system_prompt: |
+  You are PowWash's AI Estimator, a specialist in exterior surface cleaning for residential and commercial properties.
+  Your job is to review customer descriptions and photos to estimate areas and recommend PowWash services including driveways, patios, decking, render, roofs, gutters, walls, pathways, and windows.
+  Always extract clear quantities, identify surface materials, highlight risks (loose joints, delicate surfaces, drainage issues), and note where information is missing.
+  Be proactive about photo quality—request targeted additional images if needed for coverage or risk mitigation.
+  When estimating, assume standard UK residential property contexts unless otherwise stated.
+  Respond with concise, professional PowWash tone.
+services:
+  driveway:
+    label: Driveway Cleaning
+    prompt: |
+      Focus on block paving, concrete, tarmac, and resin-bound surfaces. Watch for oil staining, tyre marks, and drainage channels.
+      Highlight the need for re-sanding joints if relevant and flag vehicles or obstructions that affect access.
+      Typical issues: oil stains, weeds in joints, algae, pooling water.
+    multipliers:
+      heavy_soiling: 1.2
+      oil_stains: 1.15
+      access_difficulty: 1.1
+  patio:
+    label: Patio Cleaning
+    prompt: |
+      Prioritise slabs, natural stone, and porcelain tiles. Mention pointing condition and potential need for low-pressure rinsing on delicate stone.
+      Watch for algae build-up in shaded zones and drainage falls towards the property.
+    multipliers:
+      heavy_soiling: 1.18
+      algae_biocide: 1.12
+  decking:
+    label: Decking Clean & Treat
+    prompt: |
+      Consider wood or composite decking. Comment on slip risk, loose boards, and any need for biocide to control algae.
+      Note whether an aftercare oil or seal is requested.
+    multipliers:
+      heavy_soiling: 1.22
+      algae_biocide: 1.15
+  render:
+    label: Softwash Render
+    prompt: |
+      Evaluate render staining, organic growth, and streaking. Identify high-level access requirements and recommend softwash vs steam.
+      Note any cracks or damaged sections that may require repair before cleaning.
+    multipliers:
+      heavy_soiling: 1.25
+      algae_biocide: 1.2
+      access_difficulty: 1.2
+  roof:
+    label: Roof Cleaning
+    prompt: |
+      Review roof pitch, material, and access complexity. Flag moss accumulation, fragile tiles, gutters, and the need for scaffold or rope access.
+      Highlight potential debris management and gutter clearance requirements.
+    multipliers:
+      heavy_soiling: 1.3
+      algae_biocide: 1.18
+      access_difficulty: 1.25
+  gutters:
+    label: Gutter Clear & Wash
+    prompt: |
+      Focus on gutter capacity, downpipes, and signs of overflow. Mention fascia/soffit condition if visible.
+      Suggest external cleaning when staining is apparent.
+    multipliers:
+      access_difficulty: 1.15
+  walls:
+    label: Wall Cleaning
+    prompt: |
+      Assess brick, stone, or render walls for staining and structural issues. Note pointing condition and any efflorescence.
+      Mention nearby landscaping that may require protection.
+    multipliers:
+      heavy_soiling: 1.15
+      algae_biocide: 1.1
+  pathways:
+    label: Pathway & Steps
+    prompt: |
+      Watch for slip hazards, uneven slabs, and algae around shaded or damp zones. Call out handrail requirements for steps.
+      Note edging restraints or loose gravel that may migrate during cleaning.
+    multipliers:
+      heavy_soiling: 1.18
+      algae_biocide: 1.12
+  windows:
+    label: Window & Frame Wash
+    prompt: |
+      Consider reach and wash capability vs traditional cleaning. Mention access restrictions, leaded glass, or heritage considerations.
+      Highlight seals, vents, and nearby planting needing protection.
+    multipliers:
+      access_difficulty: 1.1
+pricing:
+  base_callout: 25.0
+  rate_per_m2: 2.5
+  multipliers:
+    heavy_soiling: 1.2
+    oil_stains: 1.15
+    algae_biocide: 1.1
+    access_difficulty: 1.2
+    delicate_surface: 1.05
+coverage_policy:
+  max_additional_photo_requests: 1
+  confidence_threshold: 0.7
+response_format: json+explanation
+max_image_size_mb: 12
