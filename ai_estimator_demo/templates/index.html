@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PowWash AI Estimator Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <div class="branding">
+          <img src="https://www.svgrepo.com/show/529415/pressure-washer.svg" alt="PowWash" />
+          <div>
+            <h1>PowWash AI Estimator Demo</h1>
+            <p>Standalone tool for rapid quoting experiments</p>
+          </div>
+        </div>
+        <button id="toggle-params" class="secondary">Training &amp; Parameters</button>
+      </header>
+
+      <main>
+        <section class="chat-pane" aria-label="Chat conversation">
+          <div id="chat-log" class="chat-log"></div>
+          <form id="chat-form" class="chat-input" autocomplete="off">
+            <div class="drop-zone" id="drop-zone">
+              <p>Drop images here or <span class="link">browse</span></p>
+              <input
+                type="file"
+                id="image-input"
+                name="images[]"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                multiple
+              />
+              <div id="preview-strip" class="preview-strip"></div>
+            </div>
+            <textarea
+              id="message"
+              name="message"
+              rows="3"
+              placeholder="Type a message..."
+            ></textarea>
+            <div class="chat-actions">
+              <span id="upload-info" class="upload-info"></span>
+              <button type="submit" class="primary">Send</button>
+            </div>
+          </form>
+        </section>
+
+        <aside id="params-panel" class="params-panel" aria-label="Training and parameters">
+          <div class="panel-header">
+            <h2>Training &amp; Parameters</h2>
+            <button id="close-params" aria-label="Close panel">×</button>
+          </div>
+          <div class="panel-content">
+            <label>
+              <span>System Prompt</span>
+              <textarea id="system-prompt" rows="8"></textarea>
+            </label>
+
+            <label>
+              <span>Service Preset</span>
+              <select id="service-preset"></select>
+              <small id="service-focus"></small>
+            </label>
+
+            <fieldset>
+              <legend>Pricing</legend>
+              <div class="field-grid">
+                <label>
+                  <span>Base Call-out (£)</span>
+                  <input type="number" id="pricing-base" step="0.01" />
+                </label>
+                <label>
+                  <span>Rate per m² (£)</span>
+                  <input type="number" id="pricing-rate" step="0.01" />
+                </label>
+                <label>
+                  <span>Heavy Soiling Multiplier</span>
+                  <input type="number" id="pricing-heavy" step="0.01" />
+                </label>
+                <label>
+                  <span>Oil Stains Multiplier</span>
+                  <input type="number" id="pricing-oil" step="0.01" />
+                </label>
+                <label>
+                  <span>Algae/Biocide Multiplier</span>
+                  <input type="number" id="pricing-algae" step="0.01" />
+                </label>
+                <label>
+                  <span>Access Difficulty Multiplier</span>
+                  <input type="number" id="pricing-access" step="0.01" />
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Coverage Policy</legend>
+              <label>
+                <span>Max Additional Photo Requests</span>
+                <input type="number" id="coverage-max" min="0" step="1" />
+              </label>
+              <label>
+                <span>Confidence Threshold</span>
+                <input type="number" id="coverage-confidence" min="0" max="1" step="0.05" />
+              </label>
+              <label>
+                <span>Max Image Size (MB)</span>
+                <input type="number" id="limit-image-size" min="1" step="1" />
+              </label>
+            </fieldset>
+
+            <label>
+              <span>Response Format</span>
+              <select id="response-format">
+                <option value="json">JSON Only</option>
+                <option value="json+explanation">JSON + Explanation</option>
+                <option value="markdown">Markdown</option>
+              </select>
+            </label>
+
+            <button id="save-params" class="primary">Apply &amp; Save</button>
+          </div>
+        </aside>
+      </main>
+
+      <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+      <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+        <button id="lightbox-close" aria-label="Close">×</button>
+        <img id="lightbox-image" alt="Preview" />
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </body>
+</html>
