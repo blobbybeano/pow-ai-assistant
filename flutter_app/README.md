@@ -35,6 +35,35 @@ Use `http://127.0.0.1:5002` for iOS Simulator or desktop platforms. When
 running on a physical device, expose the Flask server with a tunnelling tool
 (e.g. ngrok) and pass the public URL instead.
 
+## Configure Twilio WhatsApp senders
+
+To allow manual replies from the Flutter workspace to reach WhatsApp, make sure
+your Twilio account is configured for the sender you plan to use:
+
+1. Set the inbound webhook in **Messaging → Services → Your WhatsApp Sender** to
+   `https://<your-host>/twilio/whatsapp` (HTTP POST), matching the screenshot
+   above.
+2. Provide your credentials to the Flask API by exporting the following
+   environment variables before launching `workspace_launcher.py`:
+
+   ```bash
+   export TWILIO_ACCOUNT_SID=ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+   export TWILIO_AUTH_TOKEN=your_auth_token
+   # If you are using a Messaging Service (recommended for Business senders)
+   export TWILIO_MESSAGING_SERVICE_SID=MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+   # or fall back to the sandbox/phone number format: whatsapp:+12345550123
+   export TWILIO_WHATSAPP_NUMBER=whatsapp:+1XXXYYYZZZZ
+   ```
+
+3. In the Flutter app, open **Settings → Integration tokens** and fill in the
+   Twilio section. A dedicated “Messaging Service SID” field has been added to
+   mirror the Twilio Console terminology and remind you which identifier to
+   copy.
+
+With these values in place the workspace can generate and send replies using
+the configured WhatsApp sender while continuing to process inbound messages via
+the webhook.
+
 ## Features
 
 * Inbox view that mirrors WhatsApp with avatars, unread counters, and last

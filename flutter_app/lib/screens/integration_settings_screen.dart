@@ -12,6 +12,8 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
   final TextEditingController _twilioSidController = TextEditingController();
   final TextEditingController _twilioAuthController = TextEditingController();
   final TextEditingController _twilioPhoneController = TextEditingController();
+  final TextEditingController _twilioMessagingServiceController =
+      TextEditingController();
   final TextEditingController _openAiKeyController = TextEditingController();
   final TextEditingController _openAiOrgController = TextEditingController();
   final TextEditingController _otherIntegrationsController = TextEditingController();
@@ -22,6 +24,7 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
     _twilioSidController.dispose();
     _twilioAuthController.dispose();
     _twilioPhoneController.dispose();
+    _twilioMessagingServiceController.dispose();
     _openAiKeyController.dispose();
     _openAiOrgController.dispose();
     _otherIntegrationsController.dispose();
@@ -71,6 +74,14 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
                     controller: _twilioPhoneController,
                     label: 'Messaging phone number',
                     hint: '+1 (555) 010-1234',
+                  ),
+                  const SizedBox(height: 16),
+                  _TokenField(
+                    controller: _twilioMessagingServiceController,
+                    label: 'Messaging Service SID',
+                    hint: 'MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                    helperText:
+                        'Found in Twilio Console → Messaging → Services. Use this when sending from a branded WhatsApp sender.',
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile.adaptive(
@@ -223,6 +234,7 @@ class _TokenField extends StatelessWidget {
     required this.controller,
     required this.label,
     this.hint,
+    this.helperText,
     this.obscureText = false,
     this.maxLines = 1,
     this.validator,
@@ -231,6 +243,7 @@ class _TokenField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
+  final String? helperText;
   final bool obscureText;
   final int maxLines;
   final FormFieldValidator<String>? validator;
@@ -246,6 +259,8 @@ class _TokenField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        helperText: helperText,
+        helperMaxLines: helperText != null ? 3 : null,
       ),
     );
   }
