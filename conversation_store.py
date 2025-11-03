@@ -460,7 +460,7 @@ class ConversationStore:
                 ],
             },
             {
-                "phone": "+447700900123",
+                "phone": "+447366320940",
                 "displayName": "Priya Sharma",
                 "profilePhotoUrl": "https://ui-avatars.com/api/?name=Priya+Sharma&background=F4A261&color=ffffff",
                 "aiEnabled": True,

@@ -35,7 +35,7 @@ class UserController extends ChangeNotifier {
       displayName: 'Casey Morgan',
       email: 'casey@example.com',
       photoUrl: 'https://i.pravatar.cc/160?img=45',
-      assignedConversationIds: ['+447700900123'],
+      assignedConversationIds: ['+447366320940'],
     ),
     const AppUser(
       id: 'user-4',
