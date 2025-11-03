@@ -408,6 +408,43 @@
           "error": null
         }
       ]
+    },
+    "+447541088300": {
+      "id": "+447541088300",
+      "phoneNumber": "+447541088300",
+      "displayName": "Ben",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
+      "aiEnabled": true,
+      "unreadCount": 1,
+      "assignedResponderId": "user-2",
+      "messages": [
+        {
+          "id": "2004a846-e5d4-465c-ae4a-0c4adc92f44d",
+          "text": "Can you hear me",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-03T22:44:56.056916+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "92f9be95-bed8-494d-a7a9-357a211b2dd4",
+          "text": "Hello! Yes, I can hear you. How can I assist you today with your exterior cleaning needs? If you\u2019re looking for a quote, feel free to share details about the surface type, size, and any access considerations. Looking forward to helping you! \n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-03T22:44:56.058782+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-03T22:47:59.215492+00:00",
+          "sentAt": null,
+          "error": null
+        }
+      ]
     }
   }
 }
