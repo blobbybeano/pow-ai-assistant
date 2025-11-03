@@ -18,8 +18,8 @@ void main() {
           unreadCount: 0,
         ),
         ConversationSummary(
-          id: '+447565708252',
-          phoneNumber: '+447565708252',
+          id: '+447366320940',
+          phoneNumber: '+447366320940',
           displayName: 'Ben',
           aiEnabled: true,
           unreadCount: 2,
@@ -36,7 +36,7 @@ void main() {
       final visible = controller.assignedConversations(conversations);
 
       expect(visible.map((c) => c.id), contains('+15551230001'));
-      expect(visible.map((c) => c.id), contains('+447565708252'));
+      expect(visible.map((c) => c.id), contains('+447366320940'));
       expect(visible.map((c) => c.id), isNot(contains('+14085550100')));
     });
 
