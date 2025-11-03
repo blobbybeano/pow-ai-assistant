@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from typing import Optional
 
@@ -33,9 +34,7 @@ class TwilioMessenger:
         if not account_sid or not auth_token:
             return None
 
-        whatsapp_from = os.getenv("TWILIO_WHATSAPP_NUMBER")
-        if whatsapp_from and not whatsapp_from.startswith("whatsapp:"):
-            whatsapp_from = f"whatsapp:{whatsapp_from}"
+        whatsapp_from = _normalize_whatsapp_address(os.getenv("TWILIO_WHATSAPP_NUMBER"))
 
         messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID")
 
@@ -52,7 +51,9 @@ class TwilioMessenger:
         if not body.strip():
             raise ValueError("Message body cannot be empty.")
 
-        to_address = to if to.startswith("whatsapp:") else f"whatsapp:{to}"
+        to_address = _normalize_whatsapp_address(to)
+        if not to_address:
+            raise ValueError("Recipient phone number is invalid.")
 
         kwargs = {"to": to_address, "body": body}
 
@@ -71,3 +72,31 @@ class TwilioMessenger:
             raise RuntimeError(f"Failed to send WhatsApp message: {exc.msg}") from exc
 
         return message.sid
+
+
+def _normalize_whatsapp_address(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+
+    raw = value.strip()
+    if not raw:
+        return None
+
+    if raw.lower().startswith("whatsapp:"):
+        raw = raw.split(":", 1)[1]
+
+    raw = raw.replace(" ", "")
+
+    if raw.startswith("+"):
+        digits = "+" + re.sub(r"[^\d]", "", raw[1:])
+    elif raw.startswith("00"):
+        digits_only = re.sub(r"[^\d]", "", raw[2:])
+        digits = f"+{digits_only}" if digits_only else ""
+    else:
+        digits_only = re.sub(r"[^\d]", "", raw)
+        digits = f"+{digits_only}" if digits_only else ""
+
+    if not digits or digits == "+":
+        return None
+
+    return f"whatsapp:{digits}"

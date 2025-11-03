@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -52,8 +53,45 @@ def _build_reply(inbound_text: str) -> str:
     )
 
 
-def _conversation_id(from_number: str) -> str:
-    return from_number.replace("whatsapp:", "")
+def _normalize_msisdn(raw: str) -> str:
+    """Return a phone number in E.164 format if possible."""
+
+    value = (raw or "").strip()
+    if not value:
+        return ""
+
+    if value.lower().startswith("whatsapp:"):
+        value = value.split(":", 1)[1]
+
+    value = value.replace(" ", "")
+
+    if value.startswith("+"):
+        digits = "+" + re.sub(r"[^\d]", "", value[1:])
+        return digits if digits != "+" else ""
+
+    if value.startswith("00"):
+        digits = re.sub(r"[^\d]", "", value[2:])
+        return f"+{digits}" if digits else ""
+
+    digits = re.sub(r"[^\d]", "", value)
+    if not digits:
+        return ""
+
+    return f"+{digits}"
+
+
+def _conversation_id(from_number: str, wa_id: str | None = None) -> str:
+    """Normalise Twilio's sender identifiers into a stable conversation id."""
+
+    for candidate in (from_number, wa_id):
+        normalized = _normalize_msisdn(candidate or "")
+        if normalized:
+            return normalized
+
+    fallback = (wa_id or from_number or "").strip()
+    if fallback.lower().startswith("whatsapp:"):
+        fallback = fallback.split(":", 1)[1]
+    return fallback or "unknown"
 
 
 def _iso_now() -> str:
@@ -164,7 +202,8 @@ def whatsapp_webhook() -> Response:
         "ProfileImageUrl"
     )
 
-    conversation_id = _conversation_id(from_number)
+    wa_id = request.form.get("WaId")
+    conversation_id = _conversation_id(from_number, wa_id)
 
     conversation_store.record_message(
         conversation_id,
