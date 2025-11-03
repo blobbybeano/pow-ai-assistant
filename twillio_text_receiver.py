@@ -12,8 +12,8 @@ import os
 
 ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "ACcfd643ffbd265a8d4a0ce93758a92fa7")
 AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "1308a4bedef880bdd14c703196b7c634")
-TWILIO_SMS_NUMBER = os.getenv("TWILIO_SMS_NUMBER", "+447378581724")
-TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+447378581724")
+TWILIO_SMS_NUMBER = os.getenv("TWILIO_SMS_NUMBER", "+447366320940")
+TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+447366320940")
 
 client = Client(ACCOUNT_SID, AUTH_TOKEN)
 app = Flask(__name__)
@@ -23,7 +23,7 @@ last_sender = None
 
 
 @app.route("/message", methods=["POST"])
-@app.route("/twilio/whatsapp", methods=["POST"])  # 👈 handles both possible webhook paths
+@app.route("/twilio/whatsapp", methods=["POST"])  # Handles both webhook paths
 def message():
     """Receive and print incoming messages from Twilio (SMS or WhatsApp)."""
     global last_sender
@@ -38,6 +38,28 @@ def message():
     return "Message received", 200
 
 
+def normalize_number(to, msg_type):
+    """
+    Ensure number format matches the selected channel.
+    - For WhatsApp: always 'whatsapp:+44...'
+    - For SMS: plain '+44...'
+    """
+    to = to.strip()
+
+    # Fix if user forgets to include country code (optional)
+    if to.startswith("0"):
+        to = "+44" + to[1:]
+
+    if msg_type == "w":
+        if not to.startswith("whatsapp:"):
+            to = f"whatsapp:{to}"
+    else:
+        # Remove accidental whatsapp: prefix for SMS
+        to = to.replace("whatsapp:", "")
+
+    return to
+
+
 def send_message():
     """Allows manual sending of SMS or WhatsApp messages from the terminal."""
     global last_sender
@@ -50,23 +72,24 @@ def send_message():
         if choice == "1" and last_sender:
             to = last_sender
             print(f"Replying to {to}")
+            # Detect if last_sender is WhatsApp or SMS
+            msg_type = "w" if "whatsapp:" in to else "s"
         elif choice == "2":
             msg_type = input("Send via [w]hatsapp or [s]ms? ").strip().lower()
-            to = input("Enter recipient number (with country code): ").strip()
-            if msg_type == "w":
-                to = f"whatsapp:{to}"
+            to = input("Enter recipient number (with country code or 0): ").strip()
+            to = normalize_number(to, msg_type)
         else:
             print("⚠️ No recent sender to reply to.")
             continue
 
         body = input("Enter your message: ").strip()
 
-        # Choose the correct Twilio number
-        from_ = TWILIO_WHATSAPP_NUMBER if "whatsapp:" in to else TWILIO_SMS_NUMBER
+        # Pick correct Twilio sender
+        from_ = TWILIO_WHATSAPP_NUMBER if msg_type == "w" else TWILIO_SMS_NUMBER
 
         try:
             message = client.messages.create(from_=from_, to=to, body=body)
-            print(f"✅ Sent message (SID: {message.sid})")
+            print(f"✅ Sent message via {'WhatsApp' if msg_type == 'w' else 'SMS'} (SID: {message.sid})")
         except Exception as e:
             print(f"❌ Failed to send message: {e}")
 

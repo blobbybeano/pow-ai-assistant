@@ -5,9 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7b8e761-6fa5-4807-95c1-8c0e3056aedb" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/twillio_text_receiver.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conversation_state.json" beforeDir="false" afterPath="$PROJECT_DIR$/conversation_state.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/twillio_text_receiver.py" beforeDir="false" afterPath="$PROJECT_DIR$/twillio_text_receiver.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,7 +34,9 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.app (1).executor": "Run",
+    "Python.app (2).executor": "Run",
     "Python.app.executor": "Run",
+    "Python.auto_responder.executor": "Run",
     "Python.gmail_subjects.executor": "Run",
     "Python.twilio_app.executor": "Run",
     "Python.twillio_setup.executor": "Run",
@@ -48,7 +49,29 @@
   }
 }]]></component>
   <component name="RunManager" selected="Python.twillio_text_receiver">
-    <configuration name="app (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="app (2)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="the-ai-customer-messaging-assistant" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ai_estimator_demo" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ai_estimator_demo/app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="auto_responder" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="the-ai-customer-messaging-assistant" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -61,29 +84,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="the-ai-customer-messaging-assistant" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/flask_app" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/flask_app/app.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/auto_responder.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -99,9 +100,6 @@
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="OPENAI_API_KEY" value="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" />
-        <env name="TWILIO_ACCOUNT_SID" value="ACcfd643ffbd265a8d4a0ce93758a92fa7" />
-        <env name="TWILIO_AUTH_TOKEN" value="1308a4bedef880bdd14c703196b7c634" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -162,19 +160,19 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.auto_responder" />
+      <item itemvalue="Python.app (2)" />
       <item itemvalue="Python.twillio_text_receiver" />
       <item itemvalue="Python.workspace_launcher" />
       <item itemvalue="Python.twilio_app" />
-      <item itemvalue="Python.app" />
-      <item itemvalue="Python.app (1)" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.twillio_text_receiver" />
-        <item itemvalue="Python.workspace_launcher" />
-        <item itemvalue="Python.app (1)" />
         <item itemvalue="Python.twilio_app" />
-        <item itemvalue="Python.app" />
+        <item itemvalue="Python.auto_responder" />
+        <item itemvalue="Python.app (2)" />
+        <item itemvalue="Python.workspace_launcher" />
       </list>
     </recent_temporary>
   </component>
