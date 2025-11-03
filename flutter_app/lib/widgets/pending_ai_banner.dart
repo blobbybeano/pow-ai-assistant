@@ -17,7 +17,7 @@ class PendingAiBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final messagePreview = summary.lastMessage?.text ?? '';
+    final messagePreview = summary.lastMessage?.previewText() ?? '';
     return Container(
       decoration: BoxDecoration(
         color: const Color(0x332FC6B2),

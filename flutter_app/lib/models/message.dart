@@ -1,5 +1,35 @@
 import 'package:intl/intl.dart';
 
+class ChatAttachment {
+  ChatAttachment({
+    required this.id,
+    required this.contentType,
+    this.sourceUrl,
+    this.filename,
+    this.proxyUrl,
+  });
+
+  factory ChatAttachment.fromJson(Map<String, dynamic> json) {
+    return ChatAttachment(
+      id: json['id'] as String,
+      contentType: json['contentType'] as String? ?? 'application/octet-stream',
+      sourceUrl: json['sourceUrl'] as String?,
+      filename: json['filename'] as String?,
+      proxyUrl: json['proxyUrl'] as String?,
+    );
+  }
+
+  final String id;
+  final String contentType;
+  final String? sourceUrl;
+  final String? filename;
+  final String? proxyUrl;
+
+  bool get isImage => contentType.startsWith('image/');
+
+  String? get displayUrl => proxyUrl ?? sourceUrl;
+}
+
 class ChatMessage {
   ChatMessage({
     required this.id,
@@ -9,6 +39,7 @@ class ChatMessage {
     required this.timestamp,
     required this.via,
     required this.status,
+    required this.attachments,
     this.scheduledSendAt,
     this.sentAt,
     this.transportSid,
@@ -30,6 +61,10 @@ class ChatMessage {
       sentAt: _parseDate(json['sentAt'] as String?),
       transportSid: json['transportSid'] as String?,
       error: json['error'] as String?,
+      attachments: (json['attachments'] as List<dynamic>? ?? [])
+          .map((attachment) =>
+              ChatAttachment.fromJson(attachment as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -40,6 +75,7 @@ class ChatMessage {
   final DateTime timestamp;
   final String via;
   final String status;
+  final List<ChatAttachment> attachments;
   final DateTime? scheduledSendAt;
   final DateTime? sentAt;
   final String? transportSid;
@@ -49,6 +85,8 @@ class ChatMessage {
 
   DateTime get displayTimestamp => sentAt ?? scheduledSendAt ?? timestamp;
 
+  bool get hasAttachments => attachments.isNotEmpty;
+
   String formattedTime() => DateFormat.jm().format(displayTimestamp);
 
   bool get isScheduled => status == 'scheduled';
@@ -56,6 +94,21 @@ class ChatMessage {
   bool get isDrafting => status == 'drafting';
   bool get isCancelled => status == 'cancelled';
   bool get isPending => status == 'scheduled' || status == 'sending' || isDrafting;
+
+  String previewText() {
+    final trimmed = text.trim();
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+    if (attachments.isNotEmpty) {
+      final first = attachments.first;
+      if (first.isImage) {
+        return '📷 Photo';
+      }
+      return '📎 Attachment';
+    }
+    return '';
+  }
 
   String? statusLabel() {
     switch (status) {

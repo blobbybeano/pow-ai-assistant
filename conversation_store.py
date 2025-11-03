@@ -49,6 +49,24 @@ def _is_placeholder_avatar(url: Optional[str]) -> bool:
 
 
 @dataclass
+class MessageAttachment:
+    """Represents an attachment associated with a chat message."""
+
+    id: str
+    content_type: str
+    source_url: str
+    filename: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "contentType": self.content_type,
+            "sourceUrl": self.source_url,
+            "filename": self.filename,
+        }
+
+
+@dataclass
 class MessageRecord:
     """Represents a single chat message stored in the conversation history."""
 
@@ -65,6 +83,7 @@ class MessageRecord:
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
+    attachments: List[MessageAttachment] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -79,6 +98,7 @@ class MessageRecord:
             "scheduledSendAt": self.scheduled_send_at,
             "sentAt": self.sent_at,
             "error": self.error,
+            "attachments": [attachment.to_dict() for attachment in self.attachments],
         }
 
     def effective_datetime(self) -> datetime:
@@ -183,6 +203,16 @@ class ConversationStore:
                         scheduled_send_at=msg.get("scheduledSendAt"),
                         sent_at=msg.get("sentAt"),
                         error=msg.get("error"),
+                        attachments=[
+                            MessageAttachment(
+                                id=attachment.get("id", str(uuid4())),
+                                content_type=attachment.get("contentType", "application/octet-stream"),
+                                source_url=attachment.get("sourceUrl", ""),
+                                filename=attachment.get("filename"),
+                            )
+                            for attachment in msg.get("attachments", [])
+                            if attachment.get("sourceUrl")
+                        ],
                     )
                     for msg in record.get("messages", [])
                 ],
@@ -361,6 +391,7 @@ class ConversationStore:
         scheduled_send_at: Optional[str] = None,
         sent_at: Optional[str] = None,
         error: Optional[str] = None,
+        attachments: Optional[List[MessageAttachment]] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
@@ -368,6 +399,8 @@ class ConversationStore:
             phone_number=conversation_id,
             profile_photo_url=profile_photo_url,
         )
+
+        message_attachments = list(attachments or [])
 
         message = MessageRecord(
             id=str(uuid4()),
@@ -381,6 +414,7 @@ class ConversationStore:
             scheduled_send_at=scheduled_send_at,
             sent_at=sent_at,
             error=error,
+            attachments=message_attachments,
         )
 
         with self._lock:
@@ -584,6 +618,15 @@ class ConversationStore:
                                     scheduled_send_at=message.scheduled_send_at,
                                     sent_at=message.sent_at,
                                     error=message.error,
+                                    attachments=[
+                                        MessageAttachment(
+                                            id=attachment.id,
+                                            content_type=attachment.content_type,
+                                            source_url=attachment.source_url,
+                                            filename=attachment.filename,
+                                        )
+                                        for attachment in message.attachments
+                                    ],
                                 ),
                             )
                         )
@@ -613,6 +656,15 @@ class ConversationStore:
                         scheduled_send_at=message.scheduled_send_at,
                         sent_at=message.sent_at,
                         error=message.error,
+                        attachments=[
+                            MessageAttachment(
+                                id=attachment.id,
+                                content_type=attachment.content_type,
+                                source_url=attachment.source_url,
+                                filename=attachment.filename,
+                            )
+                            for attachment in message.attachments
+                        ],
                     )
 
         return None

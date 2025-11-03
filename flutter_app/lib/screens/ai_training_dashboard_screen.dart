@@ -270,7 +270,7 @@ class _TrainingConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = conversation.lastMessage?.text?.trim();
+    final preview = conversation.lastMessage?.previewText();
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF111B21),

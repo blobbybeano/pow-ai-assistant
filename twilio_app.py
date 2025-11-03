@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 import re
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, Set
+from typing import Dict, List, Sequence, Set
+from uuid import uuid4
 
-from flask import Flask, Response, abort, jsonify, request
+from flask import Flask, Response, abort, jsonify, request, url_for
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auto_responder import generate_reply
-from conversation_store import conversation_store
+from conversation_store import MessageAttachment, conversation_store
 from twilio_helpers import TwilioMessenger
 
 logging.basicConfig(level=logging.INFO)
@@ -36,20 +38,76 @@ AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
 
 
-def _build_reply(inbound_text: str) -> str:
+def _build_reply(
+    inbound_text: str, attachments: Sequence[MessageAttachment]
+) -> str:
     """Generate a PowWash response for the inbound WhatsApp message."""
-    if not inbound_text:
+
+    message_text = (inbound_text or "").strip()
+    attachments = list(attachments)
+
+    if not message_text and not attachments:
         return (
             "Hi there! This is PowWash. I didn't catch your message—"
             "could you please resend it so we can prepare your quote?"
         )
 
+    vision_inputs: List[Dict[str, str]] = []
+    if attachments and not twilio_messenger:
+        logging.warning(
+            "Received media attachments but Twilio credentials are missing; "
+            "cannot download images for AI analysis."
+        )
+    elif attachments:
+        for attachment in attachments[:4]:
+            if not attachment.content_type.lower().startswith("image/"):
+                continue
+            try:
+                media_bytes, detected_type = twilio_messenger.fetch_media(
+                    attachment.source_url
+                )  # type: ignore[union-attr]
+            except Exception:  # pragma: no cover - network call
+                logging.exception("Failed to download inbound media from Twilio")
+                continue
+
+            content_type = detected_type or attachment.content_type
+            if not media_bytes:
+                continue
+
+            encoded = base64.b64encode(media_bytes).decode("ascii")
+            data_url = f"data:{content_type};base64,{encoded}"
+            vision_inputs.append(
+                {
+                    "data_url": data_url,
+                    "content_type": content_type,
+                    "detail": "low",
+                }
+            )
+
+    if not message_text:
+        message_text = "The customer sent the following image attachments without additional text."
+
+    if attachments:
+        if vision_inputs:
+            count = len(vision_inputs)
+            plural = "s" if count != 1 else ""
+            message_text += (
+                f"\n\nThe customer included {count} image{plural}. "
+                "Please reference the visuals in your response."
+            )
+        else:
+            message_text += (
+                "\n\nThe customer attempted to share media, but the images could not "
+                "be retrieved. Ask them to resend if the visuals are important."
+            )
+
     return generate_reply(
-        message=inbound_text,
+        message=message_text,
         price_list_path=PRICE_LIST_PATH,
         tone_profile_path=TONE_PROFILE_PATH,
         model="gpt-4o-mini",
         temperature=0.5,
+        attachments=vision_inputs,
     )
 
 
@@ -191,6 +249,26 @@ def _bootstrap_pending_messages() -> None:
 _bootstrap_pending_messages()
 
 
+def _attach_proxy_urls(conversation_id: str, message: Dict[str, object]) -> None:
+    attachments = message.get("attachments")
+    message_id = message.get("id")
+    if not isinstance(attachments, list) or not isinstance(message_id, str):
+        return
+
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        attachment_id = attachment.get("id")
+        if not isinstance(attachment_id, str):
+            continue
+        attachment["proxyUrl"] = url_for(
+            "api_get_message_attachment",
+            conversation_id=conversation_id,
+            message_id=message_id,
+            attachment_id=attachment_id,
+        )
+
+
 @app.post("/twilio/whatsapp")
 def whatsapp_webhook() -> Response:
     """Return a TwiML response and update the conversation store."""
@@ -201,6 +279,31 @@ def whatsapp_webhook() -> Response:
     profile_photo_url = request.form.get("ProfilePictureUrl") or request.form.get(
         "ProfileImageUrl"
     )
+
+    try:
+        num_media = int(request.form.get("NumMedia", "0"))
+    except (TypeError, ValueError):
+        num_media = 0
+
+    inbound_attachments: List[MessageAttachment] = []
+    for index in range(num_media):
+        media_url = request.form.get(f"MediaUrl{index}")
+        if not media_url:
+            continue
+        content_type = request.form.get(f"MediaContentType{index}") or "application/octet-stream"
+        filename = (
+            request.form.get(f"MediaFilename{index}")
+            or request.form.get(f"MediaFileName{index}")
+            or None
+        )
+        inbound_attachments.append(
+            MessageAttachment(
+                id=str(uuid4()),
+                content_type=content_type,
+                source_url=media_url,
+                filename=filename,
+            )
+        )
 
     wa_id = request.form.get("WaId")
     conversation_id = _conversation_id(from_number, wa_id)
@@ -213,6 +316,7 @@ def whatsapp_webhook() -> Response:
         profile_name=profile_name,
         profile_photo_url=profile_photo_url,
         increment_unread=True,
+        attachments=inbound_attachments,
     )
 
     if conversation_store.default_responder_id:
@@ -235,7 +339,7 @@ def whatsapp_webhook() -> Response:
         )
 
         try:
-            reply_text = _build_reply(inbound_text)
+            reply_text = _build_reply(inbound_text, inbound_attachments)
         except Exception as exc:  # pragma: no cover - network call
             logging.exception("Failed to build AI reply")
             conversation_store.update_message(
@@ -299,6 +403,11 @@ def api_set_default_responder() -> Response:
 @app.get("/api/conversations")
 def api_list_conversations() -> Response:
     conversations = conversation_store.list_conversations()
+    for convo in conversations:
+        convo_id = convo.get("id")
+        last_message = convo.get("lastMessage") if isinstance(convo, dict) else None
+        if isinstance(convo_id, str) and isinstance(last_message, dict):
+            _attach_proxy_urls(convo_id, last_message)
     return jsonify({"conversations": conversations})
 
 
@@ -307,7 +416,44 @@ def api_get_conversation(conversation_id: str) -> Response:
     convo = conversation_store.get_conversation(conversation_id, mark_read=True)
     if convo is None:
         abort(404, description="Conversation not found")
+    for message in convo.get("messages", []):
+        if isinstance(message, dict):
+            _attach_proxy_urls(conversation_id, message)
     return jsonify(convo)
+
+
+@app.get(
+    "/api/conversations/<conversation_id>/messages/<message_id>/attachments/<attachment_id>"
+)
+def api_get_message_attachment(
+    conversation_id: str, message_id: str, attachment_id: str
+) -> Response:
+    message = conversation_store.get_message(conversation_id, message_id)
+    if message is None:
+        abort(404, description="Message not found")
+
+    attachment = next(
+        (item for item in message.attachments if item.id == attachment_id),
+        None,
+    )
+    if attachment is None:
+        abort(404, description="Attachment not found")
+
+    if not twilio_messenger:
+        abort(
+            503,
+            description="Twilio credentials are not configured; media download unavailable",
+        )
+
+    try:
+        media_bytes, content_type = twilio_messenger.fetch_media(attachment.source_url)
+    except Exception:  # pragma: no cover - network call
+        logging.exception("Failed to proxy WhatsApp media from Twilio")
+        abort(502, description="Failed to retrieve attachment from Twilio")
+
+    mimetype = content_type or attachment.content_type
+    headers = {"Cache-Control": "private, max-age=60"}
+    return Response(media_bytes, mimetype=mimetype, headers=headers)
 
 
 @app.post("/api/conversations/<conversation_id>/toggle-ai")

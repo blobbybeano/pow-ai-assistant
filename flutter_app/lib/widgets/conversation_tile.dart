@@ -122,10 +122,14 @@ class ConversationTile extends StatelessWidget {
 String _buildSubtitle(ChatMessage? message) {
   if (message == null) return 'New conversation';
   final statusLabel = message.statusLabel();
+  final preview = message.previewText();
   if (statusLabel != null && !message.isInbound) {
-    return '$statusLabel • ${message.text}';
+    if (preview.isNotEmpty) {
+      return '$statusLabel • $preview';
+    }
+    return statusLabel;
   }
-  return message.text;
+  return preview;
 }
 
 class _AiBadge extends StatelessWidget {

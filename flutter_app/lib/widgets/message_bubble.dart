@@ -58,6 +58,8 @@ class MessageBubble extends StatelessWidget {
     final statusLabel = message.statusLabel();
     final isDrafting = message.isDrafting;
     final isPendingAi = message.author == 'ai' && message.isPending;
+    final hasText = message.text.trim().isNotEmpty;
+    final hasAttachments = message.attachments.isNotEmpty;
 
     final bubbleColor = isPendingAi
         ? const Color(0xFFFFC857)
@@ -104,15 +106,23 @@ class MessageBubble extends StatelessWidget {
               TypingIndicator(
                 dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
               )
-            else if (message.text.isNotEmpty)
-              Text(
-                message.text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      height: 1.5,
-                    ),
-              ),
-            const SizedBox(height: 8),
+            else ...[
+              if (hasAttachments)
+                _MessageAttachments(
+                  attachments: message.attachments,
+                  isInbound: isInbound,
+                ),
+              if (hasAttachments && hasText) const SizedBox(height: 8),
+              if (hasText)
+                Text(
+                  message.text,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                        height: 1.5,
+                      ),
+                ),
+            ],
+            if (hasAttachments || hasText || isDrafting) const SizedBox(height: 8),
             Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment:
@@ -179,6 +189,129 @@ class MessageBubble extends StatelessWidget {
             ]
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MessageAttachments extends StatelessWidget {
+  const _MessageAttachments({
+    required this.attachments,
+    required this.isInbound,
+  });
+
+  final List<ChatAttachment> attachments;
+  final bool isInbound;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        for (var i = 0; i < attachments.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: i == attachments.length - 1 ? 0 : 8),
+            child: _AttachmentPreview(attachment: attachments[i]),
+          ),
+      ],
+    );
+  }
+}
+
+class _AttachmentPreview extends StatelessWidget {
+  const _AttachmentPreview({required this.attachment});
+
+  final ChatAttachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayUrl = attachment.displayUrl;
+    if (attachment.isImage && displayUrl != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 120, maxHeight: 260, minWidth: 120),
+          child: Image.network(
+            displayUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              final totalBytes = progress.expectedTotalBytes;
+              final value = totalBytes != null && totalBytes > 0
+                  ? progress.cumulativeBytesLoaded / totalBytes
+                  : null;
+              return _AttachmentPlaceholder(
+                icon: Icons.image,
+                label: 'Loading image…',
+                progress: value,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => const _AttachmentPlaceholder(
+              icon: Icons.broken_image,
+              label: 'Image unavailable',
+            ),
+          ),
+        ),
+      );
+    }
+
+    final label = attachment.filename?.isNotEmpty == true
+        ? attachment.filename!
+        : (attachment.isImage ? 'Image attachment' : 'Attachment');
+    final icon = attachment.isImage ? Icons.image : Icons.insert_drive_file;
+
+    return _AttachmentPlaceholder(icon: icon, label: label);
+  }
+}
+
+class _AttachmentPlaceholder extends StatelessWidget {
+  const _AttachmentPlaceholder({
+    required this.icon,
+    required this.label,
+    this.progress,
+  });
+
+  final IconData icon;
+  final String label;
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 120),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.white70, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.white70,
+                  height: 1.3,
+                ),
+          ),
+          if (progress != null) ...[
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: progress!.clamp(0.0, 1.0).toDouble(),
+              backgroundColor: Colors.white24,
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00A884)),
+              minHeight: 4,
+            ),
+          ],
+        ],
       ),
     );
   }

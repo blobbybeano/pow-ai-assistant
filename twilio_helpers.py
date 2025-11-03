@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 
+import httpx
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
@@ -72,6 +73,20 @@ class TwilioMessenger:
             raise RuntimeError(f"Failed to send WhatsApp message: {exc.msg}") from exc
 
         return message.sid
+
+    def fetch_media(self, url: str) -> Tuple[bytes, str]:
+        """Download a media asset from Twilio and return its bytes and content type."""
+
+        with httpx.Client(timeout=30.0) as client:
+            response = client.get(
+                url,
+                auth=(self._config.account_sid, self._config.auth_token),
+                follow_redirects=True,
+            )
+            response.raise_for_status()
+
+        content_type = response.headers.get("Content-Type", "application/octet-stream")
+        return response.content, content_type
 
 
 def _normalize_whatsapp_address(value: Optional[str]) -> Optional[str]:
