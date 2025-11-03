@@ -122,10 +122,37 @@ class ConversationTile extends StatelessWidget {
 String _buildSubtitle(ChatMessage? message) {
   if (message == null) return 'New conversation';
   final statusLabel = message.statusLabel();
-  if (statusLabel != null && !message.isInbound) {
-    return '$statusLabel • ${message.text}';
+  final attachmentCount = message.attachments.length;
+  final imageCount = message.attachments.where((attachment) => attachment.isImage).length;
+
+  String baseText = message.text.trim();
+
+  if (baseText.isEmpty && attachmentCount > 0) {
+    final parts = <String>[];
+    if (imageCount > 0) {
+      parts.add(imageCount == 1 ? 'Sent a photo' : 'Sent $imageCount photos');
+    }
+    final fileCount = attachmentCount - imageCount;
+    if (fileCount > 0) {
+      parts.add(fileCount == 1 ? 'Sent a file' : 'Sent $fileCount files');
+    }
+    baseText = parts.join(' • ');
+  } else if (attachmentCount > 0) {
+    if (imageCount == attachmentCount) {
+      baseText = '📷 ${imageCount == 1 ? 'Photo' : '$imageCount photos'} • $baseText';
+    } else {
+      baseText = '📎 Attachment • $baseText';
+    }
   }
-  return message.text;
+
+  if (baseText.isEmpty) {
+    baseText = message.isInbound ? 'Customer sent a message' : 'Message sent';
+  }
+
+  if (statusLabel != null && !message.isInbound) {
+    return '$statusLabel • $baseText';
+  }
+  return baseText;
 }
 
 class _AiBadge extends StatelessWidget {

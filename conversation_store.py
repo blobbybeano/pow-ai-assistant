@@ -65,6 +65,7 @@ class MessageRecord:
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
+    attachments: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -79,6 +80,7 @@ class MessageRecord:
             "scheduledSendAt": self.scheduled_send_at,
             "sentAt": self.sent_at,
             "error": self.error,
+            "attachments": self.attachments,
         }
 
     def effective_datetime(self) -> datetime:
@@ -183,6 +185,11 @@ class ConversationStore:
                         scheduled_send_at=msg.get("scheduledSendAt"),
                         sent_at=msg.get("sentAt"),
                         error=msg.get("error"),
+                        attachments=[
+                            attachment
+                            for attachment in msg.get("attachments", [])
+                            if isinstance(attachment, dict)
+                        ],
                     )
                     for msg in record.get("messages", [])
                 ],
@@ -361,6 +368,7 @@ class ConversationStore:
         scheduled_send_at: Optional[str] = None,
         sent_at: Optional[str] = None,
         error: Optional[str] = None,
+        attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
@@ -368,6 +376,12 @@ class ConversationStore:
             phone_number=conversation_id,
             profile_photo_url=profile_photo_url,
         )
+
+        normalized_attachments: List[Dict[str, Any]] = []
+        if attachments:
+            for attachment in attachments:
+                if isinstance(attachment, dict):
+                    normalized_attachments.append(dict(attachment))
 
         message = MessageRecord(
             id=str(uuid4()),
@@ -381,6 +395,7 @@ class ConversationStore:
             scheduled_send_at=scheduled_send_at,
             sent_at=sent_at,
             error=error,
+            attachments=normalized_attachments,
         )
 
         with self._lock:
@@ -584,6 +599,7 @@ class ConversationStore:
                                     scheduled_send_at=message.scheduled_send_at,
                                     sent_at=message.sent_at,
                                     error=message.error,
+                                    attachments=list(message.attachments),
                                 ),
                             )
                         )
@@ -613,6 +629,7 @@ class ConversationStore:
                         scheduled_send_at=message.scheduled_send_at,
                         sent_at=message.sent_at,
                         error=message.error,
+                        attachments=list(message.attachments),
                     )
 
         return None

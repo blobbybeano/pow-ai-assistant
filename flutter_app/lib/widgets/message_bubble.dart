@@ -76,6 +76,40 @@ class MessageBubble extends StatelessWidget {
             ? const Color(0x1A8696A0)
             : const Color(0x3300A884);
 
+    final List<Widget> contentWidgets = [];
+    if (isDrafting) {
+      contentWidgets.add(
+        TypingIndicator(
+          dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
+        ),
+      );
+    } else {
+      if (message.hasAttachments) {
+        contentWidgets.add(
+          _AttachmentGallery(
+            attachments: message.attachments,
+            isInbound: isInbound,
+          ),
+        );
+      }
+      if (message.text.isNotEmpty) {
+        if (contentWidgets.isNotEmpty) {
+          contentWidgets.add(const SizedBox(height: 8));
+        }
+        contentWidgets.add(
+          Text(
+            message.text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: textColor,
+                  height: 1.5,
+                ),
+          ),
+        );
+      }
+    }
+
+    final hasContent = contentWidgets.isNotEmpty;
+
     return Align(
       alignment: alignment,
       child: Container(
@@ -100,19 +134,8 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment:
               isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
           children: [
-            if (isDrafting)
-              TypingIndicator(
-                dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
-              )
-            else if (message.text.isNotEmpty)
-              Text(
-                message.text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      height: 1.5,
-                    ),
-              ),
-            const SizedBox(height: 8),
+            ...contentWidgets,
+            if (hasContent || isDrafting) const SizedBox(height: 8),
             Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment:
@@ -179,6 +202,127 @@ class MessageBubble extends StatelessWidget {
             ]
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AttachmentGallery extends StatelessWidget {
+  const _AttachmentGallery({required this.attachments, required this.isInbound});
+
+  final List<MessageAttachment> attachments;
+  final bool isInbound;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        for (var index = 0; index < attachments.length; index++) ...[
+          _AttachmentPreview(
+            attachment: attachments[index],
+            isInbound: isInbound,
+          ),
+          if (index != attachments.length - 1) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _AttachmentPreview extends StatelessWidget {
+  const _AttachmentPreview({required this.attachment, required this.isInbound});
+
+  final MessageAttachment attachment;
+  final bool isInbound;
+
+  @override
+  Widget build(BuildContext context) {
+    if (attachment.isImage && attachment.url.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 280,
+            minWidth: 140,
+            maxHeight: 320,
+          ),
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: Image.network(
+              attachment.url,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.black.withOpacity(0.2),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white70,
+                  size: 32,
+                ),
+              ),
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  color: Colors.black.withOpacity(0.12),
+                  alignment: Alignment.center,
+                  child: CircularProgressIndicator(
+                    value: progress.expectedTotalBytes != null
+                        ? progress.cumulativeBytesLoaded /
+                            progress.expectedTotalBytes!
+                        : null,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isInbound ? const Color(0xFF00A884) : Colors.white,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    final textTheme = Theme.of(context).textTheme;
+    final labelColor = isInbound ? Colors.white : const Color(0xFFE9EDEF);
+    final background = isInbound
+        ? Colors.black.withOpacity(0.14)
+        : Colors.white.withOpacity(0.08);
+    final border = isInbound
+        ? Colors.white.withOpacity(0.12)
+        : Colors.white.withOpacity(0.16);
+    final displayName = attachment.filename?.trim().isNotEmpty == true
+        ? attachment.filename!
+        : 'Attachment';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.insert_drive_file,
+            color: labelColor.withOpacity(0.8),
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              displayName,
+              style: textTheme.bodySmall?.copyWith(
+                color: labelColor,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
