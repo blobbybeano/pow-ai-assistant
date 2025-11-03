@@ -34,7 +34,7 @@ _MEDIA_CACHE_ROOT = MEDIA_CACHE_DIR.resolve()
 twilio_messenger = TwilioMessenger.from_env()
 if not twilio_messenger:
     logging.warning(
-        "Twilio credentials not detected. Manual outbound replies from the Flutter app will be disabled."
+        "Twilio credentials not detected. Manual outbound replies from the Flutter app will be stored locally only."
     )
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
@@ -283,9 +283,13 @@ def _schedule_ai_delivery(
     body: str,
     *,
     scheduled_for: datetime,
+    force: bool = False,
 ) -> None:
-    if message_id in _scheduled_message_ids:
+    if message_id in _scheduled_message_ids and not force:
         return
+
+    if force:
+        _scheduled_message_ids.discard(message_id)
 
     delay = max(0.0, (scheduled_for - datetime.now(timezone.utc)).total_seconds())
 
@@ -387,6 +391,7 @@ def _attach_proxy_urls(conversation_id: str, message: Dict[str, object]) -> None
             conversation_id=conversation_id,
             message_id=message_id,
             attachment_id=attachment_id,
+            _external=True,
         )
 
 
@@ -629,17 +634,21 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if not text:
         abort(400, description="Message text is required")
 
-    if not twilio_messenger:
-        abort(
-            500,
-            description="Twilio credentials are not configured for outbound messaging",
-        )
+    sid: Optional[str]
+    sent_at = _iso_now()
 
-    try:
-        sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
-    except Exception as exc:  # pragma: no cover - network call
-        logging.exception("Failed to send manual reply via Twilio")
-        abort(502, description=str(exc))
+    if not twilio_messenger:
+        logging.warning(
+            "Twilio credentials missing; recording manual reply for %s without sending",
+            conversation_id,
+        )
+        sid = f"SIMULATED-{uuid4()}"
+    else:
+        try:
+            sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to send manual reply via Twilio")
+            abort(502, description=str(exc))
 
     message = conversation_store.record_message(
         conversation_id,
@@ -647,7 +656,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
         author="agent",
         direction="outbound",
         transport_sid=sid,
-        sent_at=_iso_now(),
+        sent_at=sent_at,
     )
 
     return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})
@@ -661,6 +670,39 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
 
     _scheduled_message_ids.discard(message_id)
     return jsonify({"status": "cancelled", "message": message.to_dict()})
+
+
+@app.post("/api/conversations/<conversation_id>/messages/<message_id>/send-now")
+def api_send_ai_message_now(conversation_id: str, message_id: str) -> Response:
+    message = conversation_store.get_message(conversation_id, message_id)
+    if message is None or message.author != "ai":
+        abort(404, description="AI message not found")
+
+    if message.status != "scheduled":
+        abort(400, description="Only scheduled AI messages can be sent immediately")
+
+    updated = conversation_store.update_message(
+        conversation_id,
+        message_id,
+        status="scheduled",
+        scheduled_send_at=_iso_now(),
+        error=None,
+    )
+
+    if updated is None:
+        abort(404, description="AI message not found")
+
+    _schedule_ai_delivery(
+        conversation_id,
+        message_id,
+        updated.text,
+        scheduled_for=datetime.now(timezone.utc),
+        force=True,
+    )
+
+    refreshed = conversation_store.get_message(conversation_id, message_id)
+    payload = refreshed.to_dict() if refreshed else updated.to_dict()
+    return jsonify({"status": "scheduled", "message": payload})
 
 
 @app.post("/api/conversations/<conversation_id>/ai-draft")

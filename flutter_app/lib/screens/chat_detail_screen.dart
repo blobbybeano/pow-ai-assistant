@@ -114,8 +114,9 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                   controller.pendingAiMessage!.id == message.id &&
                   message.author == 'ai' &&
                   message.isScheduled
-              ? _EditScheduledButton(
+              ? _PendingAiActions(
                   controller: controller,
+                  messageId: message.id,
                   onRecovered: (draft) {
                     setState(() {
                       _composerController.text = draft;
@@ -152,6 +153,14 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
             _maybeScrollToBottom(force: shouldForce);
           });
         }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final photoUrl = controller.detail?.profilePhotoUrl;
+          if (photoUrl != null && photoUrl.isNotEmpty) {
+            context.read<ProfileController>().setPhoto(widget.summary.id, photoUrl);
+          }
+        });
 
         return Scaffold(
           backgroundColor: const Color(0xFF0B141A),
@@ -568,7 +577,8 @@ class _EditScheduledButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBusy = controller.isCancellingPendingAi;
+    final isBusy =
+        controller.isCancellingPendingAi || controller.isSendingPendingAiNow;
 
     return OutlinedButton.icon(
       onPressed: isBusy
@@ -592,6 +602,52 @@ class _EditScheduledButton extends StatelessWidget {
             )
           : const Icon(Icons.edit_outlined, size: 18),
       label: const Text('Edit before sending'),
+    );
+  }
+}
+
+class _PendingAiActions extends StatelessWidget {
+  const _PendingAiActions({
+    required this.controller,
+    required this.messageId,
+    required this.onRecovered,
+  });
+
+  final ConversationController controller;
+  final String messageId;
+  final ValueChanged<String> onRecovered;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBusy = controller.isCancellingPendingAi || controller.isSendingPendingAiNow;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        FilledButton.icon(
+          onPressed: isBusy
+              ? null
+              : () async {
+                  await controller.sendPendingAiNow(messageId);
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF00A884),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          icon: controller.isSendingPendingAiNow
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.send),
+          label: Text(controller.isSendingPendingAiNow ? 'Sending…' : 'Send now'),
+        ),
+        _EditScheduledButton(controller: controller, onRecovered: onRecovered),
+      ],
     );
   }
 }

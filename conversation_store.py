@@ -134,11 +134,14 @@ class ConversationRecord:
 
     def to_summary(self) -> Dict[str, Any]:
         last_msg = self.last_message()
+        photo_url = self.contact_photo_url or _generate_avatar(
+            self.contact_name, self.phone_number
+        )
         return {
             "id": self.id,
             "phoneNumber": self.phone_number,
             "displayName": self.contact_name or self.phone_number,
-            "profilePhotoUrl": self.contact_photo_url,
+            "profilePhotoUrl": photo_url,
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "assignedResponderId": self.assigned_responder_id,
@@ -146,11 +149,14 @@ class ConversationRecord:
         }
 
     def to_dict(self) -> Dict[str, Any]:
+        photo_url = self.contact_photo_url or _generate_avatar(
+            self.contact_name, self.phone_number
+        )
         return {
             "id": self.id,
             "phoneNumber": self.phone_number,
             "displayName": self.contact_name or self.phone_number,
-            "profilePhotoUrl": self.contact_photo_url,
+            "profilePhotoUrl": photo_url,
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "assignedResponderId": self.assigned_responder_id,
