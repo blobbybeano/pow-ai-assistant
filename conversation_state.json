@@ -495,10 +495,10 @@
           "timestamp": "2025-11-03T22:58:55.951447+00:00",
           "via": "whatsapp",
           "transportSid": null,
-          "status": "scheduled",
+          "status": "failed",
           "scheduledSendAt": "2025-11-03T23:01:59.988372+00:00",
-          "sentAt": null,
-          "error": null,
+          "sentAt": "2025-11-03T23:11:47.920264+00:00",
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
           "attachments": []
         },
         {
@@ -518,7 +518,8 @@
               "id": "ad2c2a83-92ae-4d8d-bf18-92426d059e9e",
               "contentType": "image/jpeg",
               "sourceUrl": "https://api.twilio.com/2010-04-01/Accounts/ACcfd643ffbd265a8d4a0ce93758a92fa7/Messages/MMc43ad205ad29639c448f0a9507ade591/Media/ME36b907f7809a809dc0a246c575b12e90",
-              "filename": null
+              "filename": null,
+              "cachedPath": null
             }
           ]
         },
@@ -534,6 +535,106 @@
           "scheduledSendAt": null,
           "sentAt": null,
           "error": "Error code: 400 - {'error': {'message': \"Invalid type for 'input[1].content[1].image_url': expected an image URL, but got an object instead.\", 'type': 'invalid_request_error', 'param': 'input[1].content[1].image_url', 'code': 'invalid_type'}}",
+          "attachments": []
+        },
+        {
+          "id": "b1b5c5a9-ae6d-4b0c-b541-47f6f4e0558d",
+          "text": "What\u2019s this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-03T23:13:21.653947+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "89897a7c-6587-4d5f-9280-4d6364209ee7",
+              "contentType": "image/jpeg",
+              "sourceUrl": "https://api.twilio.com/2010-04-01/Accounts/ACcfd643ffbd265a8d4a0ce93758a92fa7/Messages/MM4e7f2b1d095e372bc2798dea27e40d16/Media/ME448dd126a60055ffebfbd4ac7e1c1636",
+              "filename": null,
+              "cachedPath": "447541088300/b1b5c5a9-ae6d-4b0c-b541-47f6f4e0558d_89897a7c-6587-4d5f-9280-4d6364209ee7.jpg"
+            }
+          ]
+        },
+        {
+          "id": "bb9dbd03-8192-47e7-ae0d-4bbada522998",
+          "text": "It looks like you've sent an image related to some wiring or electrical components. However, I'm here to assist you with exterior cleaning quotes! \n\nIf you\u2019re looking for a cleaning service, could you please share details about the surface type (like driveway, patio, or roof), the size, and any access considerations? Also, let me know your preferred times for the service. \n\nLooking forward to helping you out!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-03T23:13:21.655776+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-03T23:16:28.401790+00:00",
+          "sentAt": "2025-11-03T23:16:28.685249+00:00",
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
+        },
+        {
+          "id": "1249116c-a6d2-40c5-b33d-2dfbe7b2f2c9",
+          "text": "How long would it take a company like you to clean something like this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-03T23:15:13.171888+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "057776fa-e360-4861-b284-387c38e20532",
+              "contentType": "image/jpeg",
+              "sourceUrl": "https://api.twilio.com/2010-04-01/Accounts/ACcfd643ffbd265a8d4a0ce93758a92fa7/Messages/MM0343caee9b540c9e51c15c91054707e1/Media/MEbe1bfb8edb692893cac9ef43d1d8defb",
+              "filename": null,
+              "cachedPath": "447541088300/1249116c-a6d2-40c5-b33d-2dfbe7b2f2c9_057776fa-e360-4861-b284-387c38e20532.jpg"
+            }
+          ]
+        },
+        {
+          "id": "d8f7e3a8-8125-4d33-ad24-37c55d4072dd",
+          "text": "Hi there!\n\nThanks for sharing the image! It looks like a lovely block paving driveway you've got there. For a deep clean like this, we usually recommend our Driveway Pressure Wash service, which starts at \u00a3120. \n\nThe cleaning process typically takes about 1.5 to 2 hours, depending on the size and condition of the surface. To give you a more accurate quote, could you please let me know the size of your driveway and if there are any specific access considerations? Also, do you have a preferred time for us to come by?\n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-03T23:15:13.172566+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-03T23:18:21.833760+00:00",
+          "sentAt": "2025-11-03T23:18:22.038783+00:00",
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
+        },
+        {
+          "id": "4535a542-0a8d-4145-a6d3-51c2ad9dde3e",
+          "text": "Please evaluate the size of this driveway and give me an idea of what time it would take to clean something like this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-03T23:16:30.992532+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "ec47484d-3f9b-41b5-bace-54282064b63f",
+          "text": "Hi there! I'd be happy to help with that. Could you please share the size of your driveway? If you have photos, sending those would really help us assess it better. \n\nFor reference, our Driveway Pressure Wash starts at \u00a3120 for up to 60m\u00b2, and the cleaning usually takes about 1-2 hours, depending on the condition and size. \n\nAlso, let me know if you have any preferred times for the cleaning! \n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-03T23:16:30.996110+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "cancelled",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Cancelled by agent",
           "attachments": []
         }
       ]
