@@ -56,6 +56,7 @@ class MessageAttachment:
     content_type: str
     source_url: str
     filename: Optional[str] = None
+    cached_path: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -63,6 +64,7 @@ class MessageAttachment:
             "contentType": self.content_type,
             "sourceUrl": self.source_url,
             "filename": self.filename,
+            "cachedPath": self.cached_path,
         }
 
 
@@ -206,9 +208,12 @@ class ConversationStore:
                         attachments=[
                             MessageAttachment(
                                 id=attachment.get("id", str(uuid4())),
-                                content_type=attachment.get("contentType", "application/octet-stream"),
+                                content_type=attachment.get(
+                                    "contentType", "application/octet-stream"
+                                ),
                                 source_url=attachment.get("sourceUrl", ""),
                                 filename=attachment.get("filename"),
+                                cached_path=attachment.get("cachedPath"),
                             )
                             for attachment in msg.get("attachments", [])
                             if attachment.get("sourceUrl")
@@ -624,6 +629,7 @@ class ConversationStore:
                                             content_type=attachment.content_type,
                                             source_url=attachment.source_url,
                                             filename=attachment.filename,
+                                            cached_path=attachment.cached_path,
                                         )
                                         for attachment in message.attachments
                                     ],
@@ -662,6 +668,7 @@ class ConversationStore:
                                 content_type=attachment.content_type,
                                 source_url=attachment.source_url,
                                 filename=attachment.filename,
+                                cached_path=attachment.cached_path,
                             )
                             for attachment in message.attachments
                         ],
@@ -706,6 +713,37 @@ class ConversationStore:
                     return message
 
         return None
+
+    def update_attachment_metadata(
+        self,
+        conversation_id: str,
+        message_id: str,
+        attachment_id: str,
+        *,
+        cached_path: Optional[str] = None,
+        content_type: Optional[str] = None,
+    ) -> bool:
+        """Update cached metadata for a stored attachment."""
+
+        with self._lock:
+            convo = self._conversations.get(conversation_id)
+            if not convo:
+                return False
+
+            for message in convo.messages:
+                if message.id != message_id:
+                    continue
+                for attachment in message.attachments:
+                    if attachment.id != attachment_id:
+                        continue
+                    if cached_path is not None:
+                        attachment.cached_path = cached_path
+                    if content_type is not None:
+                        attachment.content_type = content_type
+                    self._persist()
+                    return True
+
+        return False
 
     def cancel_scheduled_message(
         self, conversation_id: str, message_id: str

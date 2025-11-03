@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import base64
 import logging
+import mimetypes
 import re
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Sequence, Set
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 from uuid import uuid4
 
-from flask import Flask, Response, abort, jsonify, request, url_for
+from flask import Flask, Response, abort, jsonify, request, send_file, url_for
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
@@ -26,6 +27,9 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 PRICE_LIST_PATH = Path("price_list.json")
 TONE_PROFILE_PATH = Path("tone_profile.md")
+MEDIA_CACHE_DIR = Path("media_cache")
+MEDIA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+_MEDIA_CACHE_ROOT = MEDIA_CACHE_DIR.resolve()
 
 twilio_messenger = TwilioMessenger.from_env()
 if not twilio_messenger:
@@ -38,13 +42,135 @@ AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
 
 
+def _safe_path_segment(value: str) -> str:
+    sanitized = re.sub(r"[^A-Za-z0-9._-]", "_", value)
+    sanitized = sanitized.strip("_")
+    return sanitized or "item"
+
+
+def _resolve_cached_path(relative_path: str) -> Optional[Path]:
+    if not relative_path:
+        return None
+
+    candidate = (MEDIA_CACHE_DIR / Path(relative_path)).resolve()
+    if candidate == _MEDIA_CACHE_ROOT or _MEDIA_CACHE_ROOT in candidate.parents:
+        return candidate
+    return None
+
+
+def _store_cached_media(
+    conversation_id: str,
+    message_id: str,
+    attachment_id: str,
+    media_bytes: bytes,
+    content_type: str,
+) -> Optional[str]:
+    safe_convo = _safe_path_segment(conversation_id)
+    safe_message = _safe_path_segment(message_id)
+    safe_attachment = _safe_path_segment(attachment_id)
+
+    content_type = (content_type or "application/octet-stream").split(";")[0].strip()
+    extension = mimetypes.guess_extension(content_type) or ".bin"
+
+    cache_dir = MEDIA_CACHE_DIR / safe_convo
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{safe_message}_{safe_attachment}{extension}"
+    file_path = cache_dir / filename
+
+    try:
+        file_path.write_bytes(media_bytes)
+    except OSError:  # pragma: no cover - filesystem error
+        logging.exception("Failed to cache media for attachment %s", attachment_id)
+        return None
+
+    relative_path = f"{safe_convo}/{filename}"
+    return relative_path
+
+
+def _collect_attachment_bytes(
+    attachments: Sequence[MessageAttachment],
+    *,
+    conversation_id: Optional[str] = None,
+    message_id: Optional[str] = None,
+) -> Dict[str, Tuple[bytes, str]]:
+    """Return a mapping of attachment IDs to media bytes and content type."""
+
+    collected: Dict[str, Tuple[bytes, str]] = {}
+    missing_credentials_logged = False
+
+    for attachment in attachments:
+        if not attachment.content_type.lower().startswith("image/"):
+            continue
+
+        media_bytes: Optional[bytes] = None
+        content_type = attachment.content_type.split(";")[0].strip()
+
+        if getattr(attachment, "cached_path", None):
+            cache_path = _resolve_cached_path(attachment.cached_path)
+            if cache_path and cache_path.exists():
+                try:
+                    media_bytes = cache_path.read_bytes()
+                except OSError:  # pragma: no cover - filesystem error
+                    logging.warning(
+                        "Failed to read cached media for attachment %s", attachment.id
+                    )
+
+        if media_bytes is None:
+            if not twilio_messenger:
+                missing_credentials_logged = True
+                continue
+
+            try:
+                media_bytes, detected_type = twilio_messenger.fetch_media(
+                    attachment.source_url
+                )
+            except Exception:  # pragma: no cover - network call
+                logging.exception("Failed to download inbound media from Twilio")
+                continue
+
+            if not media_bytes:
+                continue
+
+            content_type = (detected_type or attachment.content_type).split(";")[0].strip()
+
+            if conversation_id and message_id:
+                cached_path = _store_cached_media(
+                    conversation_id, message_id, attachment.id, media_bytes, content_type
+                )
+                if cached_path:
+                    attachment.cached_path = cached_path
+                    attachment.content_type = content_type
+                    conversation_store.update_attachment_metadata(
+                        conversation_id,
+                        message_id,
+                        attachment.id,
+                        cached_path=cached_path,
+                        content_type=content_type,
+                    )
+
+        if media_bytes:
+            collected[attachment.id] = (media_bytes, content_type)
+
+    if missing_credentials_logged:
+        logging.warning(
+            "Received media attachments but Twilio credentials are missing; cannot download images for AI analysis."
+        )
+
+    return collected
+
+
 def _build_reply(
-    inbound_text: str, attachments: Sequence[MessageAttachment]
+    inbound_text: str,
+    attachments: Sequence[MessageAttachment] = (),
+    *,
+    conversation_id: Optional[str] = None,
+    message_id: Optional[str] = None,
 ) -> str:
     """Generate a PowWash response for the inbound WhatsApp message."""
 
     message_text = (inbound_text or "").strip()
-    attachments = list(attachments)
+    attachments = list(attachments or [])
 
     if not message_text and not attachments:
         return (
@@ -53,24 +179,19 @@ def _build_reply(
         )
 
     vision_inputs: List[Dict[str, str]] = []
-    if attachments and not twilio_messenger:
-        logging.warning(
-            "Received media attachments but Twilio credentials are missing; "
-            "cannot download images for AI analysis."
+    if attachments:
+        collected = _collect_attachment_bytes(
+            attachments,
+            conversation_id=conversation_id,
+            message_id=message_id,
         )
-    elif attachments:
-        for attachment in attachments[:4]:
-            if not attachment.content_type.lower().startswith("image/"):
+        for attachment in attachments:
+            if len(vision_inputs) >= 4:
+                break
+            payload = collected.get(attachment.id)
+            if not payload:
                 continue
-            try:
-                media_bytes, detected_type = twilio_messenger.fetch_media(
-                    attachment.source_url
-                )  # type: ignore[union-attr]
-            except Exception:  # pragma: no cover - network call
-                logging.exception("Failed to download inbound media from Twilio")
-                continue
-
-            content_type = detected_type or attachment.content_type
+            media_bytes, content_type = payload
             if not media_bytes:
                 continue
 
@@ -308,7 +429,7 @@ def whatsapp_webhook() -> Response:
     wa_id = request.form.get("WaId")
     conversation_id = _conversation_id(from_number, wa_id)
 
-    conversation_store.record_message(
+    inbound_message = conversation_store.record_message(
         conversation_id,
         text=inbound_text,
         author="customer",
@@ -339,7 +460,12 @@ def whatsapp_webhook() -> Response:
         )
 
         try:
-            reply_text = _build_reply(inbound_text, inbound_attachments)
+            reply_text = _build_reply(
+                inbound_text,
+                inbound_attachments,
+                conversation_id=conversation_id,
+                message_id=inbound_message.id,
+            )
         except Exception as exc:  # pragma: no cover - network call
             logging.exception("Failed to build AI reply")
             conversation_store.update_message(
@@ -439,6 +565,18 @@ def api_get_message_attachment(
     if attachment is None:
         abort(404, description="Attachment not found")
 
+    if attachment.cached_path:
+        cache_path = _resolve_cached_path(attachment.cached_path)
+        if cache_path and cache_path.exists():
+            mimetype = attachment.content_type.split(";")[0].strip()
+            return send_file(
+                cache_path,
+                mimetype=mimetype,
+                as_attachment=False,
+                download_name=attachment.filename or cache_path.name,
+                max_age=60,
+            )
+
     if not twilio_messenger:
         abort(
             503,
@@ -446,12 +584,28 @@ def api_get_message_attachment(
         )
 
     try:
-        media_bytes, content_type = twilio_messenger.fetch_media(attachment.source_url)
+        media_bytes, detected_type = twilio_messenger.fetch_media(attachment.source_url)
     except Exception:  # pragma: no cover - network call
         logging.exception("Failed to proxy WhatsApp media from Twilio")
         abort(502, description="Failed to retrieve attachment from Twilio")
 
-    mimetype = content_type or attachment.content_type
+    mimetype = (detected_type or attachment.content_type).split(";")[0].strip()
+    cached_path = _store_cached_media(
+        conversation_id,
+        message_id,
+        attachment.id,
+        media_bytes,
+        mimetype,
+    )
+    if cached_path:
+        conversation_store.update_attachment_metadata(
+            conversation_id,
+            message_id,
+            attachment.id,
+            cached_path=cached_path,
+            content_type=mimetype,
+        )
+
     headers = {"Cache-Control": "private, max-age=60"}
     return Response(media_bytes, mimetype=mimetype, headers=headers)
 
@@ -519,7 +673,12 @@ def api_generate_ai_draft(conversation_id: str) -> Response:
     if latest is None:
         abort(400, description="No customer message available for drafting")
 
-    draft = _build_reply(latest.text)
+    draft = _build_reply(
+        latest.text,
+        latest.attachments,
+        conversation_id=conversation_id,
+        message_id=latest.id,
+    )
 
     return jsonify({"draft": draft, "model": "gpt-4o-mini"})
 

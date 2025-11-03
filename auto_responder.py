@@ -83,11 +83,11 @@ def generate_reply(
                 continue
             image_payload: Dict[str, Any] = {
                 "type": "input_image",
-                "image_url": {"url": data_url},
+                "image_url": data_url,
             }
             detail = attachment.get("detail")
             if detail:
-                image_payload["image_url"]["detail"] = detail
+                image_payload["detail"] = detail
             user_content.append(image_payload)
 
     response = client.responses.create(
