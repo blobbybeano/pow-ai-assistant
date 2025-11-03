@@ -23,7 +23,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "dfa3abb1-cd8c-4c34-bfad-ce6a21465ea8",
@@ -36,7 +37,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:01:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "021e06ec-443d-45a3-afa8-ba44a5f1339c",
@@ -49,7 +51,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:02:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -73,7 +76,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "ab312877-e6eb-4669-be55-7e7f79e59f3d",
@@ -86,7 +90,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:02:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "3b439647-f6dd-4e79-84bf-ccff38431443",
@@ -99,7 +104,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:04:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -123,7 +129,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "b40a5b7f-b877-4813-abb8-8bf58f09ad9a",
@@ -136,7 +143,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:02:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "849352bb-2819-4138-ab50-ff3df3664752",
@@ -149,7 +157,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:04:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "5a42ce9b-c200-4454-9197-a8f044996276",
@@ -162,7 +171,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-01-17T14:07:00+00:00",
           "sentAt": "2025-10-20T12:57:06.803070+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -186,7 +196,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "9410e1ef-d90a-4780-b648-d438cc03abc4",
@@ -199,7 +210,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:01:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "bee1e7d6-c9fe-46fd-8ce6-78a639ab120c",
@@ -212,7 +224,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:03:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -236,7 +249,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "f686430d-4c76-48ef-a802-ca5db20c1488",
@@ -249,7 +263,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T17:04:29.825111+00:00",
           "sentAt": "2025-10-20T17:04:31.064532+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "36b5fdf2-5592-47ec-899f-fa18c5e192f4",
@@ -262,7 +277,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "4faba898-eba0-45cb-967f-080c3b6dddea",
@@ -275,7 +291,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T17:08:10.403435+00:00",
           "sentAt": "2025-10-20T17:13:47.947854+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "eda3aa71-bc08-4265-b6b6-3f0c7ddd2c29",
@@ -288,7 +305,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "b52089bc-202d-4fe9-b901-9c67c2386a0a",
@@ -301,7 +319,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T17:17:34.419799+00:00",
           "sentAt": "2025-10-20T17:17:35.727663+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "631401a4-cbdc-4378-8332-a0a31df0b072",
@@ -314,7 +333,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "181a3414-d9f8-4c9e-a8a0-114904eca960",
@@ -327,7 +347,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-24T13:11:41.669473+00:00",
           "sentAt": "2025-10-24T13:11:42.086672+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "36a7b52e-66d4-4128-b89a-efb8f9ccf883",
@@ -340,7 +361,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "7c017df0-3eb6-48b8-a1cb-d7e9773f6c95",
@@ -353,7 +375,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-24T14:05:03.203182+00:00",
           "sentAt": "2025-10-24T14:05:03.580524+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "c7b46a40-de8d-43fa-bb2a-788ff131b961",
@@ -366,7 +389,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "8a2a2736-949c-48ff-a5b8-2eab5c8a8175",
@@ -379,7 +403,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-25T22:24:00.601605+00:00",
           "sentAt": "2025-10-25T22:24:01.051130+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "9a3d8335-63f5-488e-9cc0-909c8c102aca",
@@ -392,7 +417,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "20dff686-7006-48ca-9876-d039cfa6a669",
@@ -405,7 +431,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-25T22:24:56.918639+00:00",
           "sentAt": "2025-10-25T22:24:57.187699+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -415,7 +442,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 0,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -429,7 +456,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "92f9be95-bed8-494d-a7a9-357a211b2dd4",
@@ -439,10 +467,74 @@
           "timestamp": "2025-11-03T22:44:56.058782+00:00",
           "via": "whatsapp",
           "transportSid": null,
-          "status": "scheduled",
+          "status": "failed",
           "scheduledSendAt": "2025-11-03T22:47:59.215492+00:00",
+          "sentAt": "2025-11-03T22:58:20.706504+00:00",
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
+        },
+        {
+          "id": "2f94f48b-7972-40e0-8b45-81feae1515b3",
+          "text": "Hey, can I send you a picture",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-03T22:58:55.949293+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "e12ef41c-92e5-4a9c-8ace-2b1ac9d5de84",
+          "text": "Hi there! Unfortunately, I can't receive pictures here, but I\u2019d love to help you with a quote. Could you tell me a bit more about the surface you need cleaning? For example, is it a driveway, patio, roof, or gutters? Also, what size is the area, and do you have any preferred times for the service? \n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-03T22:58:55.951447+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-03T23:01:59.988372+00:00",
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "4e997686-dc64-4113-8427-3936268ad077",
+          "text": "",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-03T22:59:19.407946+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "ad2c2a83-92ae-4d8d-bf18-92426d059e9e",
+              "contentType": "image/jpeg",
+              "sourceUrl": "https://api.twilio.com/2010-04-01/Accounts/ACcfd643ffbd265a8d4a0ce93758a92fa7/Messages/MMc43ad205ad29639c448f0a9507ade591/Media/ME36b907f7809a809dc0a246c575b12e90",
+              "filename": null
+            }
+          ]
+        },
+        {
+          "id": "b6b529da-557a-409f-9357-ba484d920f02",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-03T22:59:19.409869+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Invalid type for 'input[1].content[1].image_url': expected an image URL, but got an object instead.\", 'type': 'invalid_request_error', 'param': 'input[1].content[1].image_url', 'code': 'invalid_type'}}",
+          "attachments": []
         }
       ]
     }
