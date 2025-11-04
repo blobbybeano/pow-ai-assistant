@@ -258,9 +258,22 @@ class ChatApiClient {
     if (response.statusCode == 404 || response.body.isEmpty) {
       return null;
     }
-    final payload = json.decode(response.body) as Map<String, dynamic>;
-    final value = payload['defaultResponderId'];
-    return value is String && value.isNotEmpty ? value : null;
+    final contentType = response.headers['content-type']?.toLowerCase();
+    final body = response.body.trim();
+    final isLikelyJson =
+        (contentType != null && contentType.contains('application/json')) ||
+            body.startsWith('{') ||
+            body.startsWith('[');
+    if (!isLikelyJson) {
+      return null;
+    }
+    try {
+      final payload = json.decode(body) as Map<String, dynamic>;
+      final value = payload['defaultResponderId'];
+      return value is String && value.isNotEmpty ? value : null;
+    } on FormatException {
+      return null;
+    }
   }
 
   Future<void> updateDefaultResponderId(String responderId) async {
