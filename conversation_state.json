@@ -1,6 +1,6 @@
 {
   "settings": {
-    "defaultResponderId": "user-2"
+    "defaultResponderId": "user-1"
   },
   "conversations": {
     "+15551230001": {
@@ -442,8 +442,8 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 0,
-      "assignedResponderId": "user-2",
+      "unreadCount": 1,
+      "assignedResponderId": "user-1",
       "messages": [
         {
           "id": "2004a846-e5d4-465c-ae4a-0c4adc92f44d",
@@ -663,6 +663,34 @@
           "scheduledSendAt": "2025-11-04T21:29:30.990358+00:00",
           "sentAt": "2025-11-04T21:29:31.288165+00:00",
           "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
+        },
+        {
+          "id": "0e50805c-b7bd-49ae-aa50-f5182f64c20c",
+          "text": "Hehe",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-04T21:52:05.220172+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "3fd45e7c-4168-4736-8c29-7c0c9e7b6fbb",
+          "text": "Hello! \ud83d\ude0a How can we help you today? If you\u2019re looking for a quote on exterior cleaning, just let us know what you need, and we\u2019ll get started! Feel free to share details like the type of surface, size, and any access considerations. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-04T21:52:05.224438+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-04T21:55:08.278532+00:00",
+          "sentAt": null,
+          "error": null,
           "attachments": []
         }
       ]
