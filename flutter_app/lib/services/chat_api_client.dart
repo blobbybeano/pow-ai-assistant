@@ -4,17 +4,19 @@ import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
 
+const _defaultBaseUrl = 'https://enabling-corroboratorily-johnna.ngrok-free.dev';
+
 class ChatApiClient {
   ChatApiClient({required this.baseUrl, http.Client? httpClient})
       : _client = httpClient ?? http.Client(),
         _baseUri = Uri.parse(baseUrl);
 
   factory ChatApiClient.fromEnvironment() {
-    const defaultUrl = String.fromEnvironment(
+    const baseUrl = String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'http://127.0.0.1:5002',
+      defaultValue: _defaultBaseUrl,
     );
-    return ChatApiClient(baseUrl: defaultUrl);
+    return ChatApiClient(baseUrl: baseUrl);
   }
 
   final String baseUrl;

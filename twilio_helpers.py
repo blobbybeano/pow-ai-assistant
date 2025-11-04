@@ -11,6 +11,8 @@ import httpx
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
+from workspace_settings import load_workspace_settings
+
 
 @dataclass
 class TwilioConfig:
@@ -29,15 +31,22 @@ class TwilioMessenger:
 
     @classmethod
     def from_env(cls) -> Optional["TwilioMessenger"]:
-        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        settings = load_workspace_settings()
+
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID") or settings.twilio.account_sid
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN") or settings.twilio.auth_token
 
         if not account_sid or not auth_token:
             return None
 
-        whatsapp_from = _normalize_whatsapp_address(os.getenv("TWILIO_WHATSAPP_NUMBER"))
+        whatsapp_from = _normalize_whatsapp_address(
+            os.getenv("TWILIO_WHATSAPP_NUMBER") or settings.twilio.whatsapp_number
+        )
 
-        messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID")
+        messaging_service_sid = (
+            os.getenv("TWILIO_MESSAGING_SERVICE_SID")
+            or settings.twilio.messaging_service_sid
+        )
 
         config = TwilioConfig(
             account_sid=account_sid,

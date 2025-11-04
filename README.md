@@ -19,7 +19,9 @@ URL so you can trial the experience in one step.
   `OPENAI_ORG_ID` / `OPENAI_PROJECT_ID` if required)
 * Twilio sandbox credentials for outbound replies (`TWILIO_ACCOUNT_SID`,
   `TWILIO_AUTH_TOKEN`, and either `TWILIO_WHATSAPP_NUMBER` or
-  `TWILIO_MESSAGING_SERVICE_SID`)
+  `TWILIO_MESSAGING_SERVICE_SID`). These can be stored in
+  [`workspace_settings.json`](workspace_settings.json) if you prefer to keep
+  them out of your shell environment during development.
 
 ### Run everything together
 
@@ -32,8 +34,10 @@ The launcher will:
 
 1. Serve the Twilio webhook + REST API locally (default `http://0.0.0.0:5002`).
 2. Run `flutter pub get` (unless `--skip-pub-get` is supplied).
-3. Execute `flutter run` with `--dart-define=API_BASE_URL=http://127.0.0.1:5002`
-   so the workspace talks to the freshly started backend.
+3. Execute `flutter run` with `--dart-define=API_BASE_URL=<base-url>` so the
+   workspace talks to the freshly started backend. The base URL defaults to the
+   value in `workspace_settings.json` (if present) or falls back to
+   `http://127.0.0.1:<port>`.
 
 Use `Ctrl+C` to shut down both processes at once. Pass `--no-flutter` if you only
 need the Flask backend (e.g. when deploying to a server or testing webhooks).
@@ -43,7 +47,17 @@ need the Flask backend (e.g. when deploying to a server or testing webhooks).
 * `--flutter-device`: forwards a device ID from `flutter devices` when you need
   to target a physical device or specific simulator.
 * `--flutter-base-url`: override the API base URL (for example,
-  `http://10.0.2.2:5002` when talking to Android emulators).
+  `http://10.0.2.2:5002` when talking to Android emulators). When not supplied,
+  the launcher reads the default from `workspace_settings.json`.
+
+### Workspace defaults
+
+`workspace_settings.json` centralises the values shared between the Flask
+backend and Flutter client. The checked-in configuration points the stack at the
+public ngrok tunnel (`https://enabling-corroboratorily-johnna.ngrok-free.dev`)
+with the WhatsApp number `+44 7366 320940`. Update this file if your webhook or
+sender details change; the launcher and Twilio helper will automatically pick up
+the new values on restart.
 * `--flutter-extra-args -- <args>`: append custom arguments to the `flutter run`
   invocation.
 

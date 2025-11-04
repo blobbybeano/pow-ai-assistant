@@ -1,0 +1,11 @@
+{
+  "api": {
+    "baseUrl": "https://enabling-corroboratorily-johnna.ngrok-free.dev"
+  },
+  "twilio": {
+    "accountSid": "ACcfd643ffbd265a8d4a0ce93758a92fa7",
+    "authToken": "1308a4bedef880bdd14c703196b7c634",
+    "whatsappNumber": "whatsapp:+447366320940",
+    "webhookUrl": "https://enabling-corroboratorily-johnna.ngrok-free.dev/twilio/whatsapp"
+  }
+}
