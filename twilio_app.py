@@ -387,6 +387,7 @@ def _attach_proxy_urls(conversation_id: str, message: Dict[str, object]) -> None
             conversation_id=conversation_id,
             message_id=message_id,
             attachment_id=attachment_id,
+            _external=True,
         )
 
 
@@ -629,17 +630,22 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if not text:
         abort(400, description="Message text is required")
 
-    if not twilio_messenger:
-        abort(
-            500,
-            description="Twilio credentials are not configured for outbound messaging",
-        )
+    simulated_delivery = False
+    sid: Optional[str] = None
 
-    try:
-        sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
-    except Exception as exc:  # pragma: no cover - network call
-        logging.exception("Failed to send manual reply via Twilio")
-        abort(502, description=str(exc))
+    if not twilio_messenger:
+        simulated_delivery = True
+        logging.warning(
+            "Twilio credentials not configured; recording manual reply for %s without sending",
+            conversation_id,
+        )
+        sid = f"simulated-{uuid4()}"
+    else:
+        try:
+            sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to send manual reply via Twilio")
+            abort(502, description=str(exc))
 
     message = conversation_store.record_message(
         conversation_id,
@@ -650,7 +656,51 @@ def api_send_manual_message(conversation_id: str) -> Response:
         sent_at=_iso_now(),
     )
 
-    return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})
+    payload: Dict[str, object] = {
+        "status": "sent",
+        "sid": sid or "",
+        "message": message.to_dict(),
+    }
+    if simulated_delivery:
+        payload["delivery"] = "simulated"
+
+    return jsonify(payload)
+
+
+@app.post("/api/conversations/<conversation_id>/messages/<message_id>/send-now")
+def api_send_ai_message_now(conversation_id: str, message_id: str) -> Response:
+    message = conversation_store.get_message(conversation_id, message_id)
+    if message is None or message.author != "ai":
+        abort(404, description="Scheduled AI message not found")
+
+    if message.status != "scheduled":
+        abort(409, description="Message is not awaiting delivery")
+
+    body = (message.text or "").strip()
+    if not body:
+        abort(400, description="Scheduled AI message is empty")
+
+    now = datetime.now(timezone.utc)
+    conversation_store.update_message(
+        conversation_id,
+        message_id,
+        status="scheduled",
+        sent_at=None,
+        scheduled_send_at=now.isoformat(),
+    )
+    _scheduled_message_ids.discard(message_id)
+    _schedule_ai_delivery(
+        conversation_id,
+        message_id,
+        body,
+        scheduled_for=now,
+    )
+
+    updated = conversation_store.get_message(conversation_id, message_id)
+    return jsonify({
+        "status": "scheduled",
+        "message": updated.to_dict() if updated else message.to_dict(),
+    })
 
 
 @app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")

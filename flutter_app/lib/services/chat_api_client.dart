@@ -97,6 +97,18 @@ class ChatApiClient {
     }
   }
 
+  Future<void> sendScheduledMessageNow({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final response = await _client.post(
+      _uri('/api/conversations/$conversationId/messages/$messageId/send-now'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send AI message now (${response.statusCode})');
+    }
+  }
+
   Future<String> fetchAiDraft(String conversationId, {String? responderId}) async {
     final body = responderId != null ? json.encode({'responderId': responderId}) : null;
     final headers = body != null ? {'Content-Type': 'application/json'} : null;

@@ -41,9 +41,31 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
+        <key>CADisableMinimumFrameDurationOnPhone</key>
+        <true/>
+        <key>UIApplicationSupportsIndirectInputEvents</key>
+        <true/>
+        <key>NSAppTransportSecurity</key>
+        <dict>
+                <key>NSAllowsArbitraryLoads</key>
+                <true/>
+                <key>NSExceptionDomains</key>
+                <dict>
+                        <key>localhost</key>
+                        <dict>
+                                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                                <true/>
+                                <key>NSIncludesSubdomains</key>
+                                <true/>
+                        </dict>
+                        <key>127.0.0.1</key>
+                        <dict>
+                                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                                <true/>
+                                <key>NSIncludesSubdomains</key>
+                                <true/>
+                        </dict>
+                </dict>
+        </dict>
 </dict>
 </plist>
