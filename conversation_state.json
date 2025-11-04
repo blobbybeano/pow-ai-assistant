@@ -442,7 +442,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 2,
       "assignedResponderId": "user-1",
       "messages": [
         {
@@ -687,8 +687,36 @@
           "timestamp": "2025-11-04T21:52:05.224438+00:00",
           "via": "whatsapp",
           "transportSid": null,
-          "status": "scheduled",
+          "status": "failed",
           "scheduledSendAt": "2025-11-04T21:55:08.278532+00:00",
+          "sentAt": "2025-11-04T22:01:05.130772+00:00",
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
+        },
+        {
+          "id": "c02c1db3-66d4-4b5f-b8a2-fa9d7570d8ee",
+          "text": "For",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-04T22:01:44.497583+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "7dddfbef-4f07-48af-ae6d-1218c2b11b06",
+          "text": "Hi there! It looks like your message got cut off. Could you let me know what service you\u2019re interested in? If you share a bit about the surface type, size, and any access considerations, I can help you get a quote. \n\nLooking forward to hearing from you!\n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-04T22:01:44.500513+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-04T22:04:49.284003+00:00",
           "sentAt": null,
           "error": null,
           "attachments": []
