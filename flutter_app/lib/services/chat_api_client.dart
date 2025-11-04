@@ -27,9 +27,38 @@ class ChatApiClient {
 
   Uri _uriFromSegments(Iterable<String> segments,
       {Map<String, String>? queryParameters}) {
+    final baseSegments = _basePathSegments().toList();
+    final additionalSegments = segments
+        .map((segment) => segment.trim())
+        .where((segment) => segment.isNotEmpty)
+        .toList();
+
+    var overlap = 0;
+    final maxOverlap = baseSegments.length < additionalSegments.length
+        ? baseSegments.length
+        : additionalSegments.length;
+
+    for (var size = maxOverlap; size > 0; size--) {
+      final baseTail =
+          baseSegments.sublist(baseSegments.length - size, baseSegments.length);
+      final segmentHead = additionalSegments.sublist(0, size);
+      var matches = true;
+      for (var index = 0; index < size; index++) {
+        if (baseTail[index].toLowerCase() !=
+            segmentHead[index].toLowerCase()) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        overlap = size;
+        break;
+      }
+    }
+
     final combinedSegments = <String>[
-      ..._basePathSegments(),
-      ...segments.where((segment) => segment.isNotEmpty),
+      ...baseSegments,
+      ...additionalSegments.sublist(overlap),
     ];
 
     return Uri(
