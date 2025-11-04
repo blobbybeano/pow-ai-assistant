@@ -85,17 +85,34 @@ class ChatApiClient {
     }
   }
 
-  void _normaliseMessagePayload(Map<String, dynamic> payload) {
+  void _normaliseMessagePayload(
+    Map<String, dynamic> payload, {
+    String? conversationId,
+  }) {
     final attachments = payload['attachments'];
     if (attachments is List) {
       for (final attachment in attachments) {
         if (attachment is Map<String, dynamic>) {
           final proxyUrl = attachment['proxyUrl'];
           final sourceUrl = attachment['sourceUrl'];
-          final resolvedProxy = _resolveUrl(proxyUrl as String?);
-          final resolvedSource = _resolveUrl(sourceUrl as String?);
+          final messageId = payload['id'];
+          final attachmentId = attachment['id'];
+          final resolvedProxy = _resolveUrl(proxyUrl is String ? proxyUrl : null);
+          final resolvedSource = _resolveUrl(sourceUrl is String ? sourceUrl : null);
           if (resolvedProxy != null) {
             attachment['proxyUrl'] = resolvedProxy;
+          } else if (conversationId != null &&
+              messageId is String &&
+              attachmentId is String) {
+            attachment['proxyUrl'] = _uriFromSegments([
+              'api',
+              'conversations',
+              conversationId,
+              'messages',
+              messageId,
+              'attachments',
+              attachmentId,
+            ]).toString();
           }
           if (resolvedSource != null) {
             attachment['sourceUrl'] = resolvedSource;
@@ -105,23 +122,34 @@ class ChatApiClient {
     }
   }
 
-  void _normaliseConversationPayload(Map<String, dynamic> payload) {
+  void _normaliseConversationPayload(
+    Map<String, dynamic> payload, {
+    String? conversationId,
+  }) {
+    final effectiveConversationId =
+        conversationId ?? (payload['id'] is String ? payload['id'] as String : null);
     final photoUrl = payload['profilePhotoUrl'];
-    final resolvedPhoto = _resolveUrl(photoUrl as String?);
+    final resolvedPhoto = _resolveUrl(photoUrl is String ? photoUrl : null);
     if (resolvedPhoto != null) {
       payload['profilePhotoUrl'] = resolvedPhoto;
     }
 
     final lastMessage = payload['lastMessage'];
     if (lastMessage is Map<String, dynamic>) {
-      _normaliseMessagePayload(lastMessage);
+      _normaliseMessagePayload(
+        lastMessage,
+        conversationId: effectiveConversationId,
+      );
     }
 
     final messages = payload['messages'];
     if (messages is List) {
       for (final message in messages) {
         if (message is Map<String, dynamic>) {
-          _normaliseMessagePayload(message);
+          _normaliseMessagePayload(
+            message,
+            conversationId: effectiveConversationId,
+          );
         }
       }
     }
@@ -137,7 +165,11 @@ class ChatApiClient {
     final conversations = payload['conversations'] as List<dynamic>? ?? [];
     return conversations.map((json) {
       final map = Map<String, dynamic>.from(json as Map<String, dynamic>);
-      _normaliseConversationPayload(map);
+      final convoId = map['id'];
+      _normaliseConversationPayload(
+        map,
+        conversationId: convoId is String ? convoId : null,
+      );
       return ConversationSummary.fromJson(map);
     }).toList();
   }
@@ -152,7 +184,10 @@ class ChatApiClient {
     final payload = Map<String, dynamic>.from(
       json.decode(response.body) as Map<String, dynamic>,
     );
-    _normaliseConversationPayload(payload);
+    _normaliseConversationPayload(
+      payload,
+      conversationId: conversationId,
+    );
     return ConversationDetail.fromJson(payload);
   }
 

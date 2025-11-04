@@ -7,6 +7,7 @@ class ChatAttachment {
     this.sourceUrl,
     this.filename,
     this.proxyUrl,
+    this.cachedPath,
   });
 
   factory ChatAttachment.fromJson(Map<String, dynamic> json) {
@@ -16,6 +17,7 @@ class ChatAttachment {
       sourceUrl: json['sourceUrl'] as String?,
       filename: json['filename'] as String?,
       proxyUrl: json['proxyUrl'] as String?,
+      cachedPath: json['cachedPath'] as String?,
     );
   }
 
@@ -24,6 +26,7 @@ class ChatAttachment {
   final String? sourceUrl;
   final String? filename;
   final String? proxyUrl;
+  final String? cachedPath;
 
   bool get isImage => contentType.startsWith('image/');
 
