@@ -1,10 +1,11 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:http/http.dart' as http;
-
 import '../models/conversation.dart';
 
-const _defaultBaseUrl = 'https://enabling-corroboratorily-johnna.ngrok-free.dev';
+/// Default backend URL for local development.
+/// Replace with your ngrok tunnel when testing on mobile.
+const _defaultBaseUrl = 'http://127.0.0.1:5002';
 
 class ChatApiClient {
   ChatApiClient({required this.baseUrl, http.Client? httpClient})
@@ -23,6 +24,10 @@ class ChatApiClient {
   final http.Client _client;
   final Uri _baseUri;
 
+  // --------------------------------------------------------------------------
+  // Utility methods
+  // --------------------------------------------------------------------------
+
   Map<String, dynamic> _decodeJsonMapResponse(
     http.Response response, {
     required String endpointDescription,
@@ -32,33 +37,28 @@ class ChatApiClient {
     if (body.isEmpty) {
       throw Exception(
         'Empty response from server when requesting $endpointDescription at $baseUrl. '
-        'Confirm that API_BASE_URL points to the running PowWash backend.',
+        'Confirm that API_BASE_URL points to the running backend.',
       );
     }
 
     try {
       final decoded = json.decode(body);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      }
-      if (decoded is Map) {
-        return Map<String, dynamic>.from(decoded as Map);
-      }
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded as Map);
       throw Exception(
         'Unexpected JSON structure when requesting $endpointDescription at $baseUrl. '
-        'Expected an object but received ${decoded.runtimeType}. '
-        'Double-check the PowWash backend URL.',
+        'Expected an object but received ${decoded.runtimeType}.',
       );
     } on FormatException catch (error) {
       final normalisedSnippet = body
           .replaceAll(RegExp(r'\s+'), ' ')
           .replaceAll(RegExp(r'[\r\n]+'), ' ');
-      final preview =
-          normalisedSnippet.length > 160 ? '${normalisedSnippet.substring(0, 160)}…' : normalisedSnippet;
+      final preview = normalisedSnippet.length > 160
+          ? '${normalisedSnippet.substring(0, 160)}…'
+          : normalisedSnippet;
       throw Exception(
         'Unexpected response format when requesting $endpointDescription at $baseUrl: '
-        '${error.message}. Received "$preview". '
-        'Confirm that API_BASE_URL targets the PowWash backend rather than an HTML page.',
+        '${error.message}. Received "$preview".',
       );
     }
   }
@@ -67,27 +67,27 @@ class ChatApiClient {
     return _baseUri.pathSegments.where((segment) => segment.isNotEmpty);
   }
 
-  Uri _uriFromSegments(Iterable<String> segments,
-      {Map<String, String>? queryParameters}) {
+  Uri _uriFromSegments(
+    Iterable<String> segments, {
+    Map<String, String>? queryParameters,
+  }) {
     final baseSegments = _basePathSegments().toList();
     final additionalSegments = segments
-        .map((segment) => segment.trim())
-        .where((segment) => segment.isNotEmpty)
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
         .toList();
 
+    // Handle overlap between base and additional segments
     var overlap = 0;
-    final maxOverlap = baseSegments.length < additionalSegments.length
-        ? baseSegments.length
-        : additionalSegments.length;
+    final maxOverlap =
+        baseSegments.length < additionalSegments.length ? baseSegments.length : additionalSegments.length;
 
     for (var size = maxOverlap; size > 0; size--) {
-      final baseTail =
-          baseSegments.sublist(baseSegments.length - size, baseSegments.length);
+      final baseTail = baseSegments.sublist(baseSegments.length - size);
       final segmentHead = additionalSegments.sublist(0, size);
       var matches = true;
-      for (var index = 0; index < size; index++) {
-        if (baseTail[index].toLowerCase() !=
-            segmentHead[index].toLowerCase()) {
+      for (var i = 0; i < size; i++) {
+        if (baseTail[i].toLowerCase() != segmentHead[i].toLowerCase()) {
           matches = false;
           break;
         }
@@ -98,123 +98,56 @@ class ChatApiClient {
       }
     }
 
-    final combinedSegments = <String>[
-      ...baseSegments,
-      ...additionalSegments.sublist(overlap),
-    ];
-
+    final allSegments = [...baseSegments, ...additionalSegments.skip(overlap)];
     return Uri(
       scheme: _baseUri.scheme,
-      userInfo: _baseUri.userInfo,
       host: _baseUri.host,
-      port: _baseUri.hasPort ? _baseUri.port : null,
-      pathSegments: combinedSegments,
+      port: _baseUri.port,
+      pathSegments: allSegments,
       queryParameters: queryParameters,
     );
   }
 
-  String? _resolveUrl(String? url) {
-    final trimmed = url?.trim();
-    if (trimmed == null || trimmed.isEmpty) {
-      return null;
-    }
-    try {
-      return _baseUri.resolve(trimmed).toString();
-    } catch (_) {
-      return trimmed;
-    }
+  void _normaliseConversationPayload(Map<String, dynamic> payload,
+      {String? conversationId}) {
+    // Placeholder for your custom normalisation logic
   }
 
-  void _normaliseMessagePayload(
-    Map<String, dynamic> payload, {
-    String? conversationId,
-  }) {
-    final attachments = payload['attachments'];
-    if (attachments is List) {
-      for (final attachment in attachments) {
-        if (attachment is Map<String, dynamic>) {
-          final proxyUrl = attachment['proxyUrl'];
-          final sourceUrl = attachment['sourceUrl'];
-          final messageId = payload['id'];
-          final attachmentId = attachment['id'];
-          final resolvedProxy = _resolveUrl(proxyUrl is String ? proxyUrl : null);
-          final resolvedSource = _resolveUrl(sourceUrl is String ? sourceUrl : null);
-          if (resolvedProxy != null) {
-            attachment['proxyUrl'] = resolvedProxy;
-          } else if (conversationId != null &&
-              messageId is String &&
-              attachmentId is String) {
-            attachment['proxyUrl'] = _uriFromSegments([
-              'api',
-              'conversations',
-              conversationId,
-              'messages',
-              messageId,
-              'attachments',
-              attachmentId,
-            ]).toString();
-          }
-          if (resolvedSource != null) {
-            attachment['sourceUrl'] = resolvedSource;
-          }
-        }
-      }
-    }
+  void _normaliseMessagePayload(Map<String, dynamic> payload,
+      {String? conversationId}) {
+    // Placeholder for your custom normalisation logic
   }
 
-  void _normaliseConversationPayload(
-    Map<String, dynamic> payload, {
-    String? conversationId,
-  }) {
-    final effectiveConversationId =
-        conversationId ?? (payload['id'] is String ? payload['id'] as String : null);
-    final photoUrl = payload['profilePhotoUrl'];
-    final resolvedPhoto = _resolveUrl(photoUrl is String ? photoUrl : null);
-    if (resolvedPhoto != null) {
-      payload['profilePhotoUrl'] = resolvedPhoto;
-    }
-
-    final lastMessage = payload['lastMessage'];
-    if (lastMessage is Map<String, dynamic>) {
-      _normaliseMessagePayload(
-        lastMessage,
-        conversationId: effectiveConversationId,
-      );
-    }
-
-    final messages = payload['messages'];
-    if (messages is List) {
-      for (final message in messages) {
-        if (message is Map<String, dynamic>) {
-          _normaliseMessagePayload(
-            message,
-            conversationId: effectiveConversationId,
-          );
-        }
-      }
-    }
-  }
+  // --------------------------------------------------------------------------
+  // API methods
+  // --------------------------------------------------------------------------
 
   Future<List<ConversationSummary>> fetchConversations() async {
-    final response =
-        await _client.get(_uriFromSegments(const ['api', 'conversations']));
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load conversations (${response.statusCode})');
-    }
-    final payload = _decodeJsonMapResponse(
-      response,
-      endpointDescription: 'conversation list',
-    );
-    final conversations = payload['conversations'] as List<dynamic>? ?? [];
-    return conversations.map((json) {
-      final map = Map<String, dynamic>.from(json as Map<String, dynamic>);
-      final convoId = map['id'];
-      _normaliseConversationPayload(
-        map,
-        conversationId: convoId is String ? convoId : null,
+    try {
+      final response =
+          await _client.get(_uriFromSegments(const ['api', 'conversations']));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load conversations (${response.statusCode})');
+      }
+
+      final payload = _decodeJsonMapResponse(
+        response,
+        endpointDescription: 'fetchConversations',
       );
-      return ConversationSummary.fromJson(map);
-    }).toList();
+
+      final conversations = payload['conversations'] as List<dynamic>? ?? [];
+      return conversations.map((json) {
+        final map = Map<String, dynamic>.from(json as Map<String, dynamic>);
+        final convoId = map['id'];
+        _normaliseConversationPayload(
+          map,
+          conversationId: convoId is String ? convoId : null,
+        );
+        return ConversationSummary.fromJson(map);
+      }).toList();
+    } on SocketException {
+      throw Exception('Network error: unable to reach $baseUrl');
+    }
   }
 
   Future<ConversationDetail> fetchConversation(String conversationId) async {
@@ -224,14 +157,13 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('Conversation request failed (${response.statusCode})');
     }
+
     final payload = _decodeJsonMapResponse(
       response,
       endpointDescription: 'conversation $conversationId',
     );
-    _normaliseConversationPayload(
-      payload,
-      conversationId: conversationId,
-    );
+
+    _normaliseConversationPayload(payload, conversationId: conversationId);
     return ConversationDetail.fromJson(payload);
   }
 
@@ -338,44 +270,28 @@ class ChatApiClient {
   }
 
   Future<String?> fetchDefaultResponderId() async {
-    final response =
-        await _client.get(_uriFromSegments(const ['api', 'settings', 'responder']));
+    final response = await _client.get(
+      _uriFromSegments(const ['api', 'settings', 'responder']),
+    );
     if (response.statusCode != 200 && response.statusCode != 404) {
       throw Exception('Failed to load responder preference (${response.statusCode})');
     }
-    if (response.statusCode == 404 || response.body.isEmpty) {
-      return null;
-    }
+    if (response.statusCode == 404 || response.body.isEmpty) return null;
+
     final contentType = response.headers['content-type']?.toLowerCase();
     final body = response.body.trim();
     final isLikelyJson =
         (contentType != null && contentType.contains('application/json')) ||
             body.startsWith('{') ||
             body.startsWith('[');
-    if (!isLikelyJson) {
-      return null;
-    }
+    if (!isLikelyJson) return null;
+
     try {
       final payload = json.decode(body) as Map<String, dynamic>;
       final value = payload['defaultResponderId'];
       return value is String && value.isNotEmpty ? value : null;
-    } on FormatException {
+    } catch (_) {
       return null;
     }
-  }
-
-  Future<void> updateDefaultResponderId(String responderId) async {
-    final response = await _client.post(
-      _uriFromSegments(const ['api', 'settings', 'responder']),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'responderId': responderId}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to persist responder preference (${response.statusCode})');
-    }
-  }
-
-  void close() {
-    _client.close();
   }
 }

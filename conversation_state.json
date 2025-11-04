@@ -715,10 +715,10 @@
           "timestamp": "2025-11-04T22:01:44.500513+00:00",
           "via": "whatsapp",
           "transportSid": null,
-          "status": "scheduled",
+          "status": "failed",
           "scheduledSendAt": "2025-11-04T22:04:49.284003+00:00",
-          "sentAt": null,
-          "error": null,
+          "sentAt": "2025-11-04T22:04:49.494785+00:00",
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
           "attachments": []
         }
       ]
