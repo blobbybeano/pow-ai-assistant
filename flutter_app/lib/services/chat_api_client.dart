@@ -23,6 +23,46 @@ class ChatApiClient {
   final http.Client _client;
   final Uri _baseUri;
 
+  Map<String, dynamic> _decodeJsonMapResponse(
+    http.Response response, {
+    required String endpointDescription,
+  }) {
+    final rawBody = response.body;
+    final body = rawBody.trim();
+    if (body.isEmpty) {
+      throw Exception(
+        'Empty response from server when requesting $endpointDescription at $baseUrl. '
+        'Confirm that API_BASE_URL points to the running PowWash backend.',
+      );
+    }
+
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded as Map);
+      }
+      throw Exception(
+        'Unexpected JSON structure when requesting $endpointDescription at $baseUrl. '
+        'Expected an object but received ${decoded.runtimeType}. '
+        'Double-check the PowWash backend URL.',
+      );
+    } on FormatException catch (error) {
+      final normalisedSnippet = body
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(RegExp(r'[\r\n]+'), ' ');
+      final preview =
+          normalisedSnippet.length > 160 ? '${normalisedSnippet.substring(0, 160)}…' : normalisedSnippet;
+      throw Exception(
+        'Unexpected response format when requesting $endpointDescription at $baseUrl: '
+        '${error.message}. Received "$preview". '
+        'Confirm that API_BASE_URL targets the PowWash backend rather than an HTML page.',
+      );
+    }
+  }
+
   Iterable<String> _basePathSegments() {
     return _baseUri.pathSegments.where((segment) => segment.isNotEmpty);
   }
@@ -161,7 +201,10 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('Failed to load conversations (${response.statusCode})');
     }
-    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final payload = _decodeJsonMapResponse(
+      response,
+      endpointDescription: 'conversation list',
+    );
     final conversations = payload['conversations'] as List<dynamic>? ?? [];
     return conversations.map((json) {
       final map = Map<String, dynamic>.from(json as Map<String, dynamic>);
@@ -181,8 +224,9 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('Conversation request failed (${response.statusCode})');
     }
-    final payload = Map<String, dynamic>.from(
-      json.decode(response.body) as Map<String, dynamic>,
+    final payload = _decodeJsonMapResponse(
+      response,
+      endpointDescription: 'conversation $conversationId',
     );
     _normaliseConversationPayload(
       payload,
@@ -207,7 +251,10 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('Unable to toggle AI (${response.statusCode})');
     }
-    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final payload = _decodeJsonMapResponse(
+      response,
+      endpointDescription: 'AI toggle for $conversationId',
+    );
     return payload['enabled'] as bool? ?? enabled;
   }
 
@@ -227,7 +274,10 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('Failed to send message (${response.statusCode})');
     }
-    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final payload = _decodeJsonMapResponse(
+      response,
+      endpointDescription: 'manual message send for $conversationId',
+    );
     return payload['sid'] as String? ?? '';
   }
 
@@ -280,7 +330,10 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('AI draft failed (${response.statusCode})');
     }
-    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final payload = _decodeJsonMapResponse(
+      response,
+      endpointDescription: 'AI draft for $conversationId',
+    );
     return payload['draft'] as String;
   }
 
