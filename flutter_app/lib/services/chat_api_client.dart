@@ -24,6 +24,11 @@ class ChatApiClient {
   final http.Client _client;
   final Uri _baseUri;
 
+  /// Releases any resources held by the underlying HTTP client.
+  void close() {
+    _client.close();
+  }
+
   // --------------------------------------------------------------------------
   // Utility methods
   // --------------------------------------------------------------------------
@@ -292,6 +297,20 @@ class ChatApiClient {
       return value is String && value.isNotEmpty ? value : null;
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> updateDefaultResponderId(String responderId) async {
+    final response = await _client.post(
+      _uriFromSegments(const ['api', 'settings', 'responder']),
+      headers: const {'Content-Type': 'application/json'},
+      body: json.encode({'responderId': responderId}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to persist responder preference (${response.statusCode})',
+      );
     }
   }
 }
