@@ -24,6 +24,61 @@ class ChatApiClient {
     return base.resolve(path);
   }
 
+  String? _resolveUrl(String? url) {
+    final trimmed = url?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    try {
+      final base = Uri.parse(baseUrl);
+      return base.resolve(trimmed).toString();
+    } catch (_) {
+      return trimmed;
+    }
+  }
+
+  void _normaliseMessagePayload(Map<String, dynamic> payload) {
+    final attachments = payload['attachments'];
+    if (attachments is List) {
+      for (final attachment in attachments) {
+        if (attachment is Map<String, dynamic>) {
+          final proxyUrl = attachment['proxyUrl'];
+          final sourceUrl = attachment['sourceUrl'];
+          final resolvedProxy = _resolveUrl(proxyUrl as String?);
+          final resolvedSource = _resolveUrl(sourceUrl as String?);
+          if (resolvedProxy != null) {
+            attachment['proxyUrl'] = resolvedProxy;
+          }
+          if (resolvedSource != null) {
+            attachment['sourceUrl'] = resolvedSource;
+          }
+        }
+      }
+    }
+  }
+
+  void _normaliseConversationPayload(Map<String, dynamic> payload) {
+    final photoUrl = payload['profilePhotoUrl'];
+    final resolvedPhoto = _resolveUrl(photoUrl as String?);
+    if (resolvedPhoto != null) {
+      payload['profilePhotoUrl'] = resolvedPhoto;
+    }
+
+    final lastMessage = payload['lastMessage'];
+    if (lastMessage is Map<String, dynamic>) {
+      _normaliseMessagePayload(lastMessage);
+    }
+
+    final messages = payload['messages'];
+    if (messages is List) {
+      for (final message in messages) {
+        if (message is Map<String, dynamic>) {
+          _normaliseMessagePayload(message);
+        }
+      }
+    }
+  }
+
   Future<List<ConversationSummary>> fetchConversations() async {
     final response = await _client.get(_uri('/api/conversations'));
     if (response.statusCode != 200) {
@@ -31,9 +86,11 @@ class ChatApiClient {
     }
     final payload = json.decode(response.body) as Map<String, dynamic>;
     final conversations = payload['conversations'] as List<dynamic>? ?? [];
-    return conversations
-        .map((json) => ConversationSummary.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return conversations.map((json) {
+      final map = Map<String, dynamic>.from(json as Map<String, dynamic>);
+      _normaliseConversationPayload(map);
+      return ConversationSummary.fromJson(map);
+    }).toList();
   }
 
   Future<ConversationDetail> fetchConversation(String conversationId) async {
@@ -41,7 +98,10 @@ class ChatApiClient {
     if (response.statusCode != 200) {
       throw Exception('Conversation request failed (${response.statusCode})');
     }
-    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final payload = Map<String, dynamic>.from(
+      json.decode(response.body) as Map<String, dynamic>,
+    );
+    _normaliseConversationPayload(payload);
     return ConversationDetail.fromJson(payload);
   }
 
@@ -94,6 +154,18 @@ class ChatApiClient {
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to cancel AI message (${response.statusCode})');
+    }
+  }
+
+  Future<void> sendScheduledMessageNow({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final response = await _client.post(
+      _uri('/api/conversations/$conversationId/messages/$messageId/send-now'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send AI message now (${response.statusCode})');
     }
   }
 

@@ -114,7 +114,7 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                   controller.pendingAiMessage!.id == message.id &&
                   message.author == 'ai' &&
                   message.isScheduled
-              ? _EditScheduledButton(
+              ? _PendingAiActions(
                   controller: controller,
                   onRecovered: (draft) {
                     setState(() {
@@ -560,6 +560,26 @@ class _AiDraftPreview extends StatelessWidget {
   }
 }
 
+class _PendingAiActions extends StatelessWidget {
+  const _PendingAiActions({required this.controller, required this.onRecovered});
+
+  final ConversationController controller;
+  final ValueChanged<String> onRecovered;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.end,
+      children: [
+        _EditScheduledButton(controller: controller, onRecovered: onRecovered),
+        _SendNowButton(controller: controller),
+      ],
+    );
+  }
+}
+
 class _EditScheduledButton extends StatelessWidget {
   const _EditScheduledButton({required this.controller, required this.onRecovered});
 
@@ -568,7 +588,7 @@ class _EditScheduledButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBusy = controller.isCancellingPendingAi;
+    final isBusy = controller.isCancellingPendingAi || controller.isSendingAiNow;
 
     return OutlinedButton.icon(
       onPressed: isBusy
@@ -592,6 +612,35 @@ class _EditScheduledButton extends StatelessWidget {
             )
           : const Icon(Icons.edit_outlined, size: 18),
       label: const Text('Edit before sending'),
+    );
+  }
+}
+
+class _SendNowButton extends StatelessWidget {
+  const _SendNowButton({required this.controller});
+
+  final ConversationController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBusy = controller.isSendingAiNow || controller.isCancellingPendingAi;
+
+    return FilledButton.icon(
+      onPressed: isBusy ? null : () => controller.sendPendingAiNow(),
+      style: FilledButton.styleFrom(
+        backgroundColor: const Color(0xFF00A884),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      icon: isBusy
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            )
+          : const Icon(Icons.send_rounded, size: 18),
+      label: Text(isBusy ? 'Sending…' : 'Send now'),
     );
   }
 }

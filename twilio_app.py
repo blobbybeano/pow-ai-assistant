@@ -34,7 +34,7 @@ _MEDIA_CACHE_ROOT = MEDIA_CACHE_DIR.resolve()
 twilio_messenger = TwilioMessenger.from_env()
 if not twilio_messenger:
     logging.warning(
-        "Twilio credentials not detected. Manual outbound replies from the Flutter app will be disabled."
+        "Twilio credentials not detected. Outbound replies will be simulated locally."
     )
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
@@ -296,16 +296,17 @@ def _schedule_ai_delivery(
             return
 
         if not twilio_messenger:
-            logging.warning(
-                "Twilio credentials missing; marking AI reply as failed for %s",
+            logging.info(
+                "Twilio credentials missing; marking AI reply for %s as sent locally",
                 conversation_id,
             )
             conversation_store.update_message(
                 conversation_id,
                 message_id,
-                status="failed",
+                status="sent",
                 sent_at=_iso_now(),
-                error="Twilio credentials are not configured for outbound messaging",
+                transport_sid=f"local-{uuid4()}",
+                error=None,
             )
             _scheduled_message_ids.discard(message_id)
             return
@@ -629,17 +630,22 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if not text:
         abort(400, description="Message text is required")
 
-    if not twilio_messenger:
-        abort(
-            500,
-            description="Twilio credentials are not configured for outbound messaging",
-        )
+    sid: str
+    delivery_channel = "twilio"
 
-    try:
-        sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
-    except Exception as exc:  # pragma: no cover - network call
-        logging.exception("Failed to send manual reply via Twilio")
-        abort(502, description=str(exc))
+    if not twilio_messenger:
+        delivery_channel = "local"
+        sid = f"local-{uuid4()}"
+        logging.info(
+            "Twilio credentials missing; storing manual reply for %s locally",
+            conversation_id,
+        )
+    else:
+        try:
+            sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to send manual reply via Twilio")
+            abort(502, description=str(exc))
 
     message = conversation_store.record_message(
         conversation_id,
@@ -650,7 +656,14 @@ def api_send_manual_message(conversation_id: str) -> Response:
         sent_at=_iso_now(),
     )
 
-    return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})
+    return jsonify(
+        {
+            "status": "sent",
+            "sid": sid,
+            "message": message.to_dict(),
+            "delivery": delivery_channel,
+        }
+    )
 
 
 @app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")
@@ -661,6 +674,40 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
 
     _scheduled_message_ids.discard(message_id)
     return jsonify({"status": "cancelled", "message": message.to_dict()})
+
+
+@app.post("/api/conversations/<conversation_id>/messages/<message_id>/send-now")
+def api_send_ai_message_now(conversation_id: str, message_id: str) -> Response:
+    message = conversation_store.get_message(conversation_id, message_id)
+    if message is None or message.author != "ai":
+        abort(404, description="AI message not found")
+    if message.status != "scheduled":
+        abort(400, description="Only scheduled AI messages can be sent immediately")
+
+    scheduled_for = datetime.now(timezone.utc)
+    conversation_store.update_message(
+        conversation_id,
+        message_id,
+        scheduled_send_at=scheduled_for.isoformat(),
+        status="scheduled",
+        error=None,
+    )
+
+    _scheduled_message_ids.discard(message_id)
+    _schedule_ai_delivery(
+        conversation_id,
+        message_id,
+        message.text,
+        scheduled_for=scheduled_for,
+    )
+
+    return jsonify(
+        {
+            "status": "scheduled",
+            "scheduledSendAt": scheduled_for.isoformat(),
+            "messageId": message_id,
+        }
+    )
 
 
 @app.post("/api/conversations/<conversation_id>/ai-draft")

@@ -33,6 +33,7 @@ class ConversationController extends ChangeNotifier {
   bool _sending = false;
   bool _drafting = false;
   bool _cancellingPendingAi = false;
+  bool _sendingAiNow = false;
   Object? _error;
   String? _aiDraft;
   String? _responderId;
@@ -42,6 +43,7 @@ class ConversationController extends ChangeNotifier {
   bool get isSending => _sending;
   bool get isDrafting => _drafting;
   bool get isCancellingPendingAi => _cancellingPendingAi;
+  bool get isSendingAiNow => _sendingAiNow;
   Object? get error => _error;
   bool get aiEnabled => _detail?.aiEnabled ?? true;
   String get displayName => _detail?.displayName ?? initialDisplayName;
@@ -80,6 +82,27 @@ class ConversationController extends ChangeNotifier {
       return null;
     } finally {
       _cancellingPendingAi = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> sendPendingAiNow() async {
+    final pending = pendingAiMessage;
+    if (pending == null || !pending.isScheduled) {
+      return;
+    }
+    _sendingAiNow = true;
+    notifyListeners();
+    try {
+      await apiClient.sendScheduledMessageNow(
+        conversationId: conversationId,
+        messageId: pending.id,
+      );
+      await _loadConversation(force: true);
+    } catch (error) {
+      _error = error;
+    } finally {
+      _sendingAiNow = false;
       notifyListeners();
     }
   }
