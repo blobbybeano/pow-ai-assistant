@@ -15,14 +15,48 @@ class AvatarCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (image != null) {
-      return CircleAvatar(
-        radius: size / 2,
-        backgroundColor: Colors.transparent,
-        backgroundImage: image,
+      return SizedBox(
+        width: size,
+        height: size,
+        child: ClipOval(
+          child: Image(
+            image: image!,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return _InitialsCircle(label: label, size: size);
+            },
+            errorBuilder: (context, error, stackTrace) => _InitialsCircle(
+              label: label,
+              size: size,
+            ),
+          ),
+        ),
       );
     }
 
+    return _InitialsCircle(label: label, size: size);
+  }
+}
+
+class _InitialsCircle extends StatelessWidget {
+  const _InitialsCircle({required this.label, required this.size});
+
+  final String label;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
     final colors = _gradientFor(label);
+    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ) ??
+        const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 18,
+        );
     return Container(
       width: size,
       height: size,
@@ -37,15 +71,7 @@ class AvatarCircle extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         _initials(label),
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ) ??
-            const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-            ),
+        style: textStyle,
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../controllers/inbox_controller.dart';
 import '../controllers/user_controller.dart';
 import '../models/app_user.dart';
+import '../widgets/avatar_circle.dart';
 import '../widgets/pending_ai_banner.dart';
 import '../widgets/profile_settings_sheet.dart';
 import 'ai_training_dashboard_screen.dart';
@@ -191,19 +192,10 @@ class _UserCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor:
-                  user.photoUrl != null ? Colors.transparent : const Color(0x33243038),
-              foregroundColor: const Color(0xFFE9EDEF),
-              backgroundImage:
-                  user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
-              child: user.photoUrl != null
-                  ? null
-                  : Text(
-                      user.initials,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+            AvatarCircle(
+              label: user.displayName,
+              size: 52,
+              image: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
             ),
             const SizedBox(width: 16),
             Expanded(

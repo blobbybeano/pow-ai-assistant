@@ -13,6 +13,7 @@ from typing import Iterable, List, Optional
 from werkzeug.serving import make_server
 
 from twilio_app import app as twilio_flask_app
+from workspace_settings import load_workspace_settings
 
 
 class FlaskServer:
@@ -254,7 +255,9 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args(argv)
-    base_url = args.flutter_base_url or f"http://127.0.0.1:{args.port}"
+    settings = load_workspace_settings()
+    default_base_url = settings.api.base_url or f"http://127.0.0.1:{args.port}"
+    base_url = args.flutter_base_url or default_base_url
 
     launcher = WorkspaceLauncher(
         args.host,

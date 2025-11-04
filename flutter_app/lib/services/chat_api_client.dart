@@ -4,24 +4,73 @@ import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
 
+const _defaultBaseUrl = 'https://enabling-corroboratorily-johnna.ngrok-free.dev';
+
 class ChatApiClient {
   ChatApiClient({required this.baseUrl, http.Client? httpClient})
-      : _client = httpClient ?? http.Client();
+      : _client = httpClient ?? http.Client(),
+        _baseUri = Uri.parse(baseUrl);
 
   factory ChatApiClient.fromEnvironment() {
-    const defaultUrl = String.fromEnvironment(
+    const baseUrl = String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'http://127.0.0.1:5002',
+      defaultValue: _defaultBaseUrl,
     );
-    return ChatApiClient(baseUrl: defaultUrl);
+    return ChatApiClient(baseUrl: baseUrl);
   }
 
   final String baseUrl;
   final http.Client _client;
+  final Uri _baseUri;
 
-  Uri _uri(String path) {
-    final base = Uri.parse(baseUrl);
-    return base.resolve(path);
+  Iterable<String> _basePathSegments() {
+    return _baseUri.pathSegments.where((segment) => segment.isNotEmpty);
+  }
+
+  Uri _uriFromSegments(Iterable<String> segments,
+      {Map<String, String>? queryParameters}) {
+    final baseSegments = _basePathSegments().toList();
+    final additionalSegments = segments
+        .map((segment) => segment.trim())
+        .where((segment) => segment.isNotEmpty)
+        .toList();
+
+    var overlap = 0;
+    final maxOverlap = baseSegments.length < additionalSegments.length
+        ? baseSegments.length
+        : additionalSegments.length;
+
+    for (var size = maxOverlap; size > 0; size--) {
+      final baseTail =
+          baseSegments.sublist(baseSegments.length - size, baseSegments.length);
+      final segmentHead = additionalSegments.sublist(0, size);
+      var matches = true;
+      for (var index = 0; index < size; index++) {
+        if (baseTail[index].toLowerCase() !=
+            segmentHead[index].toLowerCase()) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        overlap = size;
+        break;
+      }
+    }
+
+    final combinedSegments = <String>[
+      ...baseSegments,
+      ...additionalSegments.sublist(overlap),
+    ];
+
+    return Uri(
+      scheme: _baseUri.scheme,
+      userInfo: _baseUri.userInfo,
+      host: _baseUri.host,
+      port: _baseUri.hasPort ? _baseUri.port : null,
+      pathSegments: combinedSegments,
+      queryParameters: queryParameters,
+    );
   }
 
   String? _resolveUrl(String? url) {
@@ -30,8 +79,7 @@ class ChatApiClient {
       return null;
     }
     try {
-      final base = Uri.parse(baseUrl);
-      return base.resolve(trimmed).toString();
+      return _baseUri.resolve(trimmed).toString();
     } catch (_) {
       return trimmed;
     }
@@ -80,7 +128,8 @@ class ChatApiClient {
   }
 
   Future<List<ConversationSummary>> fetchConversations() async {
-    final response = await _client.get(_uri('/api/conversations'));
+    final response =
+        await _client.get(_uriFromSegments(const ['api', 'conversations']));
     if (response.statusCode != 200) {
       throw Exception('Failed to load conversations (${response.statusCode})');
     }
@@ -94,7 +143,9 @@ class ChatApiClient {
   }
 
   Future<ConversationDetail> fetchConversation(String conversationId) async {
-    final response = await _client.get(_uri('/api/conversations/$conversationId'));
+    final response = await _client.get(
+      _uriFromSegments(['api', 'conversations', conversationId]),
+    );
     if (response.statusCode != 200) {
       throw Exception('Conversation request failed (${response.statusCode})');
     }
@@ -111,7 +162,7 @@ class ChatApiClient {
     String? responderId,
   }) async {
     final response = await _client.post(
-      _uri('/api/conversations/$conversationId/toggle-ai'),
+      _uriFromSegments(['api', 'conversations', conversationId, 'toggle-ai']),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'enabled': enabled,
@@ -131,7 +182,7 @@ class ChatApiClient {
     String? senderId,
   }) async {
     final response = await _client.post(
-      _uri('/api/conversations/$conversationId/messages'),
+      _uriFromSegments(['api', 'conversations', conversationId, 'messages']),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'text': text,
@@ -150,7 +201,14 @@ class ChatApiClient {
     required String messageId,
   }) async {
     final response = await _client.post(
-      _uri('/api/conversations/$conversationId/messages/$messageId/cancel'),
+      _uriFromSegments([
+        'api',
+        'conversations',
+        conversationId,
+        'messages',
+        messageId,
+        'cancel',
+      ]),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to cancel AI message (${response.statusCode})');
@@ -162,7 +220,14 @@ class ChatApiClient {
     required String messageId,
   }) async {
     final response = await _client.post(
-      _uri('/api/conversations/$conversationId/messages/$messageId/send-now'),
+      _uriFromSegments([
+        'api',
+        'conversations',
+        conversationId,
+        'messages',
+        messageId,
+        'send-now',
+      ]),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to send AI message now (${response.statusCode})');
@@ -173,7 +238,7 @@ class ChatApiClient {
     final body = responderId != null ? json.encode({'responderId': responderId}) : null;
     final headers = body != null ? {'Content-Type': 'application/json'} : null;
     final response = await _client.post(
-      _uri('/api/conversations/$conversationId/ai-draft'),
+      _uriFromSegments(['api', 'conversations', conversationId, 'ai-draft']),
       headers: headers,
       body: body,
     );
@@ -185,7 +250,8 @@ class ChatApiClient {
   }
 
   Future<String?> fetchDefaultResponderId() async {
-    final response = await _client.get(_uri('/api/settings/responder'));
+    final response =
+        await _client.get(_uriFromSegments(const ['api', 'settings', 'responder']));
     if (response.statusCode != 200 && response.statusCode != 404) {
       throw Exception('Failed to load responder preference (${response.statusCode})');
     }
@@ -199,7 +265,7 @@ class ChatApiClient {
 
   Future<void> updateDefaultResponderId(String responderId) async {
     final response = await _client.post(
-      _uri('/api/settings/responder'),
+      _uriFromSegments(const ['api', 'settings', 'responder']),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'responderId': responderId}),
     );

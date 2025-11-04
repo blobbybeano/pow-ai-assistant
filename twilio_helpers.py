@@ -11,6 +11,8 @@ import httpx
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
+from workspace_settings import load_workspace_settings
+
 
 @dataclass
 class TwilioConfig:
@@ -29,15 +31,22 @@ class TwilioMessenger:
 
     @classmethod
     def from_env(cls) -> Optional["TwilioMessenger"]:
-        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        settings = load_workspace_settings()
+
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID") or settings.twilio.account_sid
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN") or settings.twilio.auth_token
 
         if not account_sid or not auth_token:
             return None
 
-        whatsapp_from = _normalize_whatsapp_address(os.getenv("TWILIO_WHATSAPP_NUMBER"))
+        whatsapp_from = _normalize_whatsapp_address(
+            os.getenv("TWILIO_WHATSAPP_NUMBER") or settings.twilio.whatsapp_number
+        )
 
-        messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID")
+        messaging_service_sid = (
+            os.getenv("TWILIO_MESSAGING_SERVICE_SID")
+            or settings.twilio.messaging_service_sid
+        )
 
         config = TwilioConfig(
             account_sid=account_sid,
@@ -56,12 +65,21 @@ class TwilioMessenger:
         if not to_address:
             raise ValueError("Recipient phone number is invalid.")
 
-        kwargs = {"to": to_address, "body": body}
+        base_kwargs = {"to": to_address, "body": body}
 
         if self._config.messaging_service_sid:
-            kwargs["messaging_service_sid"] = self._config.messaging_service_sid
+            kwargs = {
+                **base_kwargs,
+                "messaging_service_sid": self._config.messaging_service_sid,
+            }
+            fallback_kwargs = (
+                {**base_kwargs, "from_": self._config.whatsapp_from}
+                if self._config.whatsapp_from
+                else None
+            )
         elif self._config.whatsapp_from:
-            kwargs["from_"] = self._config.whatsapp_from
+            kwargs = {**base_kwargs, "from_": self._config.whatsapp_from}
+            fallback_kwargs = None
         else:
             raise RuntimeError(
                 "Configure TWILIO_WHATSAPP_NUMBER or TWILIO_MESSAGING_SERVICE_SID to send messages."
@@ -70,7 +88,18 @@ class TwilioMessenger:
         try:
             message = self._client.messages.create(**kwargs)
         except TwilioRestException as exc:  # pragma: no cover - network side
-            raise RuntimeError(f"Failed to send WhatsApp message: {exc.msg}") from exc
+            if not (
+                fallback_kwargs
+                and getattr(exc, "code", None) in {63007}
+            ):
+                raise RuntimeError(f"Failed to send WhatsApp message: {exc.msg}") from exc
+
+            try:
+                message = self._client.messages.create(**fallback_kwargs)
+            except TwilioRestException as fallback_exc:  # pragma: no cover - network side
+                raise RuntimeError(
+                    f"Failed to send WhatsApp message: {fallback_exc.msg}"
+                ) from fallback_exc
 
         return message.sid
 
