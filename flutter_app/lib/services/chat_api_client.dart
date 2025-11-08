@@ -78,7 +78,7 @@ class ChatApiClient {
         if (senderId != null) 'senderId': senderId,
       }),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Failed to send message (${response.statusCode})');
     }
     final payload = json.decode(response.body) as Map<String, dynamic>;

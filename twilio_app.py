@@ -329,17 +329,27 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if not text:
         abort(400, description="Message text is required")
 
-    if not twilio_messenger:
-        abort(
-            500,
-            description="Twilio credentials are not configured for outbound messaging",
-        )
+    sid: str | None = None
+    status = "sent"
+    error_message: str | None = None
 
-    try:
-        sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
-    except Exception as exc:  # pragma: no cover - network call
-        logging.exception("Failed to send manual reply via Twilio")
-        abort(502, description=str(exc))
+    if not twilio_messenger:
+        logging.warning(
+            "Twilio credentials are not configured; storing manual reply as failed",
+        )
+        status = "failed"
+        error_message = (
+            "Twilio credentials are not configured for outbound messaging"
+        )
+    else:
+        try:
+            sid = twilio_messenger.send_whatsapp_message(
+                to=conversation_id, body=text
+            )
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to send manual reply via Twilio")
+            status = "failed"
+            error_message = str(exc)
 
     message = conversation_store.record_message(
         conversation_id,
@@ -347,10 +357,22 @@ def api_send_manual_message(conversation_id: str) -> Response:
         author="agent",
         direction="outbound",
         transport_sid=sid,
-        sent_at=_iso_now(),
+        sent_at=_iso_now() if status == "sent" else None,
+        status=status,
+        error=error_message,
     )
 
-    return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})
+    response_payload = {
+        "status": status,
+        "sid": sid,
+        "message": message.to_dict(),
+    }
+    if error_message:
+        response_payload["error"] = error_message
+
+    http_status = 200 if status == "sent" else 202
+
+    return jsonify(response_payload), http_status
 
 
 @app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")
