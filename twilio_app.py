@@ -8,6 +8,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Set
+from uuid import uuid4
 
 from flask import Flask, Response, abort, jsonify, request
 from flask_cors import CORS
@@ -329,17 +330,28 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if not text:
         abort(400, description="Message text is required")
 
-    if not twilio_messenger:
-        abort(
-            500,
-            description="Twilio credentials are not configured for outbound messaging",
-        )
+    simulated_delivery = False
+    delivery_error: str | None = None
+    sid: str | None = None
 
-    try:
-        sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
-    except Exception as exc:  # pragma: no cover - network call
-        logging.exception("Failed to send manual reply via Twilio")
-        abort(502, description=str(exc))
+    if twilio_messenger:
+        try:
+            sid = twilio_messenger.send_whatsapp_message(to=conversation_id, body=text)
+        except Exception as exc:  # pragma: no cover - network call
+            logging.exception("Failed to send manual reply via Twilio")
+            simulated_delivery = True
+            delivery_error = str(exc)
+    else:
+        simulated_delivery = True
+        delivery_error = "Twilio credentials are not configured for outbound messaging"
+
+    if simulated_delivery or sid is None:
+        sid = f"simulated-{uuid4()}"
+        logging.warning(
+            "Recording manual reply for %s without Twilio delivery: %s",
+            conversation_id,
+            delivery_error,
+        )
 
     message = conversation_store.record_message(
         conversation_id,
@@ -348,9 +360,17 @@ def api_send_manual_message(conversation_id: str) -> Response:
         direction="outbound",
         transport_sid=sid,
         sent_at=_iso_now(),
+        status="failed" if simulated_delivery else "sent",
+        error=delivery_error if simulated_delivery else None,
     )
 
-    return jsonify({"status": "sent", "sid": sid, "message": message.to_dict()})
+    payload_status = "failed" if simulated_delivery else "sent"
+    payload = {"status": payload_status, "sid": sid, "message": message.to_dict()}
+    if simulated_delivery:
+        payload["delivery"] = "simulated"
+        if delivery_error:
+            payload["warning"] = delivery_error
+    return jsonify(payload)
 
 
 @app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")
