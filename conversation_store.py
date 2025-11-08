@@ -139,11 +139,12 @@ class ConversationRecord:
 class ConversationStore:
     """Persistent storage for WhatsApp conversations handled by the webhook."""
 
-    def __init__(self, state_path: Path) -> None:
+    def __init__(self, state_path: Path, *, seed_demo: bool = True) -> None:
         self._state_path = state_path
         self._lock = Lock()
         self._conversations: Dict[str, ConversationRecord] = {}
         self._settings: Dict[str, Any] = {}
+        self._seed_demo = seed_demo
         self._load_state()
 
     # ------------------------------------------------------------------
@@ -194,7 +195,7 @@ class ConversationStore:
                     convo.contact_name, convo.phone_number
                 )
 
-        if not self._conversations:
+        if not self._conversations and self._seed_demo:
             self._seed_demo_conversations()
             self._persist()
 
@@ -676,6 +677,31 @@ class ConversationStore:
                     return message
 
         return None
+
+    def cancel_pending_ai_messages(
+        self, conversation_id: str, *, reason: Optional[str] = None
+    ) -> List[str]:
+        """Cancel all scheduled or drafting AI messages for a conversation."""
+
+        with self._lock:
+            convo = self._conversations.get(conversation_id)
+            if not convo:
+                return []
+
+            explanation = (reason or "Cancelled by agent").strip() or "Cancelled by agent"
+            cancelled_ids: List[str] = []
+
+            for message in convo.messages:
+                if message.author == "ai" and message.status in {"scheduled", "drafting"}:
+                    message.status = "cancelled"
+                    message.scheduled_send_at = None
+                    message.error = explanation
+                    cancelled_ids.append(message.id)
+
+            if cancelled_ids:
+                self._persist()
+
+            return cancelled_ids
 
 
 # Convenience singleton -------------------------------------------------------

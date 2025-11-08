@@ -8,6 +8,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Set
+from uuid import uuid4
 
 from flask import Flask, Response, abort, jsonify, request
 from flask_cors import CORS
@@ -325,6 +326,7 @@ def api_toggle_ai(conversation_id: str) -> Response:
 def api_send_manual_message(conversation_id: str) -> Response:
     payload = request.get_json(silent=True) or {}
     text = (payload.get("text") or "").strip()
+    sender_id = payload.get("senderId")
 
     if not text:
         abort(400, description="Message text is required")
@@ -332,14 +334,25 @@ def api_send_manual_message(conversation_id: str) -> Response:
     sid: str | None = None
     status = "sent"
     error_message: str | None = None
+    delivery_via = "whatsapp"
+    local_delivery = False
+
+    if sender_id and isinstance(sender_id, str):
+        conversation_store.assign_conversation(conversation_id, sender_id)
+
+    cancelled_ids = conversation_store.cancel_pending_ai_messages(
+        conversation_id,
+        reason="Cancelled because an agent replied manually",
+    )
+    for cancelled_id in cancelled_ids:
+        _scheduled_message_ids.discard(cancelled_id)
 
     if not twilio_messenger:
-        logging.warning(
-            "Twilio credentials are not configured; storing manual reply as failed",
-        )
-        status = "failed"
-        error_message = (
-            "Twilio credentials are not configured for outbound messaging"
+        local_delivery = True
+        delivery_via = "workspace"
+        sid = f"local-{uuid4()}"
+        logging.info(
+            "Twilio credentials are not configured; storing manual reply for workspace display only",
         )
     else:
         try:
@@ -356,6 +369,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
         text=text,
         author="agent",
         direction="outbound",
+        via=delivery_via,
         transport_sid=sid,
         sent_at=_iso_now() if status == "sent" else None,
         status=status,
@@ -370,6 +384,8 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if error_message:
         response_payload["error"] = error_message
 
+    if local_delivery:
+        response_payload["delivery"] = "workspace"
     http_status = 200 if status == "sent" else 202
 
     return jsonify(response_payload), http_status
