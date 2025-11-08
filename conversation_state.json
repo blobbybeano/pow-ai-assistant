@@ -406,6 +406,19 @@
           "scheduledSendAt": "2025-10-25T22:24:56.918639+00:00",
           "sentAt": "2025-10-25T22:24:57.187699+00:00",
           "error": null
+        },
+        {
+          "id": "0a701f8e-da22-4263-98ba-4656d85b2c02",
+          "text": "hi ben",
+          "author": "agent",
+          "direction": "outbound",
+          "timestamp": "2025-11-08T20:49:30.156090+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
         }
       ]
     }
