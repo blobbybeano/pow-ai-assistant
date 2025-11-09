@@ -27,6 +27,7 @@ from flask_cors import CORS
 from twilio.base.exceptions import TwilioRestException
 from twilio.twiml.messaging_response import MessagingResponse
 
+import requests
 from auto_responder import generate_reply
 from conversation_store import conversation_store
 from twilio_helpers import TwilioMessenger
@@ -49,6 +50,8 @@ UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 MEDIA_BASE_URL = os.getenv("MEDIA_BASE_URL")
 twilio_messenger: Optional[TwilioMessenger] = None
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 
 
 # -----------------------------------------------------------
@@ -98,28 +101,19 @@ def _attachment_caption(payload: Dict[str, Any]) -> Optional[str]:
     return f"[{label} shared]"
 
 
-def _conversation_history(conversation_id: str, *, limit: int = 20) -> List[Dict[str, str]]:
+def _conversation_history(conversation_id: str, *, limit: int = 20) -> List[Dict[str, Any]]:
     convo = conversation_store.get_conversation(conversation_id)
     if convo is None:
         return []
 
-    history: List[Dict[str, str]] = []
+    history: List[Dict[str, Any]] = []
     messages: List[Dict[str, Any]] = convo.get("messages", [])
     for message in messages[-limit:]:
         author = message.get("author", "customer")
         text = (message.get("text") or "").strip()
         attachments = message.get("attachments") or []
 
-        fragments: List[str] = []
-        if text:
-            fragments.append(text)
-        for attachment in attachments:
-            caption = _attachment_caption(attachment)
-            if caption:
-                fragments.append(caption)
-
-        if not fragments:
-            continue
+        content_blocks: List[Dict[str, Any]] = []
 
         speaker: str
         role: str
@@ -132,7 +126,33 @@ def _conversation_history(conversation_id: str, *, limit: int = 20) -> List[Dict
         else:
             speaker, role = "System", "assistant"
 
-        history.append({"role": role, "content": f"{speaker}: {' '.join(fragments)}"})
+        if text:
+            content_blocks.append({"type": "text", "text": f"{speaker}: {text}"})
+
+        for attachment in attachments:
+            content_type = (attachment.get("contentType") or "").lower()
+            url = (attachment.get("url") or "").strip()
+            if not url:
+                continue
+
+            if content_type.startswith("image/"):
+                content_blocks.append(
+                    {"type": "text", "text": f"{speaker} shared a photo."}
+                )
+                content_blocks.append(
+                    {"type": "input_image", "image_url": {"url": url}}
+                )
+            else:
+                caption = _attachment_caption(attachment)
+                if caption:
+                    content_blocks.append(
+                        {"type": "text", "text": f"{speaker}: {caption}"}
+                    )
+
+        if not content_blocks:
+            continue
+
+        history.append({"role": role, "content": content_blocks})
 
     return history[-limit:]
 
@@ -272,6 +292,84 @@ def _persist_uploaded_file(file_storage) -> Dict[str, str]:
     }
 
 
+def _persist_image_bytes(
+    data: bytes,
+    *,
+    content_type: Optional[str],
+    original_filename: Optional[str],
+) -> Dict[str, str]:
+    """Persist raw image bytes to the uploads folder and return metadata."""
+
+    normalized_type = (content_type or "").lower()
+    if not normalized_type.startswith("image/"):
+        raise ValueError("Only image content can be persisted from inbound media")
+
+    safe_name = secure_filename(original_filename or "customer-photo")
+    extension = Path(safe_name).suffix
+    if not extension:
+        guessed = mimetypes.guess_extension(normalized_type) or ""
+        extension = guessed
+
+    filename = f"{uuid4().hex}{extension}" if extension else uuid4().hex
+    storage_path = UPLOADS_DIR / filename
+    storage_path.write_bytes(data)
+
+    return {
+        "id": filename,
+        "url": _public_upload_url(filename),
+        "contentType": normalized_type,
+        "filename": safe_name or filename,
+    }
+
+
+def _mirror_inbound_media(attachments: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Download Twilio-hosted media and mirror it locally for AI + workspace access."""
+
+    if not attachments:
+        return []
+
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+        logging.warning(
+            "Twilio credentials missing; cannot mirror inbound media locally."
+        )
+        return attachments
+
+    mirrored: List[Dict[str, str]] = []
+    auth = (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+    for attachment in attachments:
+        url = (attachment.get("url") or "").strip()
+        if not url:
+            continue
+
+        requested_type = (attachment.get("contentType") or "").lower()
+        try:
+            response = requests.get(url, auth=auth, timeout=20)
+            response.raise_for_status()
+        except Exception as exc:  # pragma: no cover - network failures best-effort
+            logging.warning("Unable to download Twilio media %s: %s", url, exc)
+            mirrored.append(attachment)
+            continue
+
+        content_type = requested_type or (response.headers.get("Content-Type") or "").lower()
+        try:
+            metadata = _persist_image_bytes(
+                response.content,
+                content_type=content_type,
+                original_filename=attachment.get("filename"),
+            )
+        except ValueError:
+            logging.info(
+                "Skipping non-image media from Twilio: %s (%s)", url, content_type
+            )
+            mirrored.append(attachment)
+            continue
+
+        mirrored.append(metadata)
+
+    return mirrored or attachments
+
+
 # -----------------------------------------------------------
 # AI message scheduling logic
 # -----------------------------------------------------------
@@ -360,7 +458,7 @@ def whatsapp_webhook() -> Response:
     wa_id = request.form.get("WaId")
     conversation_id = _conversation_id(from_number, wa_id)
 
-    attachments = _collect_inbound_attachments(request.form)
+    attachments = _mirror_inbound_media(_collect_inbound_attachments(request.form))
 
     conversation_store.record_message(
         conversation_id, text=inbound_text, author="customer", direction="inbound",

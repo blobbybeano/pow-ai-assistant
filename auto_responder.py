@@ -59,8 +59,45 @@ def _build_system_prompt(price_list: str, tone_profile: str) -> str:
     )
 
 
+def _normalize_history_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure every history item uses the structured Responses API format."""
+
+    role = item.get("role", "user")
+    content = item.get("content")
+
+    if isinstance(content, str):
+        return {
+            "role": role,
+            "content": [{"type": "text", "text": content}],
+        }
+
+    if isinstance(content, list):
+        blocks: List[Dict[str, Any]] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") in {"text", "input_text"}:
+                text = block.get("text") or block.get("input_text")
+                if isinstance(text, str) and text.strip():
+                    blocks.append({"type": "text", "text": text.strip()})
+            elif isinstance(block, dict) and block.get("type") == "input_image":
+                image_url = block.get("image_url")
+                if isinstance(image_url, dict) and image_url.get("url"):
+                    blocks.append({"type": "input_image", "image_url": image_url})
+        if blocks:
+            return {"role": role, "content": blocks}
+
+    return {
+        "role": role,
+        "content": [
+            {
+                "type": "text",
+                "text": "Previous message unavailable due to unsupported format.",
+            }
+        ],
+    }
+
+
 def generate_reply(
-    conversation_history: List[Dict[str, str]],
+    conversation_history: List[Dict[str, Any]],
     price_list_path: Path,
     tone_profile_path: Path,
     model: str = "gpt-4o-mini",
@@ -76,10 +113,11 @@ def generate_reply(
     tone_profile = _load_tone_profile(tone_profile_path)
     system_prompt = _build_system_prompt(price_list, tone_profile)
 
-    chat_history: List[Dict[str, str]] = [
-        {"role": "system", "content": system_prompt},
-        *conversation_history,
+    chat_history: List[Dict[str, Any]] = [
+        {"role": "system", "content": [{"type": "text", "text": system_prompt}]}
     ]
+
+    chat_history.extend(_normalize_history_item(item) for item in conversation_history)
 
     response = client.responses.create(
         model=model,
