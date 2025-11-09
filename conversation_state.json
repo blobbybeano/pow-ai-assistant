@@ -470,7 +470,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 3,
+      "unreadCount": 4,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -1235,6 +1235,36 @@
           "scheduledSendAt": "2025-11-09T23:29:53.471087+00:00",
           "sentAt": "2025-11-09T23:29:53.477406+00:00",
           "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "ba2548ff-e502-442b-9fef-ffe0f009787a",
+          "text": "What is this image?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:41:16.273176+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/c9833419898943e4bbb9d0e229530f5b.jpg"
+          ]
+        },
+        {
+          "id": "732065d6-aa4f-4c1b-82a6-e4c0aa690965",
+          "text": "It looks like there might have been an issue with the image not coming through. Could you please try sending it again? This will help me understand your exterior cleaning needs better! \n\nIn the meantime, if you could share details about the type of surface you need cleaned (like a driveway, patio, or roof), its size, and any access considerations, that would be great. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:41:16.276766+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-09T23:44:22.994081+00:00",
+          "sentAt": null,
+          "error": null,
           "attachments": []
         }
       ]
