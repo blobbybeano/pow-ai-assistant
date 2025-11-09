@@ -126,7 +126,7 @@ def _build_input_blocks(
         stripped = text.strip()
         if not stripped:
             return
-        blocks.append({"type": "input_text", "text": stripped})
+        blocks.append({"type": "text", "text": stripped})
 
     def add_image(url: Optional[str]) -> None:
         if not isinstance(url, str):
@@ -291,7 +291,7 @@ def _to_chat_messages(history: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]
         content_blocks: List[Dict[str, Any]] = []
         for block in item.get("content", []):
             block_type = block.get("type")
-            if block_type == "input_text":
+            if block_type in {"input_text", "text"}:
                 content_blocks.append({"type": "text", "text": block.get("text", "")})
             elif block_type == "input_image":
                 image_url = block.get("image_url")
@@ -390,7 +390,7 @@ def generate_reply(
     canonical_history: List[Dict[str, Any]] = [
         {
             "role": "system",
-            "content": [{"type": "input_text", "text": system_prompt}],
+            "content": [{"type": "text", "text": system_prompt}],
         }
     ]
 
@@ -536,7 +536,7 @@ def main() -> None:
 
     content_blocks: List[Dict[str, str]] = []
     if args.message:
-        content_blocks.append({"type": "input_text", "text": args.message})
+        content_blocks.append({"type": "text", "text": args.message})
     for image_url in args.with_image:
         if image_url:
             content_blocks.append({"type": "input_image", "image_url": image_url})
