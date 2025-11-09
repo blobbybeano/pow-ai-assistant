@@ -2,11 +2,79 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from openai import OpenAI
+
+
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL")
+print(f"PUBLIC_BASE_URL: {PUBLIC_BASE_URL or '(not set)'}")
+
+
+def _url_is_accessible(url: str, timeout: float = 5.0) -> bool:
+    """Best-effort check to confirm the image URL is reachable."""
+    try:
+        try:
+            request = Request(url, method="HEAD")  # type: ignore[arg-type]
+        except TypeError:  # Python < 3.9 compatibility
+            request = Request(url)
+
+            def _head_method() -> str:
+                return "HEAD"
+
+            request.get_method = _head_method  # type: ignore[assignment]
+
+        with urlopen(request, timeout=timeout) as response:  # nosec: B310
+            if 200 <= response.status < 400:
+                return True
+            if response.status == 405:
+                raise HTTPError(url, response.status, "Method Not Allowed", response.headers, None)
+    except HTTPError as err:
+        if err.code == 405:
+            try:
+                with urlopen(url, timeout=timeout) as get_response:  # nosec: B310
+                    return 200 <= getattr(get_response, "status", 200) < 400
+            except Exception:
+                return False
+        return False
+    except (URLError, ValueError, TimeoutError):
+        return False
+    except Exception:
+        return False
+    return False
+
+
+def get_public_image_url(file_path: Path) -> str:
+    """Return a public URL or base64 representation for the provided image."""
+    absolute_path = file_path.resolve()
+    if not absolute_path.exists():
+        raise FileNotFoundError(f"Attachment does not exist: {absolute_path}")
+
+    if PUBLIC_BASE_URL:
+        uploads_dir = Path.cwd() / "uploads"
+        public_suffix = absolute_path.name
+        try:
+            relative = absolute_path.relative_to(uploads_dir)
+            public_suffix = f"uploads/{relative.as_posix()}"
+        except ValueError:
+            public_suffix = f"uploads/{absolute_path.name}"
+
+        public_url = f"{PUBLIC_BASE_URL.rstrip('/')}/{public_suffix}"
+        if _url_is_accessible(public_url):
+            return public_url
+        print(
+            f"⚠️ Image at {absolute_path} is not reachable by OpenAI. Falling back to base64 inline data."
+        )
+
+    with absolute_path.open("rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("utf-8")
+    return encoded
 
 
 # ---------------------------------------------------------------------
@@ -117,14 +185,21 @@ def generate_reply(
         if not file_path.is_file():
             continue
         try:
-            # Serve via Flask public URL (e.g. /uploads/...)
-            local_url = f"http://127.0.0.1:5002/uploads/{file_path.name}"
+            resolved = get_public_image_url(file_path)
+        except Exception as exc:
+            print(f"⚠️ Skipping attachment {file_path}: {exc}")
+            continue
+
+        if resolved.lower().startswith(("http://", "https://")):
             user_content.append({
                 "type": "input_image",
-                "image_url": local_url,
+                "image_url": resolved,
             })
-        except Exception:
-            continue
+        else:
+            user_content.append({
+                "type": "input_image",
+                "image_data": resolved,
+            })
 
     # Call OpenAI
     try:
