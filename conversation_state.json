@@ -23,7 +23,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "dfa3abb1-cd8c-4c34-bfad-ce6a21465ea8",
@@ -36,7 +37,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:01:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "021e06ec-443d-45a3-afa8-ba44a5f1339c",
@@ -49,7 +51,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:02:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -73,7 +76,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "ab312877-e6eb-4669-be55-7e7f79e59f3d",
@@ -86,7 +90,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:02:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "3b439647-f6dd-4e79-84bf-ccff38431443",
@@ -99,7 +104,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:04:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -123,7 +129,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "b40a5b7f-b877-4813-abb8-8bf58f09ad9a",
@@ -136,7 +143,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:02:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "849352bb-2819-4138-ab50-ff3df3664752",
@@ -149,7 +157,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:04:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "5a42ce9b-c200-4454-9197-a8f044996276",
@@ -162,7 +171,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-01-17T14:07:00+00:00",
           "sentAt": "2025-10-20T12:57:06.803070+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -186,7 +196,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:00:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "9410e1ef-d90a-4780-b648-d438cc03abc4",
@@ -199,7 +210,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:01:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "bee1e7d6-c9fe-46fd-8ce6-78a639ab120c",
@@ -212,7 +224,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-01-17T14:03:00+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         }
       ]
     },
@@ -236,7 +249,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "f686430d-4c76-48ef-a802-ca5db20c1488",
@@ -249,7 +263,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T17:04:29.825111+00:00",
           "sentAt": "2025-10-20T17:04:31.064532+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "36b5fdf2-5592-47ec-899f-fa18c5e192f4",
@@ -262,7 +277,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "4faba898-eba0-45cb-967f-080c3b6dddea",
@@ -275,7 +291,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T17:08:10.403435+00:00",
           "sentAt": "2025-10-20T17:13:47.947854+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "eda3aa71-bc08-4265-b6b6-3f0c7ddd2c29",
@@ -288,7 +305,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "b52089bc-202d-4fe9-b901-9c67c2386a0a",
@@ -301,7 +319,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-20T17:17:34.419799+00:00",
           "sentAt": "2025-10-20T17:17:35.727663+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "631401a4-cbdc-4378-8332-a0a31df0b072",
@@ -314,7 +333,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "181a3414-d9f8-4c9e-a8a0-114904eca960",
@@ -327,7 +347,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-24T13:11:41.669473+00:00",
           "sentAt": "2025-10-24T13:11:42.086672+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "36a7b52e-66d4-4128-b89a-efb8f9ccf883",
@@ -340,7 +361,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "7c017df0-3eb6-48b8-a1cb-d7e9773f6c95",
@@ -353,7 +375,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-24T14:05:03.203182+00:00",
           "sentAt": "2025-10-24T14:05:03.580524+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "c7b46a40-de8d-43fa-bb2a-788ff131b961",
@@ -366,7 +389,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "8a2a2736-949c-48ff-a5b8-2eab5c8a8175",
@@ -379,7 +403,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-25T22:24:00.601605+00:00",
           "sentAt": "2025-10-25T22:24:01.051130+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "9a3d8335-63f5-488e-9cc0-909c8c102aca",
@@ -392,7 +417,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "20dff686-7006-48ca-9876-d039cfa6a669",
@@ -405,7 +431,8 @@
           "status": "sent",
           "scheduledSendAt": "2025-10-25T22:24:56.918639+00:00",
           "sentAt": "2025-10-25T22:24:57.187699+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "0a701f8e-da22-4263-98ba-4656d85b2c02",
@@ -418,7 +445,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
         },
         {
           "id": "2ed4d966-95db-4e67-ad92-d3cdf1b86069",
@@ -431,7 +459,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
         }
       ]
     },
@@ -455,7 +484,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "eef149cf-478e-405b-a3f0-5d82ef8167c0",
@@ -468,7 +498,8 @@
           "status": "failed",
           "scheduledSendAt": "2025-11-08T21:25:32.284293+00:00",
           "sentAt": "2025-11-08T21:25:32.611075+00:00",
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
         },
         {
           "id": "ed135103-ec97-48a3-8fc9-f09442103df8",
@@ -481,7 +512,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
         },
         {
           "id": "66354991-0ad5-4806-877b-b0b35d4968ac",
@@ -494,7 +526,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "6b2ec4bc-dc21-480e-b19c-43dd2ef2043a",
@@ -507,7 +540,8 @@
           "status": "failed",
           "scheduledSendAt": "2025-11-08T21:40:58.152711+00:00",
           "sentAt": "2025-11-08T21:40:58.384315+00:00",
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
         },
         {
           "id": "35f1ba1b-0fb1-4f54-b8ec-94ec056b29f4",
@@ -520,7 +554,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address",
+          "attachments": []
         },
         {
           "id": "37e2800f-69cb-4d79-991c-5f36699fc728",
@@ -533,7 +568,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "56b6efab-40d3-4e6d-9420-41c18cfe7bfd",
@@ -546,7 +582,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "b52dc5d6-9dd9-45ee-b5cb-9a75f0ba2887",
@@ -559,7 +596,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "920f0062-c4c6-49e4-a2a4-049d67788a26",
@@ -572,7 +610,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "702efea7-5a9b-40c8-a20c-4e328a78e912",
@@ -585,7 +624,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "eae18a8c-0a68-429a-9bea-1a4cbbd94bd4",
@@ -598,7 +638,8 @@
           "status": "cancelled",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Cancelled by agent"
+          "error": "Cancelled by agent",
+          "attachments": []
         },
         {
           "id": "6bd6ac87-1d72-4741-a799-fee888135468",
@@ -611,7 +652,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "33edb978-0066-4f9b-9f41-d6153ebce932",
@@ -624,7 +666,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "bd5c6158-c265-415d-93cc-d63d7b0f8f26",
@@ -637,7 +680,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "58b16c59-c52c-4596-a7f0-fbef331eecd2",
@@ -650,7 +694,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "82573847-3a38-4b1f-aa3c-d2ac18b0511e",
@@ -663,7 +708,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "2225bcfd-50d5-438e-a759-e8c732d4de20",
@@ -676,7 +722,8 @@
           "status": "failed",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)"
+          "error": "Failed to send WhatsApp message: Unable to create record: Twilio could not find a Channel with the specified From address (status=400, code=63007)",
+          "attachments": []
         },
         {
           "id": "3295c321-8f98-4ce8-9343-fcad5e4c6eba",
@@ -689,7 +736,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-11-09T01:10:59.069131+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "c94a0e3f-25f2-4a55-a00d-c02964a721a6",
@@ -702,7 +750,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-11-09T01:14:39.493056+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "d58664b7-da16-464f-8150-72a04dead706",
@@ -715,7 +764,8 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": null
+          "error": null,
+          "attachments": []
         },
         {
           "id": "4e33d431-6532-46b2-85bd-5b15ce5f640f",
@@ -728,7 +778,8 @@
           "status": "cancelled",
           "scheduledSendAt": null,
           "sentAt": null,
-          "error": "Cancelled by agent"
+          "error": "Cancelled by agent",
+          "attachments": []
         },
         {
           "id": "3a0a5ca9-13be-4d71-b212-095f43865470",
@@ -741,7 +792,155 @@
           "status": "sent",
           "scheduledSendAt": null,
           "sentAt": "2025-11-09T01:15:46.677805+00:00",
-          "error": null
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "ab0b2d5d-bd39-4393-aa03-eb2788b8fe60",
+          "text": "Are you there and can you see the rest of our convo?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:35:32.118243+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "244968a6-95ee-4dc6-b132-14004e774f20",
+          "text": "AI assistant: I can see your messages, but it looks like we might have had a little mix-up! I\u2019m here now and ready to help with your exterior cleaning needs. If you need a quote, just let me know the surface type, size, and any access details. Looking forward to assisting you! \n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:35:32.121706+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMa61d8583f9ea88d33fc1d115734df6cb",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-09T01:38:35.002853+00:00",
+          "sentAt": "2025-11-09T01:36:09.641912+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "623b49ad-41a1-4f8e-b254-3fb1a2f479a1",
+          "text": "What little mixup did we have, tell me one or two of the previous messages I sent you",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:36:33.216636+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "7497811b-a350-4644-a5b3-956d6ed01bea",
+          "text": "AI assistant: I\u2019m sorry for any confusion! I can\u2019t see previous messages, but I\u2019m here to help with your exterior cleaning needs. If you\u2019re looking for a quote, please share the surface type, size, and any access details. Let\u2019s get started! \n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:36:33.218905+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM85c00e8156a272b69b076a34be948327",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-09T01:39:35.410956+00:00",
+          "sentAt": "2025-11-09T01:36:52.329199+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "64246aec-1e37-42d1-94fc-65d037820e62",
+          "text": "What is this a picture of?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:38:10.304297+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "32596fb4-8575-4b5a-ba52-c703a2836b62",
+              "url": "https://api.twilio.com/2010-04-01/Accounts/ACcfd643ffbd265a8d4a0ce93758a92fa7/Messages/MM1018b0a32f163931fb8c071030102ca1/Media/MEefb17ae243eb63220a6b948af5a33bd7",
+              "contentType": "image/jpeg",
+              "filename": null
+            }
+          ]
+        },
+        {
+          "id": "e1963512-1577-46b1-a27f-418fad04c3bc",
+          "text": "AI assistant: Thanks for sharing the photo! I can't view images directly, but if you can describe what\u2019s in it, I\u2019d be happy to help with your exterior cleaning needs. Let me know what surface you're looking at, its size, and any access details for an accurate quote! \n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:38:10.306834+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMd1b47266cf79a26c8689cb48705643bc",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-09T01:41:13.994284+00:00",
+          "sentAt": "2025-11-09T01:41:14.364170+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "83996ac6-b53a-422f-a148-6f13c20dce32",
+          "text": "Recall what I asked you at the start of this chat",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:38:51.838725+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "333c527c-1c7e-4fe3-b069-7e3811776a50",
+          "text": "AI assistant: I appreciate your patience! At the start, you asked about the last thing I said. I\u2019m here to assist you with your exterior cleaning needs. If you\u2019d like a quote, please share details about the surface type, size, and access. Looking forward to helping you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:38:51.841121+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM0fd3089499eb240ad7442bbb2bae72ae",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-09T01:41:55.092244+00:00",
+          "sentAt": "2025-11-09T01:41:55.345617+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "6b033caa-3f8e-4122-be19-03894ef60a18",
+          "text": "And how long will you remember this chat? Will you remember if we text in a weeks time?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:39:44.620165+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "ee4551ec-2bd7-4ad2-8c5b-874b2a941acd",
+          "text": "AI assistant: AI assistant: I don\u2019t have the ability to remember past chats once the conversation ends, so I won\u2019t recall this chat in a week. But I\u2019m always here to help whenever you reach out! If you need a quote or assistance with exterior cleaning, just let me know the details, and I\u2019ll be ready to assist you again!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:39:44.628929+00:00",
+          "via": "whatsapp",
+          "transportSid": "SMd26f44ea182803c2b7fda45fc54b7c16",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-09T01:42:49.124309+00:00",
+          "sentAt": "2025-11-09T01:42:49.415292+00:00",
+          "error": null,
+          "attachments": []
         }
       ]
     }
