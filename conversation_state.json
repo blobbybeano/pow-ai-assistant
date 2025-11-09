@@ -742,6 +742,58 @@
           "scheduledSendAt": null,
           "sentAt": "2025-11-09T01:15:46.677805+00:00",
           "error": null
+        },
+        {
+          "id": "63ebf6f8-3ccb-4cb1-a795-1340b2f414f5",
+          "text": "Fhdjs",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T20:46:40.496872+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "ad7ae016-9660-4cbf-ae65-cb636fdb5bef",
+          "text": "It looks like your message got a bit jumbled! If you\u2019re looking for a quote or have a question about our exterior cleaning services, feel free to share the details. \n\nLet me know what type of surface you need cleaned, its size, and any access considerations. You can also visit www.powwash.co.uk for more info!\n\nLooking forward to helping you out! \n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T20:46:40.499560+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-09T20:49:45.440024+00:00",
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "82dc99d5-bec6-4847-8d24-4377ad1aa167",
+          "text": "What\u2019s this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T20:47:15.708306+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null
+        },
+        {
+          "id": "ba55890d-48cb-4446-9635-2615d942c9a5",
+          "text": "Hi there! It looks like you're interested in our exterior cleaning services. At PowWash, we offer a variety of options, including driveway pressure washing, patio refreshes, roof soft washes, and gutter clearing. \n\nIf you could share a bit more about what you need\u2014like the type of surface, its size, access to the area, and when you\u2019d prefer to schedule the service\u2014I\u2019d be happy to provide you with a quote! \n\nFeel free to check out more at www.powwash.co.uk. Looking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T20:47:15.710555+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-09T20:50:21.764348+00:00",
+          "sentAt": null,
+          "error": null
         }
       ]
     }
