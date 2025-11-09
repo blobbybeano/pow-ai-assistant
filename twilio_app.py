@@ -49,15 +49,11 @@ _scheduled_message_ids: Set[str] = set()
 # Twilio Messenger dynamic builder
 # -----------------------------------------------------------
 def get_twilio_messenger() -> TwilioMessenger | None:
-    """
-    Always rebuild the TwilioMessenger from fresh environment variables.
-    This prevents stale 'from_' values and ensures Messaging Service SID takes priority.
-    """
+    """Always rebuild the TwilioMessenger from fresh environment variables."""
     messenger = TwilioMessenger.from_env()
     if messenger:
         cfg = messenger._config
         if cfg.messaging_service_sid:
-            # Messaging service always takes precedence
             cfg.whatsapp_from = None
         return messenger
 
@@ -70,7 +66,6 @@ def get_twilio_messenger() -> TwilioMessenger | None:
 # -----------------------------------------------------------
 def _resolve_media_extension(media_url: str | None, content_type: str | None) -> str:
     """Resolve an appropriate file extension for inbound media."""
-
     if content_type:
         normalized = content_type.lower().strip()
         if normalized in _MEDIA_EXTENSION_MAP:
@@ -86,7 +81,6 @@ def _resolve_media_extension(media_url: str | None, content_type: str | None) ->
 
 def _download_whatsapp_media(media_url: str | None, content_type: str | None) -> str | None:
     """Download an inbound WhatsApp media file via the Twilio REST API."""
-
     if not media_url:
         return None
 
@@ -130,7 +124,6 @@ def _build_attachment_url(filename: str) -> str:
 
 def _collect_inbound_attachments(form) -> List[str]:
     """Download and persist inbound WhatsApp media attachments."""
-
     attachments: List[str] = []
     try:
         num_media = int(form.get("NumMedia", "0") or 0)
@@ -148,7 +141,9 @@ def _collect_inbound_attachments(form) -> List[str]:
         filename = _download_whatsapp_media(media_url, content_type)
         if not filename:
             continue
-        attachments.append(_build_attachment_url(filename))
+        public_url = _build_attachment_url(filename)
+        attachments.append(public_url)
+        logging.info("🌍 Publicly accessible URL for media: %s", public_url)
 
     if attachments and not BASE_PUBLIC_URL:
         logging.warning(
@@ -160,7 +155,6 @@ def _collect_inbound_attachments(form) -> List[str]:
 
 def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str:
     """Generate an AI PowWash reply for an inbound WhatsApp message."""
-
     sanitized_text = (inbound_text or "").strip()
     attachment_list = list(attachments or [])
 
@@ -362,7 +356,6 @@ def healthcheck() -> Dict[str, str]:
 @app.get("/uploads/<path:filename>")
 def serve_uploaded_file(filename: str) -> Response:
     """Expose saved media files for downstream consumption (e.g. OpenAI)."""
-
     return send_from_directory(UPLOADS_DIR, filename)
 
 
@@ -476,9 +469,9 @@ def api_generate_ai_draft(conversation_id: str) -> Response:
 # Run server
 # -----------------------------------------------------------
 if __name__ == "__main__":
-    import os
     print("\n🔧 Twilio environment snapshot:")
     print(f"  Account SID: {os.getenv('TWILIO_ACCOUNT_SID')}")
     print(f"  Messaging Service SID: {os.getenv('TWILIO_MESSAGING_SERVICE_SID')}")
     print(f"  WhatsApp From: {os.getenv('TWILIO_WHATSAPP_NUMBER')}")
+    print(f"  BASE_PUBLIC_URL: {BASE_PUBLIC_URL or '(not set)'}")
     app.run(host="0.0.0.0", port=5002, debug=True)

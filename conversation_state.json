@@ -470,7 +470,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 0,
+      "unreadCount": 1,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -849,6 +849,214 @@
           "scheduledSendAt": "2025-11-09T20:50:21.764348+00:00",
           "sentAt": "2025-11-09T21:21:46.459223+00:00",
           "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "75992e7a-72a4-4be6-8e05-09413f4112c0",
+          "text": "What\u2019s this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T21:41:13.391053+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/uploads/5ca6ba70a21241c99a6592aa805d69d2.jpg"
+          ]
+        },
+        {
+          "id": "c654b66a-52a1-471e-b798-3cec04088cbd",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T21:41:13.394133+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Invalid type for 'input[1].content[1].image_url': expected an image URL, but got an object instead.\", 'type': 'invalid_request_error', 'param': 'input[1].content[1].image_url', 'code': 'invalid_type'}}",
+          "attachments": []
+        },
+        {
+          "id": "8fce559a-017c-45c0-a206-ed60d9307de3",
+          "text": "What\u2019s this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T21:52:47.014559+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/uploads/958b46b3a2374fbb9c50cb9d0295f85f.jpg"
+          ]
+        },
+        {
+          "id": "bbe9777a-bdb3-42e2-a7ed-a58de8ae4472",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T21:52:47.018478+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Invalid 'input[1].content[1].image_url'. Expected a valid URL, but got a value with an invalid format.\", 'type': 'invalid_request_error', 'param': 'input[1].content[1].image_url', 'code': 'invalid_value'}}",
+          "attachments": []
+        },
+        {
+          "id": "eec4e522-9bf7-470e-85a9-62687b8e1624",
+          "text": "Can you pressure wash my house",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T21:53:09.827042+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "12f89190-f84c-4e72-b040-93dece5fcfaf",
+          "text": "Hi there! While we don't specifically offer house pressure washing, we do have a fantastic Roof Soft Wash service. This low-pressure treatment clears moss and prevents regrowth for up to 12 months, keeping your roof looking great!\n\nCould you let me know the type of surface, size, and any access considerations? Also, when would you prefer us to come by? If you have photos, feel free to share them for a more accurate quote!\n\nLooking forward to hearing from you!\n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T21:53:09.829495+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-09T21:56:12.941707+00:00",
+          "sentAt": "2025-11-09T21:56:12.947046+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "9c0e2651-badb-4f23-9178-d863ec3fa3db",
+          "text": "What is this picture?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T22:01:35.585428+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/50f8e07ef3eb4b2f91448e21f478ec67.jpg"
+          ]
+        },
+        {
+          "id": "4dae74c2-6579-4671-9ede-592d2d748fdc",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T22:01:35.587711+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': 'Timeout while downloading https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/50f8e07ef3eb4b2f91448e21f478ec67.jpg.', 'type': 'invalid_request_error', 'param': 'url', 'code': 'invalid_value'}}",
+          "attachments": []
+        },
+        {
+          "id": "7d926d72-1bd7-46ad-b54c-36bc91ce9cfe",
+          "text": "What is this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T22:07:38.375173+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/uploads/3c293d4e96884c44a45f7b7032abec38.jpg"
+          ]
+        },
+        {
+          "id": "7b305c37-8914-4116-946c-09985a30ff4e",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T22:07:38.377554+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Invalid 'input[1].content[1].image_url'. Expected a valid URL, but got a value with an invalid format.\", 'type': 'invalid_request_error', 'param': 'input[1].content[1].image_url', 'code': 'invalid_value'}}",
+          "attachments": []
+        },
+        {
+          "id": "5385b5be-6e3a-4b89-a2f2-d64b6b795d28",
+          "text": "What is this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T22:13:25.368434+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/1f334b79152c4973b44420396b4f796d.jpg"
+          ]
+        },
+        {
+          "id": "5adb4dbb-5ce7-42e1-a423-d0ecda985cc3",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T22:13:25.371714+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': 'Timeout while downloading https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/1f334b79152c4973b44420396b4f796d.jpg.', 'type': 'invalid_request_error', 'param': 'url', 'code': 'invalid_value'}}",
+          "attachments": []
+        },
+        {
+          "id": "709271c4-f196-445b-a692-2b38317ea152",
+          "text": "What is this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T22:19:40.324621+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/bf1b4eea38724d48ad80c8e15456bdf9.jpg"
+          ]
+        },
+        {
+          "id": "2fded3fd-12d9-4541-a37a-04b6f3ce6050",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T22:19:40.327443+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': 'Timeout while downloading https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/bf1b4eea38724d48ad80c8e15456bdf9.jpg.', 'type': 'invalid_request_error', 'param': 'url', 'code': 'invalid_value'}}",
           "attachments": []
         }
       ]
