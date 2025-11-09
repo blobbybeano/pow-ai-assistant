@@ -941,6 +941,76 @@
           "sentAt": "2025-11-09T01:42:49.415292+00:00",
           "error": null,
           "attachments": []
+        },
+        {
+          "id": "f654bcb7-767c-4538-8c36-52f785902cb6",
+          "text": "What is in this picture",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:51:11.884566+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "f6e30fb2d32440eabcb0e15879bb7e9f.jpg",
+              "url": "http://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/f6e30fb2d32440eabcb0e15879bb7e9f.jpg",
+              "contentType": "image/jpeg",
+              "filename": "customer-photo"
+            }
+          ]
+        },
+        {
+          "id": "ccd683cb-8bdc-419d-854c-eba8ba0478e1",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:51:11.886575+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Invalid value: 'text'. Supported values are: 'input_text', 'input_image', 'output_text', 'refusal', 'input_file', 'computer_screenshot', and 'summary_text'.\", 'type': 'invalid_request_error', 'param': 'input[0].content[0].type', 'code': 'invalid_value'}}",
+          "attachments": []
+        },
+        {
+          "id": "bc32da9e-c459-4ee8-9b13-6daa4f75e63e",
+          "text": "What is in this picture",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T01:54:20.092512+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "c9c2b3ed263047b68e003c1f8b64985f.jpg",
+              "url": "http://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/c9c2b3ed263047b68e003c1f8b64985f.jpg",
+              "contentType": "image/jpeg",
+              "filename": "customer-photo"
+            }
+          ]
+        },
+        {
+          "id": "644d37d5-1cbc-42b4-ab51-71ab3b0be739",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T01:54:20.094406+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Invalid value: 'input_text'. Supported values are: 'output_text' and 'refusal'.\", 'type': 'invalid_request_error', 'param': 'input[2].content[0]', 'code': 'invalid_value'}}",
+          "attachments": []
         }
       ]
     }
