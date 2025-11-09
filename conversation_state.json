@@ -1046,6 +1046,41 @@
           "sentAt": "2025-11-09T12:43:53.609512+00:00",
           "error": null,
           "attachments": []
+        },
+        {
+          "id": "f6469dec-6b34-4ad4-921d-4c11c7b135da",
+          "text": "What is this a picture of?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T12:51:19.653787+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "id": "3365056073634b17abf0bbe4df45fffe.jpg",
+              "url": "http://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/3365056073634b17abf0bbe4df45fffe.jpg",
+              "contentType": "image/jpeg",
+              "filename": "customer-photo"
+            }
+          ]
+        },
+        {
+          "id": "3434335c-ff19-47ad-914f-8064a1f98645",
+          "text": "Sorry, I couldn't process that. Could you describe the issue again?",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T12:51:19.656209+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-09T12:54:21.842763+00:00",
+          "sentAt": null,
+          "error": null,
+          "attachments": []
         }
       ]
     }
