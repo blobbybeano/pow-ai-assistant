@@ -134,8 +134,18 @@ def _build_input_blocks(
         trimmed = url.strip()
         if not trimmed or trimmed in seen_images:
             return
+
+        payload: Dict[str, Any]
+        if trimmed.startswith("data:"):
+            _, _, data = trimmed.partition(",")
+            if not data:
+                return
+            payload = {"type": "input_image", "image_base64": data}
+        else:
+            payload = {"type": "input_image", "image_url": {"url": trimmed}}
+
         seen_images.add(trimmed)
-        blocks.append({"type": "input_image", "image_url": trimmed})
+        blocks.append(payload)
 
     def handle(entry: Any) -> None:
         if entry is None:
