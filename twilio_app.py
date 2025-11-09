@@ -31,7 +31,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 PRICE_LIST_PATH = Path("price_list.json")
 TONE_PROFILE_PATH = Path("tone_profile.md")
-BASE_PUBLIC_URL = os.getenv("BASE_PUBLIC_URL", "").rstrip("/")
 UPLOADS_DIR = Path(__file__).resolve().parent / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 _TWILIO_MEDIA_TIMEOUT_SECONDS = 20
@@ -79,7 +78,7 @@ def _resolve_media_extension(media_url: str | None, content_type: str | None) ->
     return ".jpg"
 
 
-def _download_whatsapp_media(media_url: str | None, content_type: str | None) -> str | None:
+def _download_whatsapp_media(media_url: str | None, content_type: str | None) -> Path | None:
     """Download an inbound WhatsApp media file via the Twilio REST API."""
     if not media_url:
         return None
@@ -112,18 +111,11 @@ def _download_whatsapp_media(media_url: str | None, content_type: str | None) ->
         return None
 
     logging.info("📸 Saved inbound WhatsApp media to %s", file_path)
-    return filename
-
-
-def _build_attachment_url(filename: str) -> str:
-    base = BASE_PUBLIC_URL
-    if base:
-        return f"{base}/uploads/{filename}"
-    return f"/uploads/{filename}"
+    return file_path
 
 
 def _collect_inbound_attachments(form) -> List[str]:
-    """Download and persist inbound WhatsApp media attachments."""
+    """Download inbound WhatsApp media and return local file paths."""
     attachments: List[str] = []
     try:
         num_media = int(form.get("NumMedia", "0") or 0)
@@ -138,17 +130,11 @@ def _collect_inbound_attachments(form) -> List[str]:
         if not media_url:
             continue
         content_type = form.get(f"MediaContentType{index}")
-        filename = _download_whatsapp_media(media_url, content_type)
-        if not filename:
+        file_path = _download_whatsapp_media(media_url, content_type)
+        if not file_path:
             continue
-        public_url = _build_attachment_url(filename)
-        attachments.append(public_url)
-        logging.info("🌍 Publicly accessible URL for media: %s", public_url)
-
-    if attachments and not BASE_PUBLIC_URL:
-        logging.warning(
-            "⚠️ BASE_PUBLIC_URL is not configured; attachment URLs will be relative paths."
-        )
+        attachments.append(str(file_path))
+        logging.info("📁 Stored inbound media at %s", file_path)
 
     return attachments
 
@@ -473,5 +459,4 @@ if __name__ == "__main__":
     print(f"  Account SID: {os.getenv('TWILIO_ACCOUNT_SID')}")
     print(f"  Messaging Service SID: {os.getenv('TWILIO_MESSAGING_SERVICE_SID')}")
     print(f"  WhatsApp From: {os.getenv('TWILIO_WHATSAPP_NUMBER')}")
-    print(f"  BASE_PUBLIC_URL: {BASE_PUBLIC_URL or '(not set)'}")
     app.run(host="0.0.0.0", port=5002, debug=True)
