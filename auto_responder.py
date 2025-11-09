@@ -142,7 +142,7 @@ def _build_input_blocks(
                 return
             payload = {"type": "input_image", "image_base64": data}
         else:
-            payload = {"type": "input_image", "image_url": {"url": trimmed}}
+            payload = {"type": "input_image", "image_url": trimmed}
 
         seen_images.add(trimmed)
         blocks.append(payload)
@@ -295,9 +295,24 @@ def _to_chat_messages(history: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]
                 content_blocks.append({"type": "text", "text": block.get("text", "")})
             elif block_type == "input_image":
                 image_url = block.get("image_url")
-                content_blocks.append(
-                    {"type": "image_url", "image_url": {"url": image_url}}
+                image_base64 = block.get("image_base64")
+                mime_type = (
+                    block.get("mime_type")
+                    or block.get("media_type")
+                    or block.get("content_type")
+                    or "image/jpeg"
                 )
+                if isinstance(image_base64, str) and image_base64.strip():
+                    data = image_base64.strip()
+                    if not data.startswith("data:"):
+                        data = f"data:{mime_type};base64,{data}"
+                    content_blocks.append(
+                        {"type": "image_url", "image_url": {"url": data}}
+                    )
+                elif isinstance(image_url, str) and image_url.strip():
+                    content_blocks.append(
+                        {"type": "image_url", "image_url": {"url": image_url.strip()}}
+                    )
         if not content_blocks:
             continue
         if len(content_blocks) == 1 and content_blocks[0]["type"] == "text":
