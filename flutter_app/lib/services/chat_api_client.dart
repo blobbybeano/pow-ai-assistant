@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 import '../models/conversation.dart';
 
@@ -69,6 +70,7 @@ class ChatApiClient {
     required String conversationId,
     required String text,
     String? senderId,
+    List<Map<String, dynamic>> attachments = const [],
   }) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/messages'),
@@ -76,6 +78,7 @@ class ChatApiClient {
       body: json.encode({
         'text': text,
         if (senderId != null) 'senderId': senderId,
+        if (attachments.isNotEmpty) 'attachments': attachments,
       }),
     );
     if (response.statusCode != 200 && response.statusCode != 202) {
@@ -83,6 +86,48 @@ class ChatApiClient {
     }
     final payload = json.decode(response.body) as Map<String, dynamic>;
     return payload['sid'] as String? ?? '';
+  }
+
+  Future<Map<String, dynamic>> sendScheduledMessageNow({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final response = await _client.post(
+      _uri('/api/conversations/$conversationId/messages/$messageId/send-now'),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 202) {
+      throw Exception(
+        'Failed to send scheduled message now (${response.statusCode})',
+      );
+    }
+
+    return json.decode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> uploadImage({
+    required String filename,
+    required String mimeType,
+    required List<int> bytes,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri('/api/uploads'))
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode != 201) {
+      throw Exception('Image upload failed (${response.statusCode})');
+    }
+
+    return json.decode(response.body) as Map<String, dynamic>;
   }
 
   Future<void> cancelScheduledMessage({

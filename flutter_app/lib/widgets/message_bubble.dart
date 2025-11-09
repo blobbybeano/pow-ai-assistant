@@ -100,6 +100,13 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment:
               isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
           children: [
+            if (message.hasAttachments) ...[
+              _AttachmentGallery(
+                attachments: message.attachments,
+                isInbound: isInbound,
+              ),
+              if (message.text.isNotEmpty || isDrafting) const SizedBox(height: 12),
+            ],
             if (isDrafting)
               TypingIndicator(
                 dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
@@ -110,6 +117,14 @@ class MessageBubble extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: textColor,
                       height: 1.5,
+                    ),
+              ),
+            if (!isDrafting && message.text.isEmpty && !message.hasAttachments)
+              Text(
+                '(No message content)',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: textColor.withOpacity(0.8),
+                      fontStyle: FontStyle.italic,
                     ),
               ),
             const SizedBox(height: 8),
@@ -179,6 +194,129 @@ class MessageBubble extends StatelessWidget {
             ]
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AttachmentGallery extends StatelessWidget {
+  const _AttachmentGallery({required this.attachments, required this.isInbound});
+
+  final List<ChatAttachment> attachments;
+  final bool isInbound;
+
+  @override
+  Widget build(BuildContext context) {
+    final images = attachments.where((attachment) => attachment.isImage).toList();
+    final others = attachments.where((attachment) => !attachment.isImage).toList();
+
+    return Column(
+      crossAxisAlignment:
+          isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        if (images.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final attachment in images)
+                _ImageAttachmentTile(
+                  attachment: attachment,
+                  isInbound: isInbound,
+                ),
+            ],
+          ),
+        if (others.isNotEmpty) ...[
+          if (images.isNotEmpty) const SizedBox(height: 8),
+          Column(
+            crossAxisAlignment:
+                isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+            children: [
+              for (final attachment in others)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _FileAttachmentTile(
+                    attachment: attachment,
+                    isInbound: isInbound,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ImageAttachmentTile extends StatelessWidget {
+  const _ImageAttachmentTile({required this.attachment, required this.isInbound});
+
+  final ChatAttachment attachment;
+  final bool isInbound;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(16);
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isInbound ? const Color(0x338696A0) : const Color(0x3300A884),
+          ),
+        ),
+        child: Image.network(
+          attachment.url,
+          width: 160,
+          height: 160,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 160,
+              height: 160,
+              color: const Color(0xFF111B21),
+              alignment: Alignment.center,
+              child: const Icon(Icons.broken_image, color: Color(0xFF8696A0)),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _FileAttachmentTile extends StatelessWidget {
+  const _FileAttachmentTile({required this.attachment, required this.isInbound});
+
+  final ChatAttachment attachment;
+  final bool isInbound;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isInbound ? const Color(0xFF202C33) : const Color(0xFF005C4B);
+    final border = isInbound ? const Color(0x1A8696A0) : const Color(0x3300A884);
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 240),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file, color: Color(0xFFE9EDEF), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              attachment.filename ?? attachment.label(),
+              style: const TextStyle(color: Color(0xFFE9EDEF)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

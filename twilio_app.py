@@ -3,13 +3,26 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
+import os
 import re
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, Set
+from typing import Any, Dict, List, Optional, Set
+from urllib.parse import urljoin
+from uuid import uuid4
 
-from flask import Flask, Response, abort, jsonify, request
+from flask import (
+    Flask,
+    Response,
+    abort,
+    jsonify,
+    request,
+    send_from_directory,
+    url_for,
+)
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from twilio.base.exceptions import TwilioRestException
 from twilio.twiml.messaging_response import MessagingResponse
@@ -32,6 +45,11 @@ TONE_PROFILE_PATH = Path("tone_profile.md")
 AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
 
+UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_BASE_URL = os.getenv("MEDIA_BASE_URL")
+twilio_messenger: Optional[TwilioMessenger] = None
+
 
 # -----------------------------------------------------------
 # Twilio Messenger dynamic builder
@@ -41,13 +59,14 @@ def get_twilio_messenger() -> TwilioMessenger | None:
     Always rebuild the TwilioMessenger from fresh environment variables.
     This prevents stale 'from_' values and ensures Messaging Service SID takes priority.
     """
+    global twilio_messenger
+    if twilio_messenger is not None:
+        return twilio_messenger
+
     messenger = TwilioMessenger.from_env()
     if messenger:
-        cfg = messenger._config
-        if cfg.messaging_service_sid:
-            # Messaging service always takes precedence
-            cfg.whatsapp_from = None
-        return messenger
+        twilio_messenger = messenger
+        return twilio_messenger
 
     logging.warning("⚠️ Twilio credentials not detected or invalid.")
     return None
@@ -56,16 +75,77 @@ def get_twilio_messenger() -> TwilioMessenger | None:
 # -----------------------------------------------------------
 # Utility functions
 # -----------------------------------------------------------
-def _build_reply(inbound_text: str) -> str:
-    """Generate an AI PowWash reply for an inbound WhatsApp message."""
-    if not inbound_text:
-        return (
-            "Hi there! This is PowWash. I didn’t catch your message—"
-            "could you please resend it so we can prepare your quote?"
-        )
+_EMPTY_INBOUND_REPLY = (
+    "Hi there! This is PowWash. I didn’t catch your message—"
+    "could you please resend it so we can prepare your quote?"
+)
 
+
+def _attachment_caption(payload: Dict[str, Any]) -> Optional[str]:
+    url = (payload.get("url") or "").strip()
+    content_type = (payload.get("contentType") or "").lower()
+    filename = (payload.get("filename") or "").strip()
+
+    if not url and not filename:
+        return None
+
+    label = "image" if content_type.startswith("image/") else "attachment"
+    if filename:
+        label = f"{label} '{filename}'"
+
+    if url:
+        return f"[{label} shared: {url}]"
+    return f"[{label} shared]"
+
+
+def _conversation_history(conversation_id: str, *, limit: int = 20) -> List[Dict[str, str]]:
+    convo = conversation_store.get_conversation(conversation_id)
+    if convo is None:
+        return []
+
+    history: List[Dict[str, str]] = []
+    messages: List[Dict[str, Any]] = convo.get("messages", [])
+    for message in messages[-limit:]:
+        author = message.get("author", "customer")
+        text = (message.get("text") or "").strip()
+        attachments = message.get("attachments") or []
+
+        fragments: List[str] = []
+        if text:
+            fragments.append(text)
+        for attachment in attachments:
+            caption = _attachment_caption(attachment)
+            if caption:
+                fragments.append(caption)
+
+        if not fragments:
+            continue
+
+        speaker: str
+        role: str
+        if author == "customer":
+            speaker, role = "Customer", "user"
+        elif author == "agent":
+            speaker, role = "Human agent", "assistant"
+        elif author == "ai":
+            speaker, role = "AI assistant", "assistant"
+        else:
+            speaker, role = "System", "assistant"
+
+        history.append({"role": role, "content": f"{speaker}: {' '.join(fragments)}"})
+
+    return history[-limit:]
+
+
+def _build_reply(conversation_id: str) -> str:
+    """Generate an AI PowWash reply using the full conversation history."""
+    history = _conversation_history(conversation_id)
+    if not history or history[-1]["role"] != "user":
+        return _EMPTY_INBOUND_REPLY
+
+    trimmed_history = history[-12:]
     return generate_reply(
-        message=inbound_text,
+        conversation_history=trimmed_history,
         price_list_path=PRICE_LIST_PATH,
         tone_profile_path=TONE_PROFILE_PATH,
         model="gpt-4o-mini",
@@ -111,6 +191,85 @@ def _conversation_id(from_number: str, wa_id: str | None = None) -> str:
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _collect_inbound_attachments(form_data) -> List[Dict[str, str]]:
+    attachments: List[Dict[str, str]] = []
+    try:
+        count = int(form_data.get("NumMedia", "0") or 0)
+    except (TypeError, ValueError):
+        count = 0
+
+    for index in range(count):
+        url = (form_data.get(f"MediaUrl{index}") or "").strip()
+        content_type = (form_data.get(f"MediaContentType{index}") or "").strip()
+        filename = (
+            form_data.get(f"MediaFilename{index}")
+            or form_data.get(f"MediaFileName{index}")
+            or ""
+        ).strip()
+
+        if not url:
+            continue
+
+        attachments.append(
+            {
+                "url": url,
+                "contentType": content_type or None,
+                "filename": filename or None,
+            }
+        )
+
+    return attachments
+
+
+def _parse_outbound_attachments(payload: Dict[str, Any]) -> List[Dict[str, str]]:
+    attachments: List[Dict[str, str]] = []
+    raw = payload.get("attachments")
+    if not isinstance(raw, list):
+        return attachments
+
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        url = (item.get("url") or "").strip()
+        if not url:
+            continue
+        content_type = (item.get("contentType") or "").strip() or None
+        filename = (item.get("filename") or "").strip() or None
+        attachments.append({"url": url, "contentType": content_type, "filename": filename})
+
+    return attachments
+
+
+def _public_upload_url(filename: str) -> str:
+    if MEDIA_BASE_URL:
+        base = MEDIA_BASE_URL.rstrip("/") + "/"
+        return urljoin(base, f"uploads/{filename}")
+    return url_for("serve_upload", filename=filename, _external=True)
+
+
+def _persist_uploaded_file(file_storage) -> Dict[str, str]:
+    content_type = (file_storage.mimetype or "").lower()
+    if not content_type.startswith("image/"):
+        abort(400, description="Only image uploads are supported")
+
+    original_name = secure_filename(file_storage.filename or "customer-photo")
+    extension = Path(original_name).suffix
+    if not extension:
+        guessed = mimetypes.guess_extension(content_type) or ""
+        extension = guessed
+
+    filename = f"{uuid4().hex}{extension}" if extension else uuid4().hex
+    storage_path = UPLOADS_DIR / filename
+    file_storage.save(storage_path)
+
+    return {
+        "id": filename,
+        "url": _public_upload_url(filename),
+        "contentType": content_type,
+        "filename": original_name,
+    }
 
 
 # -----------------------------------------------------------
@@ -201,9 +360,12 @@ def whatsapp_webhook() -> Response:
     wa_id = request.form.get("WaId")
     conversation_id = _conversation_id(from_number, wa_id)
 
+    attachments = _collect_inbound_attachments(request.form)
+
     conversation_store.record_message(
         conversation_id, text=inbound_text, author="customer", direction="inbound",
         profile_name=profile_name, profile_photo_url=profile_photo_url, increment_unread=True,
+        attachments=attachments,
     )
 
     if conversation_store.default_responder_id:
@@ -218,7 +380,7 @@ def whatsapp_webhook() -> Response:
             conversation_id, text="", author="ai", direction="outbound", status="drafting",
         )
         try:
-            reply_text = _build_reply(inbound_text)
+            reply_text = _build_reply(conversation_id)
         except Exception as exc:
             logging.exception("AI reply generation failed")
             conversation_store.update_message(conversation_id, drafting_message.id, status="failed", error=str(exc))
@@ -259,6 +421,24 @@ def api_set_default_responder() -> Response:
     return jsonify({"defaultResponderId": conversation_store.default_responder_id})
 
 
+@app.post("/api/uploads")
+def api_upload_attachment() -> Response:
+    if "file" not in request.files:
+        abort(400, description="No file part in upload request")
+
+    file_storage = request.files["file"]
+    if not file_storage or not file_storage.filename:
+        abort(400, description="Uploaded file is missing a filename")
+
+    metadata = _persist_uploaded_file(file_storage)
+    return jsonify(metadata), 201
+
+
+@app.get("/uploads/<path:filename>")
+def serve_upload(filename: str):
+    return send_from_directory(UPLOADS_DIR, filename)
+
+
 @app.get("/api/conversations")
 def api_list_conversations() -> Response:
     conversations = conversation_store.list_conversations()
@@ -290,9 +470,10 @@ def api_send_manual_message(conversation_id: str) -> Response:
     payload = request.get_json(silent=True) or {}
     text = (payload.get("text") or "").strip()
     sender_id = payload.get("senderId")
+    attachments = _parse_outbound_attachments(payload)
 
-    if not text:
-        abort(400, description="Message text is required")
+    if not text and not attachments:
+        abort(400, description="Message text or image attachment is required")
 
     status, sid, error_message = "sent", None, None
     delivery_via = "whatsapp"
@@ -300,30 +481,43 @@ def api_send_manual_message(conversation_id: str) -> Response:
     if sender_id and isinstance(sender_id, str):
         conversation_store.assign_conversation(conversation_id, sender_id)
 
-    cancelled = conversation_store.cancel_pending_ai_messages(conversation_id, reason="Agent replied manually")
+    cancelled = conversation_store.cancel_pending_ai_messages(
+        conversation_id,
+        reason="Cancelled because an agent replied manually",
+    )
     for cid in cancelled:
         _scheduled_message_ids.discard(cid)
 
     messenger = get_twilio_messenger()
-    if not messenger:
-        abort(503, description="Twilio not configured for outbound messaging.")
-
-    try:
-        sid = messenger.send_whatsapp_message(to=f"whatsapp:{conversation_id}", body=text)
-    except TwilioRestException as exc:
-        logging.error(f"❌ Twilio error {exc.code} ({exc.status}): {exc.msg}")
-        status, error_message = "failed", f"Twilio error {exc.code}: {exc.msg}"
-    except Exception as exc:
-        logging.exception("Unexpected error sending manual message via Twilio")
-        status, error_message = "failed", str(exc)
+    if messenger:
+        try:
+            sid = messenger.send_whatsapp_message(
+                to=f"whatsapp:{conversation_id}",
+                body=text,
+                media_urls=[attachment["url"] for attachment in attachments] if attachments else None,
+            )
+        except TwilioRestException as exc:
+            logging.error(f"❌ Twilio error {exc.code} ({exc.status}): {exc.msg}")
+            status, error_message = "failed", f"Twilio error {exc.code}: {exc.msg}"
+        except Exception as exc:
+            logging.exception("Unexpected error sending manual message via Twilio")
+            status, error_message = "failed", str(exc)
+    else:
+        sid = f"local-{uuid4().hex}"
+        delivery_via = "workspace"
 
     message = conversation_store.record_message(
         conversation_id, text=text, author="agent", direction="outbound",
         via=delivery_via, transport_sid=sid, sent_at=_iso_now() if status == "sent" else None,
-        status=status, error=error_message,
+        status=status, error=error_message, attachments=attachments,
     )
 
-    payload = {"status": status, "sid": sid, "message": message.to_dict()}
+    payload = {
+        "status": status,
+        "sid": sid,
+        "delivery": delivery_via,
+        "message": message.to_dict(),
+    }
     if error_message:
         payload["error"] = error_message
     return jsonify(payload), (200 if status == "sent" else 202)
@@ -338,15 +532,73 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
     return jsonify({"status": "cancelled", "message": message.to_dict()})
 
 
+@app.post("/api/conversations/<conversation_id>/messages/<message_id>/send-now")
+def api_send_scheduled_now(conversation_id: str, message_id: str) -> Response:
+    message = conversation_store.get_message(conversation_id, message_id)
+    if message is None or message.author != "ai":
+        abort(404, description="AI message not found")
+
+    if message.status not in {"scheduled", "drafting"}:
+        abort(400, description="Message is not waiting to be sent")
+
+    if not message.text.strip() and not message.attachments:
+        abort(400, description="AI message has no content to send")
+
+    messenger = get_twilio_messenger()
+    if not messenger:
+        abort(503, description="Twilio not configured for outbound messaging.")
+
+    media_urls = [attachment.url for attachment in message.attachments if attachment.url]
+
+    status = "sent"
+    sid: Optional[str] = None
+    error_message: Optional[str] = None
+
+    try:
+        sid = messenger.send_whatsapp_message(
+            to=f"whatsapp:{conversation_id}",
+            body=message.text,
+            media_urls=media_urls if media_urls else None,
+        )
+    except TwilioRestException as exc:
+        logging.error(f"❌ Twilio error {exc.code} ({exc.status}): {exc.msg}")
+        status, error_message = "failed", f"Twilio error {exc.code}: {exc.msg}"
+    except Exception as exc:
+        logging.exception("Unexpected error sending scheduled AI message immediately")
+        status, error_message = "failed", str(exc)
+
+    updated = conversation_store.update_message(
+        conversation_id,
+        message_id,
+        status=status,
+        sent_at=_iso_now(),
+        transport_sid=sid,
+        error=error_message,
+        scheduled_send_at=None,
+    )
+
+    _scheduled_message_ids.discard(message_id)
+
+    payload = {
+        "status": status,
+        "sid": sid,
+        "message": (updated or message).to_dict(),
+    }
+    if error_message:
+        payload["error"] = error_message
+
+    return jsonify(payload), (200 if status == "sent" else 202)
+
+
 @app.post("/api/conversations/<conversation_id>/ai-draft")
 def api_generate_ai_draft(conversation_id: str) -> Response:
     convo = conversation_store.get_conversation(conversation_id)
     if convo is None:
         abort(404, description="Conversation not found")
-    latest = conversation_store.latest_customer_message(conversation_id)
-    if latest is None:
+    history = _conversation_history(conversation_id)
+    if not history or history[-1]["role"] != "user":
         abort(400, description="No customer message available for drafting")
-    draft = _build_reply(latest.text)
+    draft = _build_reply(conversation_id)
     return jsonify({"draft": draft, "model": "gpt-4o-mini"})
 
 

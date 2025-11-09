@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -114,7 +117,7 @@ class _ConversationWorkspaceState extends State<_ConversationWorkspace> {
                   controller.pendingAiMessage!.id == message.id &&
                   message.author == 'ai' &&
                   message.isScheduled
-              ? _EditScheduledButton(
+              ? _PendingAiActionRow(
                   controller: controller,
                   onRecovered: (draft) {
                     setState(() {
@@ -457,9 +460,109 @@ class _ComposerBar extends StatefulWidget {
 }
 
 class _ComposerBarState extends State<_ComposerBar> {
+  final List<_PendingAttachment> _pendingAttachments = <_PendingAttachment>[];
+  bool _isUploading = false;
+
+  List<Map<String, dynamic>> get _attachmentPayload =>
+      _pendingAttachments.map((attachment) => attachment.toJson()).toList();
+
+  Future<void> _pickImages() async {
+    if (_isUploading) return;
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.image,
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) {
+      return;
+    }
+
+    setState(() => _isUploading = true);
+    final apiClient = context.read<ChatApiClient>();
+    final newAttachments = <_PendingAttachment>[];
+
+    for (final file in result.files) {
+      final bytes = file.bytes;
+      if (bytes == null) {
+        continue;
+      }
+
+      final name = file.name.isNotEmpty ? file.name : 'photo.jpg';
+      final mimeType = _guessMimeType(name);
+
+      try {
+        final metadata = await apiClient.uploadImage(
+          filename: name,
+          mimeType: mimeType,
+          bytes: bytes,
+        );
+
+        final remoteUrl = metadata['url'] as String?;
+        if (remoteUrl == null || remoteUrl.isEmpty) {
+          throw Exception('Upload response missing URL');
+        }
+
+        newAttachments.add(
+          _PendingAttachment(
+            id: metadata['id'] as String? ?? remoteUrl,
+            filename: metadata['filename'] as String? ?? name,
+            mimeType: metadata['contentType'] as String? ?? mimeType,
+            url: remoteUrl,
+            bytes: bytes,
+          ),
+        );
+      } catch (error) {
+        if (!mounted) continue;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image upload failed: $error')),
+        );
+      }
+    }
+
+    if (newAttachments.isNotEmpty && mounted) {
+      setState(() {
+        _pendingAttachments.addAll(newAttachments);
+      });
+    }
+
+    if (mounted) {
+      setState(() => _isUploading = false);
+    }
+  }
+
+  void _removeAttachment(String id) {
+    setState(() {
+      _pendingAttachments.removeWhere((attachment) => attachment.id == id);
+    });
+  }
+
+  String _guessMimeType(String filename) {
+    final extension = filename.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      case 'bmp':
+        return 'image/bmp';
+      case 'jpeg':
+      case 'jpg':
+      default:
+        return 'image/jpeg';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSending = widget.controller.isSending;
+    final isBusy = isSending || _isUploading || widget.controller.isSendingPendingAi;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -471,34 +574,86 @@ class _ComposerBarState extends State<_ComposerBar> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
+            IconButton(
+              onPressed: isSending || _isUploading ? null : _pickImages,
+              icon: _isUploading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00A884)),
+                    )
+                  : const Icon(Icons.photo_camera_outlined, color: Color(0xFFE9EDEF)),
+              tooltip: 'Attach photo',
+            ),
+            const SizedBox(width: 12),
             Expanded(
-              child: TextField(
-                controller: widget.textController,
-                maxLines: 6,
-                minLines: 1,
-                style: const TextStyle(color: Color(0xFFE9EDEF), height: 1.4),
-                decoration: const InputDecoration(
-                  hintText: 'Type a message',
-                  hintStyle: TextStyle(color: Color(0xFF8696A0)),
-                  border: InputBorder.none,
-                  isCollapsed: true,
-                ),
-                cursorColor: const Color(0xFF00A884),
-                textInputAction: TextInputAction.newline,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_pendingAttachments.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _AttachmentPreviewList(
+                        attachments: _pendingAttachments,
+                        onRemove: _removeAttachment,
+                      ),
+                    ),
+                  TextField(
+                    controller: widget.textController,
+                    maxLines: 6,
+                    minLines: 1,
+                    style: const TextStyle(color: Color(0xFFE9EDEF), height: 1.4),
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message',
+                      hintStyle: TextStyle(color: Color(0xFF8696A0)),
+                      border: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                    cursorColor: const Color(0xFF00A884),
+                    textInputAction: TextInputAction.newline,
+                  ),
+                  if (_isUploading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00A884)),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Uploading…',
+                            style: TextStyle(color: Color(0xFF8696A0), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 16),
             FilledButton(
-              onPressed: isSending
+              onPressed: isBusy
                   ? null
                   : () async {
                       final text = widget.textController.text.trim();
-                      if (text.isEmpty) return;
+                      if (text.isEmpty && _pendingAttachments.isEmpty) return;
                       widget.onSend();
                       final senderId = context.read<UserController>().currentUser?.id;
-                      await widget.controller.sendMessage(text, senderId: senderId);
+                      await widget.controller.sendMessage(
+                        text,
+                        senderId: senderId,
+                        attachments: _attachmentPayload,
+                      );
                       if (mounted) {
                         widget.textController.clear();
+                        setState(() {
+                          _pendingAttachments.clear();
+                        });
                       }
                     },
               style: FilledButton.styleFrom(
@@ -518,6 +673,80 @@ class _ComposerBarState extends State<_ComposerBar> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PendingAttachment {
+  _PendingAttachment({
+    required this.id,
+    required this.filename,
+    required this.mimeType,
+    required this.url,
+    required this.bytes,
+  });
+
+  final String id;
+  final String filename;
+  final String mimeType;
+  final String url;
+  final Uint8List bytes;
+
+  Map<String, dynamic> toJson() => {
+        'url': url,
+        'filename': filename,
+        'contentType': mimeType,
+      };
+}
+
+class _AttachmentPreviewList extends StatelessWidget {
+  const _AttachmentPreviewList({
+    required this.attachments,
+    required this.onRemove,
+  });
+
+  final List<_PendingAttachment> attachments;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: attachments
+          .map(
+            (attachment) => Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.memory(
+                    attachment.bytes,
+                    width: 96,
+                    height: 96,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: -8,
+                  right: -8,
+                  child: Material(
+                    color: const Color(0xFF111B21),
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      iconSize: 18,
+                      onPressed: () => onRemove(attachment.id),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      tooltip: 'Remove photo',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -560,6 +789,52 @@ class _AiDraftPreview extends StatelessWidget {
   }
 }
 
+class _PendingAiActionRow extends StatelessWidget {
+  const _PendingAiActionRow({required this.controller, required this.onRecovered});
+
+  final ConversationController controller;
+  final ValueChanged<String> onRecovered;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSending = controller.isSendingPendingAi;
+    final isCancelling = controller.isCancellingPendingAi;
+    final isDisabled = isSending || isCancelling;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        FilledButton.icon(
+          onPressed: isDisabled
+              ? null
+              : () async {
+                  await controller.sendPendingAiNow();
+                },
+          icon: isSending
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.send_rounded),
+          label: Text(isSending ? 'Sending…' : 'Send now'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF00A884),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        _EditScheduledButton(
+          controller: controller,
+          onRecovered: onRecovered,
+        ),
+      ],
+    );
+  }
+}
+
 class _EditScheduledButton extends StatelessWidget {
   const _EditScheduledButton({required this.controller, required this.onRecovered});
 
@@ -568,7 +843,7 @@ class _EditScheduledButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBusy = controller.isCancellingPendingAi;
+    final isBusy = controller.isCancellingPendingAi || controller.isSendingPendingAi;
 
     return OutlinedButton.icon(
       onPressed: isBusy

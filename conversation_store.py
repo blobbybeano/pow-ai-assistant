@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 from uuid import uuid4
 
 from urllib.parse import quote_plus
@@ -48,6 +48,51 @@ def _is_placeholder_avatar(url: Optional[str]) -> bool:
     return url.startswith("https://ui-avatars.com/")
 
 
+def _attachments_from_payload(items: Iterable[Dict[str, Any]]) -> List[AttachmentRecord]:
+    attachments: List[AttachmentRecord] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("url")
+        if not url:
+            continue
+        attachments.append(
+            AttachmentRecord(
+                id=item.get("id", str(uuid4())),
+                url=url,
+                content_type=item.get("contentType"),
+                filename=item.get("filename"),
+            )
+        )
+    return attachments
+
+
+@dataclass
+class AttachmentRecord:
+    """Metadata for media attached to a chat message."""
+
+    id: str
+    url: str
+    content_type: Optional[str] = None
+    filename: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "url": self.url,
+            "contentType": self.content_type,
+            "filename": self.filename,
+        }
+
+    def clone(self) -> "AttachmentRecord":
+        return AttachmentRecord(
+            id=self.id,
+            url=self.url,
+            content_type=self.content_type,
+            filename=self.filename,
+        )
+
+
 @dataclass
 class MessageRecord:
     """Represents a single chat message stored in the conversation history."""
@@ -65,6 +110,7 @@ class MessageRecord:
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
+    attachments: List[AttachmentRecord] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -79,6 +125,7 @@ class MessageRecord:
             "scheduledSendAt": self.scheduled_send_at,
             "sentAt": self.sent_at,
             "error": self.error,
+            "attachments": [attachment.to_dict() for attachment in self.attachments],
         }
 
     def effective_datetime(self) -> datetime:
@@ -92,6 +139,22 @@ class MessageRecord:
                     continue
         # Fallback to now if parsing fails
         return datetime.now(tz=timezone.utc)
+
+    def clone(self) -> "MessageRecord":
+        return MessageRecord(
+            id=self.id,
+            text=self.text,
+            author=self.author,
+            direction=self.direction,
+            timestamp=self.timestamp,
+            via=self.via,
+            transport_sid=self.transport_sid,
+            status=self.status,
+            scheduled_send_at=self.scheduled_send_at,
+            sent_at=self.sent_at,
+            error=self.error,
+            attachments=[attachment.clone() for attachment in self.attachments],
+        )
 
 
 @dataclass
@@ -184,6 +247,11 @@ class ConversationStore:
                         scheduled_send_at=msg.get("scheduledSendAt"),
                         sent_at=msg.get("sentAt"),
                         error=msg.get("error"),
+                        attachments=_attachments_from_payload(
+                            msg.get("attachments", [])
+                            if isinstance(msg.get("attachments"), list)
+                            else []
+                        ),
                     )
                     for msg in record.get("messages", [])
                 ],
@@ -362,6 +430,7 @@ class ConversationStore:
         scheduled_send_at: Optional[str] = None,
         sent_at: Optional[str] = None,
         error: Optional[str] = None,
+        attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
@@ -382,6 +451,7 @@ class ConversationStore:
             scheduled_send_at=scheduled_send_at,
             sent_at=sent_at,
             error=error,
+            attachments=_attachments_from_payload(attachments or []),
         )
 
         with self._lock:
@@ -570,24 +640,7 @@ class ConversationStore:
             for convo in self._conversations.values():
                 for message in convo.messages:
                     if message.author == "ai" and message.status == "scheduled":
-                        pending.append(
-                            (
-                                convo.id,
-                                MessageRecord(
-                                    id=message.id,
-                                    text=message.text,
-                                    author=message.author,
-                                    direction=message.direction,
-                                    timestamp=message.timestamp,
-                                    via=message.via,
-                                    transport_sid=message.transport_sid,
-                                    status=message.status,
-                                    scheduled_send_at=message.scheduled_send_at,
-                                    sent_at=message.sent_at,
-                                    error=message.error,
-                                ),
-                            )
-                        )
+                        pending.append((convo.id, message.clone()))
             return pending
 
     def get_message(
@@ -602,19 +655,7 @@ class ConversationStore:
 
             for message in convo.messages:
                 if message.id == message_id:
-                    return MessageRecord(
-                        id=message.id,
-                        text=message.text,
-                        author=message.author,
-                        direction=message.direction,
-                        timestamp=message.timestamp,
-                        via=message.via,
-                        transport_sid=message.transport_sid,
-                        status=message.status,
-                        scheduled_send_at=message.scheduled_send_at,
-                        sent_at=message.sent_at,
-                        error=message.error,
-                    )
+                    return message.clone()
 
         return None
 

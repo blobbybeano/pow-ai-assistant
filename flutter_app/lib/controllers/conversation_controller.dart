@@ -33,6 +33,7 @@ class ConversationController extends ChangeNotifier {
   bool _sending = false;
   bool _drafting = false;
   bool _cancellingPendingAi = false;
+  bool _sendingPendingAi = false;
   Object? _error;
   String? _aiDraft;
   String? _responderId;
@@ -42,6 +43,7 @@ class ConversationController extends ChangeNotifier {
   bool get isSending => _sending;
   bool get isDrafting => _drafting;
   bool get isCancellingPendingAi => _cancellingPendingAi;
+  bool get isSendingPendingAi => _sendingPendingAi;
   Object? get error => _error;
   bool get aiEnabled => _detail?.aiEnabled ?? true;
   String get displayName => _detail?.displayName ?? initialDisplayName;
@@ -107,8 +109,12 @@ class ConversationController extends ChangeNotifier {
     }
   }
 
-  Future<void> sendMessage(String text, {String? senderId}) async {
-    if (text.trim().isEmpty) return;
+  Future<void> sendMessage(
+    String text, {
+    String? senderId,
+    List<Map<String, dynamic>> attachments = const [],
+  }) async {
+    if (text.trim().isEmpty && attachments.isEmpty) return;
     _sending = true;
     notifyListeners();
 
@@ -117,6 +123,7 @@ class ConversationController extends ChangeNotifier {
         conversationId: conversationId,
         text: text,
         senderId: senderId,
+        attachments: attachments,
       );
       _aiDraft = null;
       await _loadConversation(force: true);
@@ -124,6 +131,34 @@ class ConversationController extends ChangeNotifier {
       _error = error;
     } finally {
       _sending = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> sendPendingAiNow() async {
+    final pending = pendingAiMessage;
+    if (pending == null) return false;
+
+    _sendingPendingAi = true;
+    notifyListeners();
+
+    try {
+      final response = await apiClient.sendScheduledMessageNow(
+        conversationId: conversationId,
+        messageId: pending.id,
+      );
+      final status = response['status'] as String?;
+      if (status != null && status != 'sent') {
+        final errorMessage = response['error'] as String? ?? 'Unable to send AI reply immediately.';
+        _error = Exception(errorMessage);
+      }
+      await _loadConversation(force: true);
+      return status == null || status == 'sent';
+    } catch (error) {
+      _error = error;
+      return false;
+    } finally {
+      _sendingPendingAi = false;
       notifyListeners();
     }
   }

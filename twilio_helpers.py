@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
@@ -52,10 +52,16 @@ class TwilioMessenger:
         )
         return cls(config)
 
-    def send_whatsapp_message(self, *, to: str, body: str) -> str:
+    def send_whatsapp_message(
+        self,
+        *,
+        to: str,
+        body: str,
+        media_urls: Optional[List[str]] = None,
+    ) -> str:
         """Send a WhatsApp message using the configured Messaging Service."""
-        if not body.strip():
-            raise ValueError("Message body cannot be empty.")
+        if not body.strip() and not media_urls:
+            raise ValueError("Message body or media is required.")
 
         to_address = _normalize_whatsapp_address(to)
         if not to_address:
@@ -66,6 +72,9 @@ class TwilioMessenger:
             "body": body,
             "messaging_service_sid": self._config.messaging_service_sid,
         }
+
+        if media_urls:
+            kwargs["media_url"] = media_urls
 
         print(f"[TwilioMessenger] Sending via Messaging Service SID: {self._config.messaging_service_sid}")
         print(f"[TwilioMessenger] → {to_address}")
