@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, Set
+from typing import Dict, List, Set
+from uuid import uuid4
 
-from flask import Flask, Response, abort, jsonify, request
+import requests
+from flask import Flask, Response, abort, jsonify, request, send_from_directory
 from flask_cors import CORS
 from twilio.base.exceptions import TwilioRestException
 from twilio.twiml.messaging_response import MessagingResponse
@@ -28,6 +31,15 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 PRICE_LIST_PATH = Path("price_list.json")
 TONE_PROFILE_PATH = Path("tone_profile.md")
+BASE_PUBLIC_URL = os.getenv("BASE_PUBLIC_URL", "").rstrip("/")
+UPLOADS_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+_TWILIO_MEDIA_TIMEOUT_SECONDS = 20
+_MEDIA_EXTENSION_MAP = {
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+}
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
@@ -56,20 +68,121 @@ def get_twilio_messenger() -> TwilioMessenger | None:
 # -----------------------------------------------------------
 # Utility functions
 # -----------------------------------------------------------
-def _build_reply(inbound_text: str) -> str:
+def _resolve_media_extension(media_url: str | None, content_type: str | None) -> str:
+    """Resolve an appropriate file extension for inbound media."""
+
+    if content_type:
+        normalized = content_type.lower().strip()
+        if normalized in _MEDIA_EXTENSION_MAP:
+            return _MEDIA_EXTENSION_MAP[normalized]
+
+    url_lower = (media_url or "").lower()
+    if url_lower.endswith(".png"):
+        return ".png"
+    if url_lower.endswith(".jpeg") or url_lower.endswith(".jpg"):
+        return ".jpg"
+    return ".jpg"
+
+
+def _download_whatsapp_media(media_url: str | None, content_type: str | None) -> str | None:
+    """Download an inbound WhatsApp media file via the Twilio REST API."""
+
+    if not media_url:
+        return None
+
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    if not account_sid or not auth_token:
+        logging.error("🚫 Cannot download media without Twilio credentials.")
+        return None
+
+    extension = _resolve_media_extension(media_url, content_type)
+    filename = f"{uuid4().hex}{extension}"
+    file_path = UPLOADS_DIR / filename
+
+    try:
+        response = requests.get(
+            media_url,
+            auth=(account_sid, auth_token),
+            timeout=_TWILIO_MEDIA_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        logging.error("❌ Failed to download WhatsApp media from Twilio: %s", exc)
+        return None
+
+    try:
+        file_path.write_bytes(response.content)
+    except OSError as exc:
+        logging.error("❌ Failed to persist inbound media %s: %s", filename, exc)
+        return None
+
+    logging.info("📸 Saved inbound WhatsApp media to %s", file_path)
+    return filename
+
+
+def _build_attachment_url(filename: str) -> str:
+    base = BASE_PUBLIC_URL
+    if base:
+        return f"{base}/uploads/{filename}"
+    return f"/uploads/{filename}"
+
+
+def _collect_inbound_attachments(form) -> List[str]:
+    """Download and persist inbound WhatsApp media attachments."""
+
+    attachments: List[str] = []
+    try:
+        num_media = int(form.get("NumMedia", "0") or 0)
+    except (TypeError, ValueError):
+        num_media = 0
+
+    if num_media <= 0:
+        return attachments
+
+    for index in range(num_media):
+        media_url = form.get(f"MediaUrl{index}")
+        if not media_url:
+            continue
+        content_type = form.get(f"MediaContentType{index}")
+        filename = _download_whatsapp_media(media_url, content_type)
+        if not filename:
+            continue
+        attachments.append(_build_attachment_url(filename))
+
+    if attachments and not BASE_PUBLIC_URL:
+        logging.warning(
+            "⚠️ BASE_PUBLIC_URL is not configured; attachment URLs will be relative paths."
+        )
+
+    return attachments
+
+
+def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str:
     """Generate an AI PowWash reply for an inbound WhatsApp message."""
-    if not inbound_text:
+
+    sanitized_text = (inbound_text or "").strip()
+    attachment_list = list(attachments or [])
+
+    if not sanitized_text and not attachment_list:
         return (
             "Hi there! This is PowWash. I didn’t catch your message—"
             "could you please resend it so we can prepare your quote?"
         )
 
+    if not sanitized_text:
+        sanitized_text = (
+            "The customer sent images without any accompanying text. "
+            "Please review the attachments and respond helpfully."
+        )
+
     return generate_reply(
-        message=inbound_text,
+        message=sanitized_text,
         price_list_path=PRICE_LIST_PATH,
         tone_profile_path=TONE_PROFILE_PATH,
         model="gpt-4o-mini",
         temperature=0.5,
+        attachments=attachment_list,
     )
 
 
@@ -200,10 +313,12 @@ def whatsapp_webhook() -> Response:
     profile_photo_url = request.form.get("ProfilePictureUrl") or request.form.get("ProfileImageUrl")
     wa_id = request.form.get("WaId")
     conversation_id = _conversation_id(from_number, wa_id)
+    attachments = _collect_inbound_attachments(request.form)
 
     conversation_store.record_message(
         conversation_id, text=inbound_text, author="customer", direction="inbound",
         profile_name=profile_name, profile_photo_url=profile_photo_url, increment_unread=True,
+        attachments=attachments,
     )
 
     if conversation_store.default_responder_id:
@@ -218,7 +333,7 @@ def whatsapp_webhook() -> Response:
             conversation_id, text="", author="ai", direction="outbound", status="drafting",
         )
         try:
-            reply_text = _build_reply(inbound_text)
+            reply_text = _build_reply(inbound_text, attachments)
         except Exception as exc:
             logging.exception("AI reply generation failed")
             conversation_store.update_message(conversation_id, drafting_message.id, status="failed", error=str(exc))
@@ -242,6 +357,13 @@ def whatsapp_webhook() -> Response:
 @app.get("/api/health")
 def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/uploads/<path:filename>")
+def serve_uploaded_file(filename: str) -> Response:
+    """Expose saved media files for downstream consumption (e.g. OpenAI)."""
+
+    return send_from_directory(UPLOADS_DIR, filename)
 
 
 @app.get("/api/settings/responder")
@@ -346,7 +468,7 @@ def api_generate_ai_draft(conversation_id: str) -> Response:
     latest = conversation_store.latest_customer_message(conversation_id)
     if latest is None:
         abort(400, description="No customer message available for drafting")
-    draft = _build_reply(latest.text)
+    draft = _build_reply(latest.text, latest.attachments)
     return jsonify({"draft": draft, "model": "gpt-4o-mini"})
 
 

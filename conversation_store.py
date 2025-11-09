@@ -65,6 +65,7 @@ class MessageRecord:
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
+    attachments: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -79,6 +80,7 @@ class MessageRecord:
             "scheduledSendAt": self.scheduled_send_at,
             "sentAt": self.sent_at,
             "error": self.error,
+            "attachments": list(self.attachments),
         }
 
     def effective_datetime(self) -> datetime:
@@ -184,6 +186,11 @@ class ConversationStore:
                         scheduled_send_at=msg.get("scheduledSendAt"),
                         sent_at=msg.get("sentAt"),
                         error=msg.get("error"),
+                        attachments=[
+                            attachment
+                            for attachment in msg.get("attachments", [])
+                            if isinstance(attachment, str)
+                        ],
                     )
                     for msg in record.get("messages", [])
                 ],
@@ -362,6 +369,7 @@ class ConversationStore:
         scheduled_send_at: Optional[str] = None,
         sent_at: Optional[str] = None,
         error: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
@@ -382,6 +390,7 @@ class ConversationStore:
             scheduled_send_at=scheduled_send_at,
             sent_at=sent_at,
             error=error,
+            attachments=list(attachments or []),
         )
 
         with self._lock:
@@ -614,6 +623,7 @@ class ConversationStore:
                         scheduled_send_at=message.scheduled_send_at,
                         sent_at=message.sent_at,
                         error=message.error,
+                        attachments=list(message.attachments),
                     )
 
         return None
@@ -629,6 +639,7 @@ class ConversationStore:
         transport_sid: Optional[str] = None,
         error: Optional[str] = None,
         scheduled_send_at: Optional[str] = None,
+        attachments: Optional[List[str]] = None,
     ) -> Optional[MessageRecord]:
         """Update a specific message record and persist the store."""
 
@@ -651,6 +662,8 @@ class ConversationStore:
                         message.error = error
                     if scheduled_send_at is not None:
                         message.scheduled_send_at = scheduled_send_at
+                    if attachments is not None:
+                        message.attachments = list(attachments)
                     self._persist()
                     return message
 
