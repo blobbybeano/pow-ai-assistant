@@ -470,7 +470,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 3,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -1057,6 +1057,184 @@
           "scheduledSendAt": null,
           "sentAt": null,
           "error": "Error code: 400 - {'error': {'message': 'Timeout while downloading https://enabling-corroboratorily-johnna.ngrok-free.dev/uploads/bf1b4eea38724d48ad80c8e15456bdf9.jpg.', 'type': 'invalid_request_error', 'param': 'url', 'code': 'invalid_value'}}",
+          "attachments": []
+        },
+        {
+          "id": "11f67e5f-e867-4cdb-a0ce-4df80f9b2c49",
+          "text": "What\u2019s this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:12:58.936655+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/855160358253405aa44205d018dee2ec.jpg"
+          ]
+        },
+        {
+          "id": "2c83ffb1-e3fe-46eb-9aac-e181d0ef1b4d",
+          "text": "",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:12:58.940058+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Error code: 400 - {'error': {'message': \"Unknown parameter: 'input[1].content[1].image_data'.\", 'type': 'invalid_request_error', 'param': 'input[1].content[1].image_data', 'code': 'unknown_parameter'}}",
+          "attachments": []
+        },
+        {
+          "id": "6a8e6a0b-9e5a-4ec5-be02-423b4a70f67f",
+          "text": "Can you help me",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:13:19.790521+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "e1c3d675-77b4-4f8c-8fbc-b65af2737f4c",
+          "text": "Of course! I\u2019d be happy to help you with your exterior cleaning needs. Could you let me know what type of service you\u2019re interested in? We offer driveway pressure washing, patio refreshes, roof soft washes, and gutter clearing. Also, it would be great to know the size of the area and any access considerations you might have. Looking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:13:19.794904+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-09T23:16:22.239466+00:00",
+          "sentAt": "2025-11-09T23:17:21.407149+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "030ca573-7809-40b0-89d4-0cce7353db2f",
+          "text": "What\u2019s this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:18:44.740321+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/fbcaa4c90f9142758c69c21ce4203a77.jpg"
+          ]
+        },
+        {
+          "id": "1b7bed21-4618-4839-be98-8017564ab467",
+          "text": "Hi there! It looks like you might be looking for information about our exterior cleaning services at PowWash. We offer a range of services including driveway pressure washing, patio refreshes, roof soft washing, and gutter clearing. \n\nIf you could share a bit more about what you need help with, like the surface type, size, and any access considerations, I\u2019d be happy to provide you with a quote! You can also check out more details at www.powwash.co.uk.\n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:18:44.741531+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-09T23:21:49.315622+00:00",
+          "sentAt": "2025-11-09T23:21:49.320789+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "9dd66f82-2d6b-40fe-b582-429645f0bb67",
+          "text": "Can you clean this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:22:12.054179+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/c0cc66a565734e43a8508047bfaa5b04.jpg"
+          ]
+        },
+        {
+          "id": "0d6cc9a7-046b-4eba-8bb8-8f0624a44984",
+          "text": "Hi there! Thanks for reaching out to PowWash. I see you've shared a photo, but I can't view it here. Could you please describe the surface you need cleaning? \n\nWe offer a range of services including Driveway Pressure Wash, Patio Refresh, Roof Soft Wash, and Gutter Clear & Flush. To provide an accurate quote, I'll also need to know the size of the area and any access considerations. \n\nOnce I have those details, I can give you a clearer idea of pricing and availability. Looking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:22:12.055289+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-09T23:25:16.996073+00:00",
+          "sentAt": "2025-11-09T23:25:17.002015+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "54a4f6fb-0490-40f8-b715-d321e15ab217",
+          "text": "Can you clean this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:24:26.920699+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/05b7627b5d75470dbadf67bbf5e89099.jpg"
+          ]
+        },
+        {
+          "id": "045690f8-f785-4e79-ab3a-207444e308bf",
+          "text": "Hi there! Thanks for reaching out to PowWash. I see you've got something in mind for cleaning\u2014could you please share what type of surface you're looking to clean? For example, is it a driveway, patio, roof, or gutters? \n\nAlso, if you could let me know the size of the area and any access considerations, that would be super helpful for providing you with an accurate quote. Feel free to send any photos if you have them!\n\nLooking forward to hearing from you!\n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:24:26.923815+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-09T23:27:30.523204+00:00",
+          "sentAt": "2025-11-09T23:27:30.529148+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "ba12ee16-a55a-4336-a406-972f117cc61e",
+          "text": "What\u2019s this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-09T23:26:48.292962+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/8d533e76907a4df6bf1fd42bdd0449a7.jpg"
+          ]
+        },
+        {
+          "id": "3621087c-9e5a-43cd-8727-96ea6d92274a",
+          "text": "Hi there! It looks like you're looking for some information. We're PowWash, your local exterior cleaning experts, and we offer a range of services to keep your property looking its best. \n\nIf you have a specific cleaning service in mind or need a quote, just let me know the details! For example, what type of surface are you looking to clean, its size, and any access considerations? You can also share any photos if you have them, which will help us provide a more accurate quote.\n\nLooking forward to helping you out!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-09T23:26:48.296365+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-11-09T23:29:53.471087+00:00",
+          "sentAt": "2025-11-09T23:29:53.477406+00:00",
+          "error": "Twilio credentials not configured.",
           "attachments": []
         }
       ]

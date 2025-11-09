@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -10,6 +9,9 @@ from typing import Any, Dict, Iterable, List, Optional
 from openai import OpenAI
 
 
+# ---------------------------------------------------------------------
+# Load resources
+# ---------------------------------------------------------------------
 def _load_price_list(path: Path) -> str:
     """Load and format the JSON price list."""
     if not path.exists():
@@ -32,7 +34,6 @@ def _load_price_list(path: Path) -> str:
 
     if len(lines) == 1:
         lines.append("- (No services configured)")
-
     return "\n".join(lines)
 
 
@@ -43,8 +44,11 @@ def _load_tone_profile(path: Path) -> str:
     return path.read_text(encoding="utf-8").strip()
 
 
+# ---------------------------------------------------------------------
+# Prompt building
+# ---------------------------------------------------------------------
 def _build_system_prompt(price_list: str, tone_profile: str) -> str:
-    """Build the system prompt combining tone and service info."""
+    """Combine tone and service info into the system message."""
     return (
         "You are PowWash's virtual assistant replying to WhatsApp enquiries about "
         "exterior cleaning quotes.\n"
@@ -52,13 +56,17 @@ def _build_system_prompt(price_list: str, tone_profile: str) -> str:
         "- Follow the tone guide below.\n"
         "- Reference offerings only from the provided service menu.\n"
         "- Gather any missing details that affect pricing (surface type, size, access, preferred times).\n"
-        "- Offer a clear next step at the end of the message.\n\n"
+        "- Offer a clear next step at the end of the message.\n"
+        "- Acknowledge any photos or attachments the customer has shared when relevant.\n\n"
         "Tone guide:\n"
         f"{tone_profile}\n\n"
         f"Service menu and starting prices:\n{price_list}"
     )
 
 
+# ---------------------------------------------------------------------
+# Core AI logic
+# ---------------------------------------------------------------------
 def generate_reply(
     message: str,
     price_list_path: Path,
@@ -75,11 +83,12 @@ def generate_reply(
     """
     client = OpenAI()
 
+    # Load resources
     price_list = _load_price_list(price_list_path)
     tone_profile = _load_tone_profile(tone_profile_path)
     system_prompt = _build_system_prompt(price_list, tone_profile)
 
-    # Clean up any attachment types (dicts or strings) into URLs or local paths
+    # Normalize attachments
     normalized_attachments: List[str] = []
     for att in attachments or []:
         if isinstance(att, str) and att.strip():
@@ -89,12 +98,13 @@ def generate_reply(
             if isinstance(value, str) and value.strip():
                 normalized_attachments.append(value.strip())
 
-    # Build the content blocks for the user input
+    # ---------------- Corrected structure for Responses API ----------------
     user_content: List[Dict[str, Any]] = [
         {"type": "input_text", "text": message}
     ]
 
     for attachment in normalized_attachments:
+        # Publicly accessible image
         if attachment.lower().startswith(("http://", "https://")):
             user_content.append({
                 "type": "input_image",
@@ -102,77 +112,64 @@ def generate_reply(
             })
             continue
 
+        # Local image files
         file_path = Path(attachment)
         if not file_path.is_file():
             continue
-
         try:
-            encoded = base64.b64encode(file_path.read_bytes()).decode("utf-8")
-        except OSError:
+            # Serve via Flask public URL (e.g. /uploads/...)
+            local_url = f"http://127.0.0.1:5002/uploads/{file_path.name}"
+            user_content.append({
+                "type": "input_image",
+                "image_url": local_url,
+            })
+        except Exception:
             continue
 
-        user_content.append({
-            "type": "input_image",
-            "image_data": encoded,
-        })
-
-    # ✅ Correct usage of the new Responses API
-    response = client.responses.create(
-        model=model,
-        temperature=temperature,
-        input=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-        ],
-    )
-
-    # Extract the text safely
+    # Call OpenAI
     try:
-        return response.output[0].content[0].text.strip()
-    except Exception:
-        return "(No AI reply generated — check model output format.)"
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for testing the reply generator."""
-    parser = argparse.ArgumentParser(
-        description=(
-            "Compose a reply to an inbound customer message using your price list "
-            "and tone guide."
+        response = client.responses.create(
+            model=model,
+            temperature=temperature,
+            input=[
+                {"role": "system", "content": [{"type": "input_text", "text": system_prompt}]},
+                {"role": "user", "content": user_content},
+            ],
         )
+        return response.output[0].content[0].text.strip()
+    except Exception as e:
+        print(f"⚠️ Responses API failed: {e}")
+        try:
+            completion = client.chat.completions.create(
+                model=model,
+                temperature=temperature,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message},
+                ],
+            )
+            return completion.choices[0].message.content.strip()
+        except Exception as e2:
+            print(f"❌ Chat Completions also failed: {e2}")
+            return "(No AI reply generated — check model output format.)"
+
+
+# ---------------------------------------------------------------------
+# CLI testing
+# ---------------------------------------------------------------------
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Compose a reply to an inbound customer message using your price list and tone guide."
     )
-    parser.add_argument(
-        "message",
-        help="The inbound customer message. Use quotes to preserve newlines.",
-    )
-    parser.add_argument(
-        "--price-list",
-        type=Path,
-        default=Path("price_list.json"),
-        help="Path to the JSON price list file (default: price_list.json).",
-    )
-    parser.add_argument(
-        "--tone-profile",
-        type=Path,
-        default=Path("tone_profile.md"),
-        help="Path to the markdown tone profile (default: tone_profile.md).",
-    )
-    parser.add_argument(
-        "--model",
-        default="gpt-4o-mini",
-        help="Model name to use for generation (default: gpt-4o-mini).",
-    )
-    parser.add_argument(
-        "--temperature",
-        type=float,
-        default=0.6,
-        help="Sampling temperature for the model (default: 0.6).",
-    )
+    parser.add_argument("message", help="The inbound customer message.")
+    parser.add_argument("--price-list", type=Path, default=Path("price_list.json"))
+    parser.add_argument("--tone-profile", type=Path, default=Path("tone_profile.md"))
+    parser.add_argument("--model", default="gpt-4o-mini")
+    parser.add_argument("--temperature", type=float, default=0.6)
     return parser.parse_args()
 
 
 def main() -> None:
-    """Allow local CLI testing of the auto-responder."""
     args = parse_args()
     reply = generate_reply(
         message=args.message,
