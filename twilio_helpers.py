@@ -1,26 +1,34 @@
-"""Utilities for sending outbound WhatsApp messages via Twilio."""
+"""
+Utilities for sending outbound WhatsApp messages via Twilio.
+
+This version is simplified for Messaging Service use only.
+It ignores TWILIO_WHATSAPP_NUMBER entirely.
+"""
 
 from __future__ import annotations
-
 import os
 import re
 from dataclasses import dataclass
 from typing import Optional
-
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
 
+# ==========================================================
+# Configuration data structure
+# ==========================================================
 @dataclass
 class TwilioConfig:
     account_sid: str
     auth_token: str
-    whatsapp_from: Optional[str] = None
-    messaging_service_sid: Optional[str] = None
+    messaging_service_sid: str
 
 
+# ==========================================================
+# Twilio Messenger class
+# ==========================================================
 class TwilioMessenger:
-    """Wrapper around the Twilio REST client for WhatsApp sending."""
+    """Wrapper around Twilio REST client for sending WhatsApp messages."""
 
     def __init__(self, config: TwilioConfig) -> None:
         self._config = config
@@ -28,26 +36,24 @@ class TwilioMessenger:
 
     @classmethod
     def from_env(cls) -> Optional["TwilioMessenger"]:
+        """Build a messenger using only Messaging Service credentials."""
         account_sid = os.getenv("TWILIO_ACCOUNT_SID")
         auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-
-        if not account_sid or not auth_token:
-            return None
-
-        whatsapp_from = _normalize_whatsapp_address(os.getenv("TWILIO_WHATSAPP_NUMBER"))
-
         messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID")
+
+        if not all([account_sid, auth_token, messaging_service_sid]):
+            print("⚠️ Missing Twilio environment variables; messenger not initialized.")
+            return None
 
         config = TwilioConfig(
             account_sid=account_sid,
             auth_token=auth_token,
-            whatsapp_from=whatsapp_from,
             messaging_service_sid=messaging_service_sid,
         )
-
         return cls(config)
 
     def send_whatsapp_message(self, *, to: str, body: str) -> str:
+        """Send a WhatsApp message using the configured Messaging Service."""
         if not body.strip():
             raise ValueError("Message body cannot be empty.")
 
@@ -55,48 +61,47 @@ class TwilioMessenger:
         if not to_address:
             raise ValueError("Recipient phone number is invalid.")
 
-        kwargs = {"to": to_address, "body": body}
+        kwargs = {
+            "to": to_address,
+            "body": body,
+            "messaging_service_sid": self._config.messaging_service_sid,
+        }
 
-        if self._config.messaging_service_sid:
-            kwargs["messaging_service_sid"] = self._config.messaging_service_sid
-        elif self._config.whatsapp_from:
-            kwargs["from_"] = self._config.whatsapp_from
-        else:
-            raise RuntimeError(
-                "Configure TWILIO_WHATSAPP_NUMBER or TWILIO_MESSAGING_SERVICE_SID to send messages."
-            )
+        print(f"[TwilioMessenger] Sending via Messaging Service SID: {self._config.messaging_service_sid}")
+        print(f"[TwilioMessenger] → {to_address}")
 
         try:
             message = self._client.messages.create(**kwargs)
-        except TwilioRestException as exc:  # pragma: no cover - network side
-            raise RuntimeError(f"Failed to send WhatsApp message: {exc.msg}") from exc
+        except TwilioRestException as exc:
+            raise RuntimeError(
+                f"Failed to send WhatsApp message: {exc.msg} (status={exc.status}, code={exc.code})"
+            ) from exc
 
         return message.sid
 
 
+# ==========================================================
+# Helper: normalize WhatsApp address
+# ==========================================================
 def _normalize_whatsapp_address(value: Optional[str]) -> Optional[str]:
+    """Normalize input like 07541 088300 → whatsapp:+447541088300"""
     if not value:
         return None
 
-    raw = value.strip()
-    if not raw:
-        return None
-
-    if raw.lower().startswith("whatsapp:"):
+    raw = value.strip().lower()
+    if raw.startswith("whatsapp:"):
         raw = raw.split(":", 1)[1]
-
-    raw = raw.replace(" ", "")
+    raw = re.sub(r"[^\d+]", "", raw)
 
     if raw.startswith("+"):
         digits = "+" + re.sub(r"[^\d]", "", raw[1:])
     elif raw.startswith("00"):
-        digits_only = re.sub(r"[^\d]", "", raw[2:])
-        digits = f"+{digits_only}" if digits_only else ""
+        digits = "+" + re.sub(r"[^\d]", "", raw[2:])
+    elif raw.startswith("0"):
+        digits = "+44" + re.sub(r"[^\d]", "", raw[1:])
+    elif raw.startswith("44"):
+        digits = "+" + re.sub(r"[^\d]", "", raw)
     else:
-        digits_only = re.sub(r"[^\d]", "", raw)
-        digits = f"+{digits_only}" if digits_only else ""
+        digits = "+" + re.sub(r"[^\d]", "", raw)
 
-    if not digits or digits == "+":
-        return None
-
-    return f"whatsapp:{digits}"
+    return f"whatsapp:{digits}" if digits and digits != "+" else None
