@@ -28,24 +28,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.app (1).executor": "Run",
-    "Python.app (2).executor": "Run",
-    "Python.app.executor": "Run",
-    "Python.auto_responder.executor": "Run",
-    "Python.gmail_subjects.executor": "Run",
-    "Python.twilio_app.executor": "Run",
-    "Python.twillio_setup.executor": "Run",
-    "Python.twillio_text_receiver.executor": "Run",
-    "Python.workspace_launcher.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.app (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app (2).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.auto_responder.executor&quot;: &quot;Run&quot;,
+    &quot;Python.gmail_subjects.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twilio_app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twillio_setup.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twillio_text_receiver.executor&quot;: &quot;Run&quot;,
+    &quot;Python.workspace_launcher.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Python.twillio_text_receiver">
+}</component>
+  <component name="RunManager" selected="Python.workspace_launcher">
     <configuration name="app (2)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="the-ai-customer-messaging-assistant" />
       <option name="ENV_FILES" value="" />
@@ -141,6 +141,7 @@
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="BASE_PUBLIC_URL" value="https://enabling-corroboratorily-johnna.ngrok-free.dev" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -165,11 +166,11 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.workspace_launcher" />
         <item itemvalue="Python.twillio_text_receiver" />
         <item itemvalue="Python.twilio_app" />
         <item itemvalue="Python.auto_responder" />
         <item itemvalue="Python.app (2)" />
-        <item itemvalue="Python.workspace_launcher" />
       </list>
     </recent_temporary>
   </component>
