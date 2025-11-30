@@ -16,6 +16,7 @@ from flask import Flask, Response, abort, jsonify, request, send_from_directory
 from flask_cors import CORS
 from twilio.base.exceptions import TwilioRestException
 from twilio.twiml.messaging_response import MessagingResponse
+from flask_cors import cross_origin
 
 from auto_responder import generate_reply
 from conversation_store import conversation_store
@@ -343,6 +344,7 @@ def healthcheck() -> Dict[str, str]:
 
 
 @app.get("/uploads/<path:filename>")
+@cross_origin()   # <-- THIS fixes your Flutter Web image loading
 def serve_uploaded_file(filename: str) -> Response:
     """Expose saved media files for downstream consumption (e.g. OpenAI)."""
     return send_from_directory(UPLOADS_DIR, filename)

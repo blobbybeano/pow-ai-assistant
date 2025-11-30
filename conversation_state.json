@@ -1744,6 +1744,72 @@
           "sentAt": "2025-11-30T22:05:10.091214+00:00",
           "error": null,
           "attachments": []
+        },
+        {
+          "id": "9c5b56a9-3257-49ec-84f8-edbd9711bc75",
+          "text": "Can you help with this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T22:15:55.983331+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/bc72ed737b4e41d69311338e5c6bb617.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "6d29f4e6-3e19-40fd-8c46-cd0cdac91f3b",
+          "text": "Absolutely, I can help with that! It looks like you need a gutter clear and flush, which involves vacuum removal of debris and a downpipe flush. \n\nCould you please let me know:\n- The height of your property (is it up to two storeys?).\n- Any access considerations we should be aware of.\n- Your preferred times for scheduling the service.\n\nOnce I have those details, I can provide you with a quote. The starting price for the Gutter Clear & Flush is \u00a380. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T22:15:55.985437+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM60167ee64261fca8dc549e23c0c338be",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-30T22:19:02.782166+00:00",
+          "sentAt": "2025-11-30T22:19:03.280846+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "0ca9f247-d36e-4ef1-a566-6c7886ab1ba1",
+          "text": "",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T22:28:06.880252+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/82abc9a37bfe406685046e033aa5f175.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "027d049f-f40f-4328-8109-58f01dbc46e0",
+          "text": "Hi there! Thanks for sharing the images. While I can't see the specifics, I\u2019d love to help you with your exterior cleaning needs.\n\nCould you please let me know what type of service you\u2019re interested in? Here\u2019s a quick reminder of what we offer:\n\n- **Driveway Pressure Wash** (\u00a3120)\n- **Patio Refresh** (\u00a395)\n- **Roof Soft Wash** (\u00a3320)\n- **Gutter Clear & Flush** (\u00a380)\n\nAlso, it would be great to know the surface type, size, and any access considerations. If you have a preferred time for the service, please share that too!\n\nLooking forward to your reply!\n\nBest,\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T22:28:06.883725+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-30T22:31:12.496930+00:00",
+          "sentAt": null,
+          "error": null,
+          "attachments": []
         }
       ]
     }
