@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import '../models/message.dart';
 import 'typing_indicator.dart';
 
+const _apiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://127.0.0.1:5002',
+);
+
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     required this.message,
@@ -58,6 +63,7 @@ class MessageBubble extends StatelessWidget {
     final statusLabel = message.statusLabel();
     final isDrafting = message.isDrafting;
     final isPendingAi = message.author == 'ai' && message.isPending;
+    final attachments = message.attachments;
 
     final bubbleColor = isPendingAi
         ? const Color(0xFFFFC857)
@@ -104,15 +110,26 @@ class MessageBubble extends StatelessWidget {
               TypingIndicator(
                 dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
               )
-            else if (message.text.isNotEmpty)
-              Text(
-                message.text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      height: 1.5,
-                    ),
-              ),
-            const SizedBox(height: 8),
+            else ...[
+              if (message.text.isNotEmpty)
+                Text(
+                  message.text,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                        height: 1.5,
+                      ),
+                ),
+              if (attachments.isNotEmpty) ...[
+                if (message.text.isNotEmpty) const SizedBox(height: 8),
+                _AttachmentsGrid(
+                  attachments: attachments,
+                  isInbound: isInbound,
+                  textColor: textColor,
+                ),
+              ],
+              if (message.text.isNotEmpty || attachments.isNotEmpty)
+                const SizedBox(height: 8),
+            ],
             Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment:
@@ -182,6 +199,97 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AttachmentsGrid extends StatelessWidget {
+  const _AttachmentsGrid({
+    required this.attachments,
+    required this.isInbound,
+    required this.textColor,
+  });
+
+  final List<String> attachments;
+  final bool isInbound;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: attachments
+          .map(
+            (attachment) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _AttachmentPreview(
+                url: _resolveAttachmentUrl(attachment),
+                textColor: textColor,
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _AttachmentPreview extends StatelessWidget {
+  const _AttachmentPreview({required this.url, required this.textColor});
+
+  final String url;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.1),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 240,
+            maxHeight: 260,
+          ),
+          child: AspectRatio(
+            aspectRatio: 4 / 5,
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.black26,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  'Unable to load image',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: textColor),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _resolveAttachmentUrl(String attachment) {
+  if (attachment.startsWith('http://') || attachment.startsWith('https://')) {
+    return attachment;
+  }
+
+  const uploadsMarker = '/uploads/';
+  final uploadsIndex = attachment.indexOf(uploadsMarker);
+  final normalizedPath = uploadsIndex != -1
+      ? attachment.substring(uploadsIndex)
+      : (attachment.startsWith('/') ? attachment : '/$attachment');
+
+  return '$_apiBaseUrl$normalizedPath';
 }
 
 IconData _iconForAuthor(String author) {

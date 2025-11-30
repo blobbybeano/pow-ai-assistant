@@ -9,6 +9,7 @@ class ChatMessage {
     required this.timestamp,
     required this.via,
     required this.status,
+    this.attachments = const [],
     this.scheduledSendAt,
     this.sentAt,
     this.transportSid,
@@ -26,6 +27,9 @@ class ChatMessage {
       timestamp: DateTime.parse(json['timestamp'] as String).toLocal(),
       via: json['via'] as String? ?? 'whatsapp',
       status: json['status'] as String? ?? 'sent',
+      attachments: _parseAttachments(
+        json['attachments'] ?? json['media'],
+      ),
       scheduledSendAt: _parseDate(json['scheduledSendAt'] as String?),
       sentAt: _parseDate(json['sentAt'] as String?),
       transportSid: json['transportSid'] as String?,
@@ -40,6 +44,7 @@ class ChatMessage {
   final DateTime timestamp;
   final String via;
   final String status;
+  final List<String> attachments;
   final DateTime? scheduledSendAt;
   final DateTime? sentAt;
   final String? transportSid;
@@ -83,4 +88,26 @@ class ChatMessage {
         return null;
     }
   }
+}
+
+List<String> _parseAttachments(dynamic value) {
+  if (value is! List) return const [];
+
+  final paths = <String>[];
+  for (final item in value) {
+    if (item is String && item.isNotEmpty) {
+      paths.add(item);
+    } else if (item is Map<String, dynamic>) {
+      final contentType = item['content_type'] ?? item['contentType'];
+      final path = item['path'] ?? item['url'] ?? item['uri'];
+      final isImageAttachment = contentType == null ||
+          (contentType is String && contentType.toLowerCase().startsWith('image/'));
+
+      if (isImageAttachment && path is String && path.isNotEmpty) {
+        paths.add(path);
+      }
+    }
+  }
+
+  return paths;
 }
