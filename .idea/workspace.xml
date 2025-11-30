@@ -161,11 +161,11 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.auto_responder" />
       <item itemvalue="Python.app (2)" />
+      <item itemvalue="Python.auto_responder" />
+      <item itemvalue="Python.twilio_app" />
       <item itemvalue="Python.twillio_text_receiver" />
       <item itemvalue="Python.workspace_launcher" />
-      <item itemvalue="Python.twilio_app" />
     </list>
     <recent_temporary>
       <list>
