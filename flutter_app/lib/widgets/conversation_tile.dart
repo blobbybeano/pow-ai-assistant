@@ -122,10 +122,15 @@ class ConversationTile extends StatelessWidget {
 String _buildSubtitle(ChatMessage? message) {
   if (message == null) return 'New conversation';
   final statusLabel = message.statusLabel();
+  final attachmentLabel = message.attachmentLabel();
+  final body = message.text.isNotEmpty
+      ? message.text
+      : (attachmentLabel != null ? attachmentLabel : '');
   if (statusLabel != null && !message.isInbound) {
-    return '$statusLabel • ${message.text}';
+    return body.isNotEmpty ? '$statusLabel • $body' : statusLabel;
   }
-  return message.text;
+  if (body.isNotEmpty) return body;
+  return 'Attachment';
 }
 
 class _AiBadge extends StatelessWidget {

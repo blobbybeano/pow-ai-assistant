@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/message.dart';
+import '../services/chat_api_client.dart';
 import 'typing_indicator.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -17,6 +19,10 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final apiBaseUrl = context.read<ChatApiClient>().baseUrl;
+    final imageAttachments =
+        message.attachments.where((attachment) => attachment.isImage).toList();
+    final hasText = message.text.isNotEmpty;
     if (message.author == 'system') {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -100,11 +106,18 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment:
               isInbound ? CrossAxisAlignment.start : CrossAxisAlignment.end,
           children: [
+            if (imageAttachments.isNotEmpty) ...[
+              _AttachmentGallery(
+                attachments: imageAttachments,
+                apiBaseUrl: apiBaseUrl,
+              ),
+              if (hasText) const SizedBox(height: 8),
+            ],
             if (isDrafting)
               TypingIndicator(
                 dotColor: isInbound ? authorColor : (isPendingAi ? authorColor : Colors.white),
               )
-            else if (message.text.isNotEmpty)
+            else if (hasText)
               Text(
                 message.text,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -180,6 +193,66 @@ class MessageBubble extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AttachmentGallery extends StatelessWidget {
+  const _AttachmentGallery({required this.attachments, required this.apiBaseUrl});
+
+  final List<MessageAttachment> attachments;
+  final String apiBaseUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final attachment in attachments) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              color: const Color(0xFF0B141A),
+              child: AspectRatio(
+                aspectRatio: 4 / 3,
+                child: Image.network(
+                  attachment.resolvedUrl(apiBaseUrl),
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Color(0xFF00A884),
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF182229),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.broken_image_outlined, color: Color(0xFF8696A0), size: 28),
+                        SizedBox(height: 6),
+                        Text(
+                          'Could not load image',
+                          style: TextStyle(color: Color(0xFF8696A0), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ]
+      ],
     );
   }
 }
