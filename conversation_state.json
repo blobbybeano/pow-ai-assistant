@@ -1711,6 +1711,39 @@
           "sentAt": "2025-11-30T21:52:44.091732+00:00",
           "error": null,
           "attachments": []
+        },
+        {
+          "id": "a90bcc0b-f3ac-46d6-8cff-7d05a2a90bf4",
+          "text": "Can you help me with this?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T22:02:03.446858+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/2fbd549528c04011a23ac8ea8924adf5.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "27a13e19-d195-4693-8a76-d3ad4d9dbd93",
+          "text": "Absolutely, I can help with that! It looks like you might need a Gutter Clear & Flush service. This includes vacuum removal of debris, downpipe flush, and a condition report for homes up to two storeys, starting at \u00a380.\n\nTo provide you with a more accurate quote, could you let me know:\n- The height of your property (is it one or two storeys?)\n- Any access considerations we should be aware of?\n- Your preferred times for us to come by?\n\nFeel free to share any additional photos if you think it will help! \n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T22:02:03.450520+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM25e2114394b2b47e7d4116ab7f257244",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-30T22:05:09.735188+00:00",
+          "sentAt": "2025-11-30T22:05:10.091214+00:00",
+          "error": null,
+          "attachments": []
         }
       ]
     }
