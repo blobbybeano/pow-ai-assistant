@@ -222,7 +222,7 @@ class _AttachmentsGrid extends StatelessWidget {
             (attachment) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _AttachmentPreview(
-                url: _resolveAttachmentUrl(attachment),
+                attachment: attachment,
                 textColor: textColor,
               ),
             ),
@@ -233,13 +233,17 @@ class _AttachmentsGrid extends StatelessWidget {
 }
 
 class _AttachmentPreview extends StatelessWidget {
-  const _AttachmentPreview({required this.url, required this.textColor});
+  const _AttachmentPreview({
+    required this.attachment,
+    required this.textColor,
+  });
 
-  final String url;
+  final String attachment;
   final Color textColor;
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = _resolveAttachmentUrl(attachment);
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: DecoratedBox(
@@ -255,7 +259,7 @@ class _AttachmentPreview extends StatelessWidget {
           child: AspectRatio(
             aspectRatio: 4 / 5,
             child: Image.network(
-              url,
+              imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
                 color: Colors.black26,
