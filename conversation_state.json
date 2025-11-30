@@ -1375,7 +1375,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 1,
+      "unreadCount": 0,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -1512,10 +1512,10 @@
           "direction": "outbound",
           "timestamp": "2025-11-30T20:38:26.494672+00:00",
           "via": "whatsapp",
-          "transportSid": null,
-          "status": "scheduled",
+          "transportSid": "SM958dd3c9f980d2d8285a928dc77cf155",
+          "status": "sent",
           "scheduledSendAt": "2025-11-30T20:41:31.511529+00:00",
-          "sentAt": null,
+          "sentAt": "2025-11-30T20:41:39.770150+00:00",
           "error": null,
           "attachments": []
         }
