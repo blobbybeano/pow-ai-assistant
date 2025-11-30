@@ -165,12 +165,20 @@ def generate_reply(
         if isinstance(att, str) and att.strip():
             normalized_attachments.append({"value": att.strip(), "content_type": None})
         elif isinstance(att, dict):
-            value = att.get("path") or att.get("local_path") or att.get("url")
+            value = att.get("url")  # prefer URL if available
+
+            # If path/local_path is a Path object -> convert to string
+            if not value:
+                p = att.get("path") or att.get("local_path")
+                if p:
+                    value = str(p)
+
             if isinstance(value, str) and value.strip():
                 content_type = att.get("content_type") or att.get("mime_type")
-                normalized_attachments.append(
-                    {"value": value.strip(), "content_type": content_type if isinstance(content_type, str) else None}
-                )
+                normalized_attachments.append({
+                    "value": value.strip(),
+                    "content_type": content_type if isinstance(content_type, str) else None,
+                })
 
     # ---------------- Corrected structure for Responses API ----------------
     user_content: List[Dict[str, Any]] = [

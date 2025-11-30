@@ -1375,7 +1375,7 @@
       "displayName": "Ben",
       "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
       "aiEnabled": true,
-      "unreadCount": 0,
+      "unreadCount": 1,
       "assignedResponderId": "user-2",
       "messages": [
         {
@@ -1450,6 +1450,72 @@
           "status": "sent",
           "scheduledSendAt": "2025-11-30T20:23:57.226972+00:00",
           "sentAt": "2025-11-30T20:23:57.630315+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "00484019-ec2a-4141-9515-47239a8cbcf4",
+          "text": "What is this picture?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T20:29:40.841194+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/271b91ae8a034897a372d24c103dbf4f.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "a55aef34-c0fd-4e07-a334-841c150658a0",
+          "text": "I'm unable to identify or describe images, but if you need help with something specific related to the photo, feel free to ask!",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T20:29:40.844450+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM558e5d261b9ab8edf5ea1e7b0598db4d",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-30T20:32:44.263942+00:00",
+          "sentAt": "2025-11-30T20:32:44.668971+00:00",
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "dfdd64cf-d345-4ed5-b8f4-a19601204498",
+          "text": "Whats this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T20:38:26.492930+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/c598c41d9df94ecaa49186155005592f.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "9aa69b4e-bccd-4cc8-9b65-7a8b0d64f79e",
+          "text": "It looks like you're viewing a GPS map interface, possibly related to a tracking app. The map shows streets and locations, and the icon with a car indicates a vehicle's position. If you have questions about using this app or need assistance with something specific, feel free to ask! \n\nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T20:38:26.494672+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "scheduled",
+          "scheduledSendAt": "2025-11-30T20:41:31.511529+00:00",
+          "sentAt": null,
           "error": null,
           "attachments": []
         }
