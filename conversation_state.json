@@ -1361,9 +1361,62 @@
           "timestamp": "2025-11-16T00:15:19.331267+00:00",
           "via": "whatsapp",
           "transportSid": null,
-          "status": "scheduled",
+          "status": "failed",
           "scheduledSendAt": "2025-11-16T00:18:24.801411+00:00",
+          "sentAt": "2025-11-30T19:46:47.000742+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        }
+      ]
+    },
+    "+447565708252": {
+      "id": "+447565708252",
+      "phoneNumber": "+447565708252",
+      "displayName": "Ben",
+      "profilePhotoUrl": "https://ui-avatars.com/api/?name=Ben&background=0D8ABC&color=ffffff",
+      "aiEnabled": true,
+      "unreadCount": 0,
+      "assignedResponderId": "user-2",
+      "messages": [
+        {
+          "id": "80564680-077e-481c-9062-c6294724d8c6",
+          "text": "Do you clean Biach?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T19:56:57.457754+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
           "sentAt": null,
+          "error": null,
+          "attachments": []
+        },
+        {
+          "id": "216fd6ed-d5cb-4d4e-8372-de1e1e722dfe",
+          "text": "Hi there! It sounds like you might be asking about a specific type of surface or area. Could you clarify what \"Biach\" refers to? If it's a type of surface, please let me know more about it, including the size and any access considerations. \n\nWe offer a range of services like Driveway Pressure Wash, Patio Refresh, Roof Soft Wash, and Gutter Clear & Flush. You can check out more details on our website at www.powwash.co.uk.\n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T19:56:57.460404+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "cancelled",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": "Cancelled by agent",
+          "attachments": []
+        },
+        {
+          "id": "be404a68-1b7d-49c1-9f6b-e28983be5d71",
+          "text": "Hi there! It sounds like you might be asking about a specific type of surface or area. Could you clarify what \"Biach\" refers to? If it's a type of surface, please let me know more about it, including the size and any access considerations. \n\nWe offer a range of services like Driveway Pressure Wash, Patio Refresh, Roof Soft Wash, and Gutter Clear & Flush. You can check out more details on our website at www.powwash.co.uk.\n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "agent",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T19:57:37.814307+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM1a044eeb8057e590afc6e5cf9d176f4a",
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": "2025-11-30T19:57:37.814268+00:00",
           "error": null,
           "attachments": []
         }
