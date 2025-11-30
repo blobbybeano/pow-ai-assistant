@@ -23,6 +23,7 @@ class MessageBubble extends StatelessWidget {
     final imageAttachments =
         message.attachments.where((attachment) => attachment.isImage).toList();
     final hasText = message.text.isNotEmpty;
+    final hasMediaUrls = message.mediaUrls.isNotEmpty;
     if (message.author == 'system') {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -125,6 +126,10 @@ class MessageBubble extends StatelessWidget {
                       height: 1.5,
                     ),
               ),
+            if (hasMediaUrls) ...[
+              if (hasText || isDrafting) const SizedBox(height: 8),
+              _MediaGallery(urls: message.mediaUrls),
+            ],
             const SizedBox(height: 8),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -252,6 +257,59 @@ class _AttachmentGallery extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ]
+      ],
+    );
+  }
+}
+
+class _MediaGallery extends StatelessWidget {
+  const _MediaGallery({required this.urls});
+
+  final List<String> urls;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final url in urls) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              color: const Color(0xFF0B141A),
+              child: AspectRatio(
+                aspectRatio: 4 / 3,
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Color(0xFF00A884),
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF182229),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      color: Color(0xFF8696A0),
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }

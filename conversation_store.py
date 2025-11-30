@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -13,11 +14,80 @@ from uuid import uuid4
 
 from urllib.parse import quote_plus
 
+from flask import has_request_context, request
+
 
 def _utc_now() -> str:
     """Return the current UTC timestamp as an ISO formatted string."""
 
     return datetime.now(tz=timezone.utc).isoformat()
+
+
+_DEFAULT_PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5002").rstrip("/")
+
+
+def _public_base_url(base_url: Optional[str] = None) -> str:
+    if base_url:
+        return base_url.rstrip("/")
+    if has_request_context():
+        root = (request.url_root or "").strip()
+        if root:
+            return root.rstrip("/")
+    return _DEFAULT_PUBLIC_BASE_URL
+
+
+def _normalize_media_urls(media_urls: Any, attachments: List[Any], base_url: str) -> List[str]:
+    sources: List[str] = []
+
+    if isinstance(media_urls, list):
+        for entry in media_urls:
+            if isinstance(entry, str):
+                trimmed = entry.strip()
+                if trimmed:
+                    sources.append(trimmed)
+
+    if not sources:
+        for attachment in attachments:
+            candidate = None
+            if isinstance(attachment, dict):
+                candidate = (
+                    attachment.get("url")
+                    or attachment.get("path")
+                    or attachment.get("local_path")
+                    or attachment.get("media_url")
+                )
+            elif isinstance(attachment, str):
+                candidate = attachment
+
+            if candidate:
+                sources.append(str(candidate))
+
+    resolved: List[str] = []
+    seen = set()
+    for source in sources:
+        trimmed = source.strip()
+        if not trimmed:
+            continue
+        if trimmed.startswith("http://") or trimmed.startswith("https://"):
+            url = trimmed
+        else:
+            filename = Path(trimmed).name
+            url = f"{base_url}/uploads/{filename}"
+        if url not in seen:
+            seen.add(url)
+            resolved.append(url)
+
+    return resolved
+
+
+def _coerce_attachments(raw: Any) -> List[Any]:
+    if not isinstance(raw, list):
+        return []
+    return [
+        attachment
+        for attachment in raw
+        if isinstance(attachment, (str, dict))
+    ]
 
 
 _AVATAR_BACKGROUNDS = (
@@ -66,8 +136,12 @@ class MessageRecord:
     sent_at: Optional[str] = None
     error: Optional[str] = None
     attachments: List[Any] = field(default_factory=list)
+    media_urls: List[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, *, base_url: Optional[str] = None) -> Dict[str, Any]:
+        resolved_media = _normalize_media_urls(
+            self.media_urls, self.attachments, _public_base_url(base_url)
+        )
         return {
             "id": self.id,
             "text": self.text,
@@ -81,6 +155,7 @@ class MessageRecord:
             "sentAt": self.sent_at,
             "error": self.error,
             "attachments": list(self.attachments),
+            "media_urls": resolved_media,
         }
 
     def effective_datetime(self) -> datetime:
@@ -112,7 +187,7 @@ class ConversationRecord:
     def last_message(self) -> Optional[MessageRecord]:
         return self.messages[-1] if self.messages else None
 
-    def to_summary(self) -> Dict[str, Any]:
+    def to_summary(self, *, base_url: Optional[str] = None) -> Dict[str, Any]:
         last_msg = self.last_message()
         return {
             "id": self.id,
@@ -122,10 +197,10 @@ class ConversationRecord:
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "assignedResponderId": self.assigned_responder_id,
-            "lastMessage": last_msg.to_dict() if last_msg else None,
+            "lastMessage": last_msg.to_dict(base_url=base_url) if last_msg else None,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, *, base_url: Optional[str] = None) -> Dict[str, Any]:
         return {
             "id": self.id,
             "phoneNumber": self.phone_number,
@@ -134,7 +209,7 @@ class ConversationRecord:
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "assignedResponderId": self.assigned_responder_id,
-            "messages": [message.to_dict() for message in self.messages],
+            "messages": [message.to_dict(base_url=base_url) for message in self.messages],
         }
 
 
@@ -186,11 +261,12 @@ class ConversationStore:
                         scheduled_send_at=msg.get("scheduledSendAt"),
                         sent_at=msg.get("sentAt"),
                         error=msg.get("error"),
-                        attachments=[
-                            attachment
-                            for attachment in msg.get("attachments", [])
-                            if isinstance(attachment, (str, dict))
-                        ],
+                        attachments=(attachments := _coerce_attachments(msg.get("attachments", []))),
+                        media_urls=_normalize_media_urls(
+                            msg.get("media_urls"),
+                            attachments,
+                            _public_base_url(),
+                        ),
                     )
                     for msg in record.get("messages", [])
                 ],
@@ -219,10 +295,10 @@ class ConversationStore:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def list_conversations(self) -> List[Dict[str, Any]]:
+    def list_conversations(self, base_url: Optional[str] = None) -> List[Dict[str, Any]]:
         with self._lock:
             return [
-                convo.to_summary()
+                convo.to_summary(base_url=_public_base_url(base_url))
                 for convo in sorted(
                     self._conversations.values(),
                     key=lambda c: (
@@ -235,7 +311,7 @@ class ConversationStore:
             ]
 
     def get_conversation(
-        self, conversation_id: str, *, mark_read: bool = False
+        self, conversation_id: str, *, mark_read: bool = False, base_url: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         with self._lock:
             convo = self._conversations.get(conversation_id)
@@ -246,7 +322,7 @@ class ConversationStore:
                 convo.unread_count = 0
                 self._persist()
 
-            return convo.to_dict()
+            return convo.to_dict(base_url=_public_base_url(base_url))
 
     def ensure_conversation(
         self,
@@ -370,12 +446,21 @@ class ConversationStore:
         sent_at: Optional[str] = None,
         error: Optional[str] = None,
         attachments: Optional[List[Any]] = None,
+        media_urls: Optional[List[Any]] = None,
+        base_url: Optional[str] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
             profile_name=profile_name,
             phone_number=conversation_id,
             profile_photo_url=profile_photo_url,
+        )
+
+        normalized_attachments = _coerce_attachments(attachments or [])
+        resolved_media_urls = _normalize_media_urls(
+            media_urls,
+            normalized_attachments,
+            _public_base_url(base_url),
         )
 
         message = MessageRecord(
@@ -390,7 +475,8 @@ class ConversationStore:
             scheduled_send_at=scheduled_send_at,
             sent_at=sent_at,
             error=error,
-            attachments=list(attachments or []),
+            attachments=normalized_attachments,
+            media_urls=resolved_media_urls,
         )
 
         with self._lock:
@@ -624,6 +710,7 @@ class ConversationStore:
                         sent_at=message.sent_at,
                         error=message.error,
                         attachments=list(message.attachments),
+                        media_urls=list(message.media_urls),
                     )
 
         return None
@@ -640,8 +727,12 @@ class ConversationStore:
         error: Optional[str] = None,
         scheduled_send_at: Optional[str] = None,
         attachments: Optional[List[Any]] = None,
+        media_urls: Optional[List[Any]] = None,
+        base_url: Optional[str] = None,
     ) -> Optional[MessageRecord]:
         """Update a specific message record and persist the store."""
+
+        resolved_base_url = _public_base_url(base_url)
 
         with self._lock:
             convo = self._conversations.get(conversation_id)
@@ -663,7 +754,15 @@ class ConversationStore:
                     if scheduled_send_at is not None:
                         message.scheduled_send_at = scheduled_send_at
                     if attachments is not None:
-                        message.attachments = list(attachments)
+                        message.attachments = _coerce_attachments(attachments)
+                    media_candidates = (
+                        media_urls if media_urls is not None else message.media_urls
+                    )
+                    message.media_urls = _normalize_media_urls(
+                        media_candidates,
+                        message.attachments,
+                        resolved_base_url,
+                    )
                     self._persist()
                     return message
 

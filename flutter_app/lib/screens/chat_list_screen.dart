@@ -183,13 +183,8 @@ class _ConversationListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profileController = context.watch<ProfileController>();
-    final fallbackPhoto = summary.profilePhotoUrl;
-    final photoUrl = profileController.photoFor(summary.id) ?? fallbackPhoto;
-
     return ConversationTile(
       summary: summary,
-      avatarImage: photoUrl != null ? NetworkImage(photoUrl) : null,
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(

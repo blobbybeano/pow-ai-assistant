@@ -45,6 +45,22 @@ _scheduled_message_ids: Set[str] = set()
 
 
 # -----------------------------------------------------------
+# Base URL helper
+# -----------------------------------------------------------
+def _api_base_url() -> str:
+    env_base = os.getenv("PUBLIC_BASE_URL")
+    if env_base:
+        return env_base.rstrip("/")
+    try:
+        root = request.url_root
+        if root:
+            return root.rstrip("/")
+    except RuntimeError:
+        pass
+    return "http://localhost:5002"
+
+
+# -----------------------------------------------------------
 # Twilio Messenger dynamic builder
 # -----------------------------------------------------------
 def get_twilio_messenger() -> TwilioMessenger | None:
@@ -301,19 +317,22 @@ def whatsapp_webhook() -> Response:
     conversation_store.record_message(
         conversation_id, text=inbound_text, author="customer", direction="inbound",
         profile_name=profile_name, profile_photo_url=profile_photo_url, increment_unread=True,
-        attachments=attachments,
+        attachments=attachments, base_url=_api_base_url(),
     )
 
     if conversation_store.default_responder_id:
         conversation_store.assign_conversation(conversation_id, conversation_store.default_responder_id)
 
-    convo_snapshot = conversation_store.get_conversation(conversation_id)
+    convo_snapshot = conversation_store.get_conversation(
+        conversation_id, base_url=_api_base_url()
+    )
     ai_enabled = convo_snapshot["aiEnabled"] if convo_snapshot else True
     response = MessagingResponse()
 
     if ai_enabled:
         drafting_message = conversation_store.record_message(
             conversation_id, text="", author="ai", direction="outbound", status="drafting",
+            base_url=_api_base_url(),
         )
         try:
             reply_text = _build_reply(inbound_text, attachments)
@@ -326,6 +345,7 @@ def whatsapp_webhook() -> Response:
         conversation_store.update_message(
             conversation_id, drafting_message.id, text=reply_text,
             status="scheduled", scheduled_send_at=send_after.isoformat(),
+            base_url=_api_base_url(),
         )
         _schedule_ai_delivery(conversation_id, drafting_message.id, reply_text, scheduled_for=send_after)
     else:
@@ -365,13 +385,15 @@ def api_set_default_responder() -> Response:
 
 @app.get("/api/conversations")
 def api_list_conversations() -> Response:
-    conversations = conversation_store.list_conversations()
+    conversations = conversation_store.list_conversations(base_url=_api_base_url())
     return jsonify({"conversations": conversations})
 
 
 @app.get("/api/conversations/<conversation_id>")
 def api_get_conversation(conversation_id: str) -> Response:
-    convo = conversation_store.get_conversation(conversation_id, mark_read=True)
+    convo = conversation_store.get_conversation(
+        conversation_id, mark_read=True, base_url=_api_base_url()
+    )
     if convo is None:
         abort(404, description="Conversation not found")
     return jsonify(convo)
@@ -424,10 +446,14 @@ def api_send_manual_message(conversation_id: str) -> Response:
     message = conversation_store.record_message(
         conversation_id, text=text, author="agent", direction="outbound",
         via=delivery_via, transport_sid=sid, sent_at=_iso_now() if status == "sent" else None,
-        status=status, error=error_message,
+        status=status, error=error_message, base_url=_api_base_url(),
     )
 
-    payload = {"status": status, "sid": sid, "message": message.to_dict()}
+    payload = {
+        "status": status,
+        "sid": sid,
+        "message": message.to_dict(base_url=_api_base_url()),
+    }
     if error_message:
         payload["error"] = error_message
     return jsonify(payload), (200 if status == "sent" else 202)
@@ -439,12 +465,17 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
     if message is None:
         abort(404, description="Scheduled AI message not found")
     _scheduled_message_ids.discard(message_id)
-    return jsonify({"status": "cancelled", "message": message.to_dict()})
+    return jsonify({
+        "status": "cancelled",
+        "message": message.to_dict(base_url=_api_base_url()),
+    })
 
 
 @app.post("/api/conversations/<conversation_id>/ai-draft")
 def api_generate_ai_draft(conversation_id: str) -> Response:
-    convo = conversation_store.get_conversation(conversation_id)
+    convo = conversation_store.get_conversation(
+        conversation_id, base_url=_api_base_url()
+    )
     if convo is None:
         abort(404, description="Conversation not found")
     latest = conversation_store.latest_customer_message(conversation_id)

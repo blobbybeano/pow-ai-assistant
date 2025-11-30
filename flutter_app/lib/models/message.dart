@@ -10,6 +10,7 @@ class ChatMessage {
     required this.via,
     required this.status,
     this.attachments = const [],
+    this.mediaUrls = const [],
     this.scheduledSendAt,
     this.sentAt,
     this.transportSid,
@@ -28,6 +29,7 @@ class ChatMessage {
       via: json['via'] as String? ?? 'whatsapp',
       status: json['status'] as String? ?? 'sent',
       attachments: _parseAttachments(json['attachments']),
+      mediaUrls: _parseMediaUrls(json['media_urls']),
       scheduledSendAt: _parseDate(json['scheduledSendAt'] as String?),
       sentAt: _parseDate(json['sentAt'] as String?),
       transportSid: json['transportSid'] as String?,
@@ -43,6 +45,7 @@ class ChatMessage {
   final String via;
   final String status;
   final List<MessageAttachment> attachments;
+  final List<String> mediaUrls;
   final DateTime? scheduledSendAt;
   final DateTime? sentAt;
   final String? transportSid;
@@ -156,5 +159,14 @@ List<MessageAttachment> _parseAttachments(dynamic raw) {
   return raw
       .map((entry) => MessageAttachment.fromJson(entry))
       .where((att) => att.value.isNotEmpty)
+      .toList();
+}
+
+List<String> _parseMediaUrls(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<String>()
+      .map((url) => url.trim())
+      .where((url) => url.isNotEmpty)
       .toList();
 }

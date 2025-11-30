@@ -3,21 +3,18 @@ import 'package:intl/intl.dart';
 
 import '../models/conversation.dart';
 import '../models/message.dart';
-import 'avatar_circle.dart';
 
 class ConversationTile extends StatelessWidget {
   const ConversationTile({
     required this.summary,
     required this.onTap,
     this.isSelected = false,
-    this.avatarImage,
     super.key,
   });
 
   final ConversationSummary summary;
   final VoidCallback onTap;
   final bool isSelected;
-  final ImageProvider<Object>? avatarImage;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +42,14 @@ class ConversationTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AvatarCircle(label: summary.displayName, size: 44, image: avatarImage),
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: const Color(0xFF202C33),
+              child: const Icon(
+                Icons.person,
+                color: Color(0xFFB9C5CC),
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
