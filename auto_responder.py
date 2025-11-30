@@ -184,7 +184,7 @@ def generate_reply(
         if source.lower().startswith(("http://", "https://")):
             user_content.append({
                 "type": "input_image",
-                "image_url": {"url": source},
+                "image_url": source,
             })
             continue
 
@@ -198,16 +198,12 @@ def generate_reply(
             print(f"⚠️ Skipping attachment {file_path}: {exc}")
             continue
 
-        if resolved.lower().startswith(("http://", "https://")):
-            user_content.append({
-                "type": "input_image",
-                "image_url": {"url": resolved},
-            })
-        else:
-            user_content.append({
-                "type": "input_image",
-                "image_url": {"url": resolved},
-            })
+        # The Responses API expects `image_url` to be a string (public URL or data URI)
+        # rather than an object wrapper.
+        user_content.append({
+            "type": "input_image",
+            "image_url": resolved,
+        })
 
     # Call OpenAI
     try:
