@@ -1419,6 +1419,39 @@
           "sentAt": "2025-11-30T19:57:37.814268+00:00",
           "error": null,
           "attachments": []
+        },
+        {
+          "id": "2fa24a1f-5ead-44b5-8937-1500cfb53caa",
+          "text": "What is this",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-11-30T20:20:52.401257+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/c0511dc2b78a4a9d91fd8d2c9ac7bed1.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "57898b84-bb22-4532-9ad8-ef5fbc22ac07",
+          "text": "Hello! Thanks for reaching out to PowWash. We are a local exterior cleaning service offering a range of options to keep your property looking its best. Our services include driveway pressure washing, patio refreshing, roof soft washing, and gutter clearing.\n\nIf you're looking for a quote, I\u2019d be happy to help! Please share a bit more about what you need\u2014like the type of surface, its size, and any access considerations. If you have any photos, feel free to share those too for a more accurate quote.\n\nLooking forward to assisting you further!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-11-30T20:20:52.404692+00:00",
+          "via": "whatsapp",
+          "transportSid": "SM90b551c05f433a430255e07220518960",
+          "status": "sent",
+          "scheduledSendAt": "2025-11-30T20:23:57.226972+00:00",
+          "sentAt": "2025-11-30T20:23:57.630315+00:00",
+          "error": null,
+          "attachments": []
         }
       ]
     }
