@@ -114,9 +114,9 @@ def _download_whatsapp_media(media_url: str | None, content_type: str | None) ->
     return file_path
 
 
-def _collect_inbound_attachments(form) -> List[str]:
+def _collect_inbound_attachments(form) -> List[dict]:
     """Download and persist inbound WhatsApp media attachments."""
-    attachments: List[str] = []
+    attachments: List[dict] = []
     try:
         num_media = int(form.get("NumMedia", "0") or 0)
     except (TypeError, ValueError):
@@ -133,7 +133,10 @@ def _collect_inbound_attachments(form) -> List[str]:
         file_path = _download_whatsapp_media(media_url, content_type)
         if not file_path:
             continue
-        attachments.append(str(file_path))
+        attachment_payload = {"path": str(file_path)}
+        if content_type:
+            attachment_payload["content_type"] = content_type
+        attachments.append(attachment_payload)
         logging.info("📁 Stored local media path for AI processing: %s", file_path)
 
     return attachments

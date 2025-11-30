@@ -65,7 +65,7 @@ class MessageRecord:
     scheduled_send_at: Optional[str] = None
     sent_at: Optional[str] = None
     error: Optional[str] = None
-    attachments: List[str] = field(default_factory=list)
+    attachments: List[Any] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -189,7 +189,7 @@ class ConversationStore:
                         attachments=[
                             attachment
                             for attachment in msg.get("attachments", [])
-                            if isinstance(attachment, str)
+                            if isinstance(attachment, (str, dict))
                         ],
                     )
                     for msg in record.get("messages", [])
@@ -369,7 +369,7 @@ class ConversationStore:
         scheduled_send_at: Optional[str] = None,
         sent_at: Optional[str] = None,
         error: Optional[str] = None,
-        attachments: Optional[List[str]] = None,
+        attachments: Optional[List[Any]] = None,
     ) -> MessageRecord:
         convo = self.ensure_conversation(
             conversation_id,
@@ -639,7 +639,7 @@ class ConversationStore:
         transport_sid: Optional[str] = None,
         error: Optional[str] = None,
         scheduled_send_at: Optional[str] = None,
-        attachments: Optional[List[str]] = None,
+        attachments: Optional[List[Any]] = None,
     ) -> Optional[MessageRecord]:
         """Update a specific message record and persist the store."""
 

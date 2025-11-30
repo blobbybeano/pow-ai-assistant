@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import os
+import base64
+import mimetypes
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.error import HTTPError, URLError
@@ -50,8 +51,8 @@ def _url_is_accessible(url: str, timeout: float = 5.0) -> bool:
     return False
 
 
-def get_public_image_url(file_path: Path) -> str:
-    """Return a public URL or base64 representation for the provided image."""
+def get_public_image_url(file_path: Path, *, content_type: Optional[str] = None) -> str:
+    """Return a public URL or base64 data URL for the provided image."""
     absolute_path = file_path.resolve()
     if not absolute_path.exists():
         raise FileNotFoundError(f"Attachment does not exist: {absolute_path}")
@@ -74,7 +75,9 @@ def get_public_image_url(file_path: Path) -> str:
 
     with absolute_path.open("rb") as image_file:
         encoded = base64.b64encode(image_file.read()).decode("utf-8")
-    return encoded
+
+    mime_type = (content_type or mimetypes.guess_type(absolute_path.name)[0] or "image/jpeg")
+    return f"data:{mime_type};base64,{encoded}"
 
 
 # ---------------------------------------------------------------------
@@ -157,14 +160,17 @@ def generate_reply(
     system_prompt = _build_system_prompt(price_list, tone_profile)
 
     # Normalize attachments
-    normalized_attachments: List[str] = []
+    normalized_attachments: List[Dict[str, Optional[str]]] = []
     for att in attachments or []:
         if isinstance(att, str) and att.strip():
-            normalized_attachments.append(att.strip())
+            normalized_attachments.append({"value": att.strip(), "content_type": None})
         elif isinstance(att, dict):
             value = att.get("path") or att.get("local_path") or att.get("url")
             if isinstance(value, str) and value.strip():
-                normalized_attachments.append(value.strip())
+                content_type = att.get("content_type") or att.get("mime_type")
+                normalized_attachments.append(
+                    {"value": value.strip(), "content_type": content_type if isinstance(content_type, str) else None}
+                )
 
     # ---------------- Corrected structure for Responses API ----------------
     user_content: List[Dict[str, Any]] = [
@@ -172,20 +178,22 @@ def generate_reply(
     ]
 
     for attachment in normalized_attachments:
+        source = attachment.get("value") or ""
+        content_type = attachment.get("content_type")
         # Publicly accessible image
-        if attachment.lower().startswith(("http://", "https://")):
+        if source.lower().startswith(("http://", "https://")):
             user_content.append({
                 "type": "input_image",
-                "image_url": attachment,
+                "image_url": {"url": source},
             })
             continue
 
         # Local image files
-        file_path = Path(attachment)
+        file_path = Path(source)
         if not file_path.is_file():
             continue
         try:
-            resolved = get_public_image_url(file_path)
+            resolved = get_public_image_url(file_path, content_type=content_type)
         except Exception as exc:
             print(f"⚠️ Skipping attachment {file_path}: {exc}")
             continue
@@ -193,12 +201,12 @@ def generate_reply(
         if resolved.lower().startswith(("http://", "https://")):
             user_content.append({
                 "type": "input_image",
-                "image_url": resolved,
+                "image_url": {"url": resolved},
             })
         else:
             user_content.append({
                 "type": "input_image",
-                "image_data": resolved,
+                "image_url": {"url": resolved},
             })
 
     # Call OpenAI
