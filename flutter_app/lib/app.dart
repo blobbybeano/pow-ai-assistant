@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'controllers/inbox_controller.dart';
 import 'controllers/profile_controller.dart';
 import 'controllers/user_controller.dart';
+import 'services/auth_repository.dart';
 import 'screens/chat_list_screen.dart';
-import 'screens/user_selection_screen.dart';
+import 'screens/auth_screen.dart';
 import 'services/chat_api_client.dart';
 import 'theme/app_theme.dart';
 
@@ -22,7 +24,9 @@ class _PowWashAppState extends State<PowWashApp> {
   @override
   void initState() {
     super.initState();
-    _apiClient = ChatApiClient.fromEnvironment();
+    _apiClient = ChatApiClient.fromEnvironment(
+      tokenProvider: () => FirebaseAuth.instance.currentUser?.getIdToken(),
+    );
   }
 
   @override
@@ -36,9 +40,10 @@ class _PowWashAppState extends State<PowWashApp> {
     return MultiProvider(
       providers: [
         Provider<ChatApiClient>.value(value: _apiClient),
+        Provider<AuthRepository>(create: (_) => AuthRepository()),
         ChangeNotifierProvider(
           create: (context) => UserController(
-            apiClient: context.read<ChatApiClient>(),
+            authRepository: context.read<AuthRepository>(),
           ),
         ),
         ChangeNotifierProvider(
@@ -64,8 +69,13 @@ class _AppRouter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<UserController>(
       builder: (context, users, _) {
+        if (users.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
         if (!users.isSignedIn) {
-          return const UserSelectionScreen();
+          return const AuthScreen();
         }
         return const ChatListScreen();
       },

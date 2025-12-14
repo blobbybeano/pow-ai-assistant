@@ -147,7 +147,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           user: user,
                           isActive: userController.isCurrentUser(user),
                           notificationCount: unread,
-                          onTap: () => userController.signIn(user.id),
+                          onTap: () {},
                         );
                       },
                       separatorBuilder: (_, __) => const SizedBox(height: 12),

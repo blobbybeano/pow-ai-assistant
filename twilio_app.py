@@ -7,12 +7,16 @@ import os
 import re
 import threading
 from datetime import datetime, timedelta, timezone
+from functools import wraps
 from pathlib import Path
 from typing import Dict, List, Set
 from uuid import uuid4
 
 import requests
-from flask import Flask, Response, abort, jsonify, request, send_from_directory
+import firebase_admin
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials, firestore
+from flask import Flask, Response, abort, g, jsonify, request, send_from_directory
 from flask_cors import CORS
 from twilio.base.exceptions import TwilioRestException
 from twilio.twiml.messaging_response import MessagingResponse
@@ -43,6 +47,64 @@ _MEDIA_EXTENSION_MAP = {
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
+
+
+# -----------------------------------------------------------
+# Firebase Auth / Firestore helpers
+# -----------------------------------------------------------
+_FIREBASE_APP = None
+
+
+def _get_firebase_app():
+    global _FIREBASE_APP
+    if _FIREBASE_APP is not None:
+        return _FIREBASE_APP
+    try:
+        _FIREBASE_APP = firebase_admin.get_app()
+    except ValueError:
+        cred_path = os.getenv("FIREBASE_CREDENTIALS_FILE")
+        credentials_obj = credentials.Certificate(cred_path) if cred_path else None
+        _FIREBASE_APP = firebase_admin.initialize_app(credentials_obj)
+    return _FIREBASE_APP
+
+
+def _firestore_client():
+    return firestore.client(app=_get_firebase_app())
+
+
+def _verify_account_membership():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        abort(401, description="Missing bearer token")
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        decoded = firebase_auth.verify_id_token(token, app=_get_firebase_app())
+    except Exception:
+        abort(401, description="Invalid or expired token")
+
+    uid = decoded.get("uid")
+    db = _firestore_client()
+    membership_query = (
+        db.collection_group("members").where("userId", "==", uid).limit(1)
+    )
+    membership_docs = list(membership_query.stream())
+    if not membership_docs:
+        abort(403, description="User is not a member of any account")
+    membership = membership_docs[0]
+    account_ref = membership.reference.parent.parent
+    role = membership.to_dict().get("role", "staff")
+    g.account_id = account_ref.id if account_ref else None
+    g.member_role = role
+    g.user_id = uid
+
+
+def require_account_member(handler):
+    @wraps(handler)
+    def wrapper(*args, **kwargs):
+        _verify_account_membership()
+        return handler(*args, **kwargs)
+
+    return wrapper
 
 
 # -----------------------------------------------------------
@@ -351,11 +413,13 @@ def serve_uploaded_file(filename: str) -> Response:
 
 
 @app.get("/api/settings/responder")
+@require_account_member
 def api_get_default_responder() -> Response:
     return jsonify({"defaultResponderId": conversation_store.default_responder_id})
 
 
 @app.post("/api/settings/responder")
+@require_account_member
 def api_set_default_responder() -> Response:
     payload = request.get_json(silent=True) or {}
     responder_id = payload.get("responderId")
@@ -366,12 +430,14 @@ def api_set_default_responder() -> Response:
 
 
 @app.get("/api/conversations")
+@require_account_member
 def api_list_conversations() -> Response:
     conversations = conversation_store.list_conversations()
     return jsonify({"conversations": conversations})
 
 
 @app.get("/api/conversations/<conversation_id>")
+@require_account_member
 def api_get_conversation(conversation_id: str) -> Response:
     convo = conversation_store.get_conversation(conversation_id, mark_read=True)
     if convo is None:
@@ -380,6 +446,7 @@ def api_get_conversation(conversation_id: str) -> Response:
 
 
 @app.post("/api/conversations/<conversation_id>/toggle-ai")
+@require_account_member
 def api_toggle_ai(conversation_id: str) -> Response:
     payload = request.get_json(silent=True) or {}
     enabled = bool(payload.get("enabled", True))
@@ -391,6 +458,7 @@ def api_toggle_ai(conversation_id: str) -> Response:
 
 
 @app.post("/api/conversations/<conversation_id>/messages")
+@require_account_member
 def api_send_manual_message(conversation_id: str) -> Response:
     """Manual outbound message from agent in Flutter app."""
     payload = request.get_json(silent=True) or {}
@@ -436,6 +504,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
 
 
 @app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")
+@require_account_member
 def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
     message = conversation_store.cancel_scheduled_message(conversation_id, message_id)
     if message is None:
@@ -445,6 +514,7 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
 
 
 @app.post("/api/conversations/<conversation_id>/ai-draft")
+@require_account_member
 def api_generate_ai_draft(conversation_id: str) -> Response:
     convo = conversation_store.get_conversation(conversation_id)
     if convo is None:

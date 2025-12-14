@@ -5,6 +5,8 @@ class AppUser {
     required this.id,
     required this.displayName,
     this.email,
+    this.accountId,
+    this.role,
     this.avatarEmoji,
     this.photoUrl,
     this.assignedConversationIds = const <String>[],
@@ -13,6 +15,8 @@ class AppUser {
   final String id;
   final String displayName;
   final String? email;
+  final String? accountId;
+  final String? role;
   final String? avatarEmoji;
   final String? photoUrl;
   final List<String> assignedConversationIds;
@@ -37,6 +41,8 @@ class AppUser {
     String? id,
     String? displayName,
     String? email,
+    String? accountId,
+    String? role,
     String? avatarEmoji,
     String? photoUrl,
     List<String>? assignedConversationIds,
@@ -45,6 +51,8 @@ class AppUser {
       id: id ?? this.id,
       displayName: displayName ?? this.displayName,
       email: email ?? this.email,
+      accountId: accountId ?? this.accountId,
+      role: role ?? this.role,
       avatarEmoji: avatarEmoji ?? this.avatarEmoji,
       photoUrl: photoUrl ?? this.photoUrl,
       assignedConversationIds:
@@ -69,6 +77,8 @@ class AppUser {
         id,
         displayName,
         email,
+        accountId,
+        role,
         avatarEmoji,
         photoUrl,
         Object.hashAll(assignedConversationIds),

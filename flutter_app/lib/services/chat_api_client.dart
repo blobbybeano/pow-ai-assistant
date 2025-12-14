@@ -4,28 +4,50 @@ import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
 
-class ChatApiClient {
-  ChatApiClient({required this.baseUrl, http.Client? httpClient})
-      : _client = httpClient ?? http.Client();
+typedef TokenProvider = Future<String?> Function();
 
-  factory ChatApiClient.fromEnvironment() {
+class ChatApiClient {
+  ChatApiClient({
+    required this.baseUrl,
+    http.Client? httpClient,
+    this.tokenProvider,
+  }) : _client = httpClient ?? http.Client();
+
+  factory ChatApiClient.fromEnvironment({TokenProvider? tokenProvider}) {
     const defaultUrl = String.fromEnvironment(
       'API_BASE_URL',
       defaultValue: 'http://127.0.0.1:5002',
     );
-    return ChatApiClient(baseUrl: defaultUrl);
+    return ChatApiClient(baseUrl: defaultUrl, tokenProvider: tokenProvider);
   }
 
   final String baseUrl;
   final http.Client _client;
+  final TokenProvider? tokenProvider;
 
   Uri _uri(String path) {
     final base = Uri.parse(baseUrl);
     return base.resolve(path);
   }
 
+  Future<Map<String, String>> _withAuthHeaders([
+    Map<String, String>? additional,
+  ]) async {
+    final headers = <String, String>{...?additional};
+    if (tokenProvider != null) {
+      final token = await tokenProvider!.call();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    return headers;
+  }
+
   Future<List<ConversationSummary>> fetchConversations() async {
-    final response = await _client.get(_uri('/api/conversations'));
+    final response = await _client.get(
+      _uri('/api/conversations'),
+      headers: await _withAuthHeaders(),
+    );
     if (response.statusCode != 200) {
       throw Exception('Failed to load conversations (${response.statusCode})');
     }
@@ -37,7 +59,10 @@ class ChatApiClient {
   }
 
   Future<ConversationDetail> fetchConversation(String conversationId) async {
-    final response = await _client.get(_uri('/api/conversations/$conversationId'));
+    final response = await _client.get(
+      _uri('/api/conversations/$conversationId'),
+      headers: await _withAuthHeaders(),
+    );
     if (response.statusCode != 200) {
       throw Exception('Conversation request failed (${response.statusCode})');
     }
@@ -52,7 +77,7 @@ class ChatApiClient {
   }) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/toggle-ai'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _withAuthHeaders({'Content-Type': 'application/json'}),
       body: json.encode({
         'enabled': enabled,
         if (responderId != null) 'responderId': responderId,
@@ -72,7 +97,7 @@ class ChatApiClient {
   }) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/messages'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _withAuthHeaders({'Content-Type': 'application/json'}),
       body: json.encode({
         'text': text,
         if (senderId != null) 'senderId': senderId,
@@ -91,6 +116,7 @@ class ChatApiClient {
   }) async {
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/messages/$messageId/cancel'),
+      headers: await _withAuthHeaders(),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to cancel AI message (${response.statusCode})');
@@ -102,7 +128,7 @@ class ChatApiClient {
     final headers = body != null ? {'Content-Type': 'application/json'} : null;
     final response = await _client.post(
       _uri('/api/conversations/$conversationId/ai-draft'),
-      headers: headers,
+      headers: await _withAuthHeaders(headers),
       body: body,
     );
     if (response.statusCode != 200) {
@@ -113,7 +139,10 @@ class ChatApiClient {
   }
 
   Future<String?> fetchDefaultResponderId() async {
-    final response = await _client.get(_uri('/api/settings/responder'));
+    final response = await _client.get(
+      _uri('/api/settings/responder'),
+      headers: await _withAuthHeaders(),
+    );
     if (response.statusCode != 200 && response.statusCode != 404) {
       throw Exception('Failed to load responder preference (${response.statusCode})');
     }
@@ -128,7 +157,7 @@ class ChatApiClient {
   Future<void> updateDefaultResponderId(String responderId) async {
     final response = await _client.post(
       _uri('/api/settings/responder'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _withAuthHeaders({'Content-Type': 'application/json'}),
       body: json.encode({'responderId': responderId}),
     );
     if (response.statusCode != 200) {

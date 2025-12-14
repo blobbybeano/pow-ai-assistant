@@ -33,6 +33,13 @@ class InboxController extends ChangeNotifier {
 
   Future<void> _refreshInbox({bool force = false}) async {
     if (_loading && !force) return;
+    final tokenProvider = apiClient.tokenProvider;
+    if (tokenProvider != null) {
+      final token = await tokenProvider();
+      if (token == null || token.isEmpty) {
+        return;
+      }
+    }
     _loading = true;
     _error = null;
     notifyListeners();
