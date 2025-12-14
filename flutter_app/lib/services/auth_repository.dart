@@ -18,19 +18,25 @@ class MemberProfile extends AppUser {
   final String accountId;
   final String role;
 
+  @override
   MemberProfile copyWith({
+    String? id,
+    String? displayName,
+    String? email,
     String? accountId,
     String? role,
-    String? displayName,
+    String? avatarEmoji,
     String? photoUrl,
+    List<String>? assignedConversationIds,
   }) {
     return MemberProfile(
-      id: id,
+      id: id ?? this.id,
       displayName: displayName ?? this.displayName,
-      email: email,
-      avatarEmoji: avatarEmoji,
+      email: email ?? this.email,
+      avatarEmoji: avatarEmoji ?? this.avatarEmoji,
       photoUrl: photoUrl ?? this.photoUrl,
-      assignedConversationIds: assignedConversationIds,
+      assignedConversationIds:
+          assignedConversationIds ?? this.assignedConversationIds,
       accountId: accountId ?? this.accountId,
       role: role ?? this.role,
     );
@@ -111,6 +117,12 @@ class AuthRepository {
   }
 
   Future<void> signOut() => _auth.signOut();
+
+  Future<String?> getIdToken() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return user.getIdToken();
+  }
 
   Future<MemberProfile> _createInitialAccount(User user, String displayName) async {
     final accountRef = _firestore.collection('accounts').doc();

@@ -313,14 +313,14 @@ class _ResponderSwitcherButton extends StatelessWidget {
         ? 'AI responding as ${respondingUser.displayName}'
         : 'Select AI responder';
 
-    return PopupMenuButton<String>(
+    return PopupMenuButton<AppUser>(
       tooltip: label,
       onSelected: userController.switchRespondingUser,
       itemBuilder: (context) {
         return [
           for (final user in users)
-            PopupMenuItem<String>(
-              value: user.id,
+            PopupMenuItem<AppUser>(
+              value: user,
               child: Row(
                 children: [
                   if (userController.isRespondingUser(user))

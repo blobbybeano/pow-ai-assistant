@@ -131,7 +131,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                   ],
                   _AiResponderSelector(
                     users: users,
-                    selectedUserId: userController.respondingUser?.id,
+                    selectedUser: userController.respondingUser,
                     onChanged: userController.switchRespondingUser,
                   ),
                   const SizedBox(height: 24),
@@ -269,13 +269,13 @@ class _NotificationBadge extends StatelessWidget {
 class _AiResponderSelector extends StatelessWidget {
   const _AiResponderSelector({
     required this.users,
-    required this.selectedUserId,
+    required this.selectedUser,
     required this.onChanged,
   });
 
   final List<AppUser> users;
-  final String? selectedUserId;
-  final ValueChanged<String> onChanged;
+  final AppUser? selectedUser;
+  final ValueChanged<AppUser> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -308,9 +308,10 @@ class _AiResponderSelector extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: users.any((user) => user.id == selectedUserId)
-                  ? selectedUserId
+            child: DropdownButton<AppUser>(
+              value: selectedUser != null &&
+                      users.any((user) => user.id == selectedUser!.id)
+                  ? selectedUser
                   : null,
               icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8696A0)),
               dropdownColor: const Color(0xFF111B21),
@@ -319,8 +320,8 @@ class _AiResponderSelector extends StatelessWidget {
               isExpanded: true,
               items: users
                   .map(
-                    (user) => DropdownMenuItem<String>(
-                      value: user.id,
+                    (user) => DropdownMenuItem<AppUser>(
+                      value: user,
                       child: Row(
                         children: [
                           CircleAvatar(
@@ -361,7 +362,7 @@ class _AiResponderSelector extends StatelessWidget {
                   )
                   .toList(),
               onChanged: (value) {
-                if (value != null && value != selectedUserId) {
+                if (value != null) {
                   onChanged(value);
                 }
               },

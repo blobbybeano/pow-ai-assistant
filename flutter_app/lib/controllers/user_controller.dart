@@ -19,6 +19,7 @@ class UserController extends ChangeNotifier {
   late final StreamSubscription<User?> _authSubscription;
 
   AppUser? _currentUser;
+  AppUser? _respondingUser;
   bool _isLoading = true;
   Object? _error;
 
@@ -30,7 +31,7 @@ class UserController extends ChangeNotifier {
   List<AppUser> get availableUsers =>
       _currentUser == null ? const [] : <AppUser>[_currentUser!];
 
-  AppUser? get respondingUser => _currentUser;
+  AppUser? get respondingUser => _respondingUser;
 
   Set<String> get _knownAssignedConversationIds =>
       _currentUser?.assignedConversationIds.toSet() ?? const <String>{};
@@ -50,6 +51,7 @@ class UserController extends ChangeNotifier {
         password: password,
       );
       _currentUser = member;
+      _respondingUser = member;
     } catch (err) {
       _error = err;
       rethrow;
@@ -72,6 +74,7 @@ class UserController extends ChangeNotifier {
         displayName: displayName,
       );
       _currentUser = member;
+      _respondingUser = member;
     } catch (err) {
       _error = err;
       rethrow;
@@ -83,6 +86,19 @@ class UserController extends ChangeNotifier {
   Future<void> signOut() async {
     await _authRepository.signOut();
     _currentUser = null;
+    _respondingUser = null;
+    notifyListeners();
+  }
+
+  bool isCurrentUser(AppUser user) => _currentUser?.id == user.id;
+
+  bool isRespondingUser(AppUser user) => _respondingUser?.id == user.id;
+
+  void switchRespondingUser(AppUser user) {
+    if (isRespondingUser(user)) {
+      return;
+    }
+    _respondingUser = user;
     notifyListeners();
   }
 
@@ -125,12 +141,14 @@ class UserController extends ChangeNotifier {
   Future<void> _handleAuthChange(User? firebaseUser) async {
     if (firebaseUser == null) {
       _currentUser = null;
+      _respondingUser = null;
       notifyListeners();
       return;
     }
     final profile = await _authRepository.loadProfile(firebaseUser);
     if (profile != null) {
       _currentUser = profile;
+      _respondingUser = _respondingUser ?? profile;
       notifyListeners();
     }
   }
@@ -139,6 +157,7 @@ class UserController extends ChangeNotifier {
     try {
       final member = await _authRepository.loadProfile(FirebaseAuth.instance.currentUser);
       _currentUser = member;
+      _respondingUser = member ?? _respondingUser;
     } finally {
       _setLoading(false);
     }

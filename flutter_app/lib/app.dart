@@ -26,7 +26,11 @@ class _PowWashAppState extends State<PowWashApp> {
   void initState() {
     super.initState();
     _apiClient = ChatApiClient.fromEnvironment(
-      tokenProvider: () => FirebaseAuth.instance.currentUser?.getIdToken(),
+      tokenProvider: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return null;
+        return user.getIdToken();
+      },
     );
   }
 
