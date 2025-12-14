@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.powwashWorkspace</string>
+	<string>uk.co.powwash.workspace</string>
 	<key>PROJECT_ID</key>
 	<string>pow-ai-messaging-app</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:368120327650:ios:7fe46aba71d3d9696f5dbb</string>
+	<string>1:368120327650:ios:5ab6c24e3b8e487d6f5dbb</string>
 </dict>
 </plist>

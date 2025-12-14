@@ -11,6 +11,7 @@ import '../widgets/profile_settings_sheet.dart';
 import 'ai_training_dashboard_screen.dart';
 import 'chat_detail_screen.dart';
 import 'integration_settings_screen.dart';
+import '../models/app_user.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
