@@ -1366,6 +1366,105 @@
           "sentAt": "2025-11-30T19:46:47.000742+00:00",
           "error": "Twilio credentials not configured.",
           "attachments": []
+        },
+        {
+          "id": "d75f9a83-0a4f-4b89-8292-eb9864652d6c",
+          "text": "Just checking are you receiving the picture and can you describe what is in it?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-12-07T14:26:43.892389+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/3ae06597c9554fffb916edde598b3887.jpg",
+              "content_type": "video/mp4"
+            }
+          ]
+        },
+        {
+          "id": "ce5c3bbb-598a-4c5c-8543-f9866a52fa72",
+          "text": "It looks like I can't view pictures directly, but I'm here to help! If you could describe what\u2019s in the picture, I can assist you with your exterior cleaning needs. Let me know what kind of surface you're looking to clean, its size, and any access considerations. This will help me provide you with an accurate quote. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-12-07T14:26:43.896042+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-12-07T14:29:53.426163+00:00",
+          "sentAt": "2025-12-07T14:29:53.430831+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "4f6d8885-cf24-4d5f-a16c-e04909daed4d",
+          "text": "What about now",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-12-07T14:27:42.614331+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/91ed482224714173802f2e8adacfd547.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "4f616ac4-2fb9-48d7-8e86-a60ce4ee6010",
+          "text": "It looks like you've shared a fun and lively video! If you're looking for exterior cleaning services, feel free to let me know the details about your property. We\u2019d love to help with any cleaning needs you might have, such as driveway pressure washing or patio refreshing.\n\nJust let us know the surface type, size, access considerations, and your preferred times, and we can provide a quote. \n\nLooking forward to hearing from you!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-12-07T14:27:42.618121+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-12-07T14:30:47.615572+00:00",
+          "sentAt": "2025-12-07T14:30:47.620177+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
+        },
+        {
+          "id": "7ab33df7-d62d-4ee8-ade8-4535aa3b366a",
+          "text": "How much would a gutter clean cost for one of these houses on the right?",
+          "author": "customer",
+          "direction": "inbound",
+          "timestamp": "2025-12-07T14:28:58.704650+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "sent",
+          "scheduledSendAt": null,
+          "sentAt": null,
+          "error": null,
+          "attachments": [
+            {
+              "path": "/Users/benoliver/PycharmProjects/the-ai-customer-messaging-assistant/uploads/8bb9253a86d445e189f0f0d4a8ed5cf7.jpg",
+              "content_type": "image/jpeg"
+            }
+          ]
+        },
+        {
+          "id": "68eb76d1-85f6-41dd-8c36-6c1785f4fb35",
+          "text": "Hi there! A gutter clean for one of those houses would cost \u00a380. This includes vacuum removal of debris, a downpipe flush, and a condition report for homes up to two storeys.\n\nTo provide you with the most accurate quote, could you let me know if the house is up to two storeys and if there are any access considerations we should be aware of? Also, do you have a preferred time for the service?\n\nLooking forward to your reply!\n\nBest,  \nPowWash Team",
+          "author": "ai",
+          "direction": "outbound",
+          "timestamp": "2025-12-07T14:28:58.708422+00:00",
+          "via": "whatsapp",
+          "transportSid": null,
+          "status": "failed",
+          "scheduledSendAt": "2025-12-07T14:32:03.753757+00:00",
+          "sentAt": "2025-12-07T14:32:03.758303+00:00",
+          "error": "Twilio credentials not configured.",
+          "attachments": []
         }
       ]
     },
@@ -1805,10 +1904,10 @@
           "timestamp": "2025-11-30T22:28:06.883725+00:00",
           "via": "whatsapp",
           "transportSid": null,
-          "status": "scheduled",
+          "status": "failed",
           "scheduledSendAt": "2025-11-30T22:31:12.496930+00:00",
-          "sentAt": null,
-          "error": null,
+          "sentAt": "2025-12-07T14:23:18.555413+00:00",
+          "error": "Twilio credentials not configured.",
           "attachments": []
         }
       ]
