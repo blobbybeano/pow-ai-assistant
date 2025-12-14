@@ -1,4 +1,6 @@
-# Uncomment this line to define a global platform for your project
+# Firebase (and its transitive gRPC dependencies) require iOS 13+ for modern
+# architectures. Pin the platform here so pods resolve with a compatible
+# deployment target even if future dependency updates bump their minimums.
 platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
@@ -39,5 +41,11 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # Force all pod targets to respect our minimum iOS version so Xcode and
+    # command-line builds stay aligned when dependencies change.
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    end
   end
 end
