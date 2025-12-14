@@ -47,6 +47,7 @@ _MEDIA_EXTENSION_MAP = {
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
+DEFAULT_ACCOUNT_ID = os.getenv("DEFAULT_ACCOUNT_ID")
 
 
 # -----------------------------------------------------------
@@ -102,6 +103,17 @@ def require_account_member(handler):
     @wraps(handler)
     def wrapper(*args, **kwargs):
         _verify_account_membership()
+        return handler(*args, **kwargs)
+
+    return wrapper
+
+
+def require_admin(handler):
+    @wraps(handler)
+    def wrapper(*args, **kwargs):
+        _verify_account_membership()
+        if getattr(g, "member_role", "staff") != "admin":
+            abort(403, description="Admin privileges required")
         return handler(*args, **kwargs)
 
     return wrapper
@@ -268,14 +280,21 @@ def _conversation_id(from_number: str, wa_id: str | None = None) -> str:
     return fallback or "unknown"
 
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+def _iso_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 # -----------------------------------------------------------
 # AI message scheduling logic
 # -----------------------------------------------------------
-def _schedule_ai_delivery(conversation_id: str, message_id: str, body: str, *, scheduled_for: datetime) -> None:
+def _schedule_ai_delivery(
+    account_id: str,
+    conversation_id: str,
+    message_id: str,
+    body: str,
+    *,
+    scheduled_for: datetime,
+) -> None:
     """Schedules a delayed AI message to be sent to a WhatsApp user."""
     if message_id in _scheduled_message_ids:
         return
@@ -283,7 +302,7 @@ def _schedule_ai_delivery(conversation_id: str, message_id: str, body: str, *, s
     delay = max(0.0, (scheduled_for - datetime.now(timezone.utc)).total_seconds())
 
     def _deliver() -> None:
-        message_snapshot = conversation_store.get_message(conversation_id, message_id)
+        message_snapshot = conversation_store.get_message(account_id, conversation_id, message_id)
         if not message_snapshot or message_snapshot.status != "scheduled":
             _scheduled_message_ids.discard(message_id)
             return
@@ -292,7 +311,11 @@ def _schedule_ai_delivery(conversation_id: str, message_id: str, body: str, *, s
         if not messenger:
             logging.error("🚫 Twilio credentials missing; cannot deliver AI reply.")
             conversation_store.update_message(
-                conversation_id, message_id, status="failed", sent_at=_iso_now(),
+                account_id,
+                conversation_id,
+                message_id,
+                status="failed",
+                sent_at=_iso_now(),
                 error="Twilio credentials not configured.",
             )
             _scheduled_message_ids.discard(message_id)
@@ -305,17 +328,31 @@ def _schedule_ai_delivery(conversation_id: str, message_id: str, body: str, *, s
         except TwilioRestException as exc:
             logging.error(f"❌ Twilio error {exc.code} ({exc.status}): {exc.msg}")
             conversation_store.update_message(
-                conversation_id, message_id, status="failed", sent_at=_iso_now(),
+                account_id,
+                conversation_id,
+                message_id,
+                status="failed",
+                sent_at=_iso_now(),
                 error=f"Twilio error {exc.code}: {exc.msg}",
             )
         except Exception as exc:
             logging.exception("❌ Unexpected error sending AI reply via Twilio")
             conversation_store.update_message(
-                conversation_id, message_id, status="failed", sent_at=_iso_now(), error=str(exc),
+                account_id,
+                conversation_id,
+                message_id,
+                status="failed",
+                sent_at=_iso_now(),
+                error=str(exc),
             )
         else:
             conversation_store.update_message(
-                conversation_id, message_id, status="sent", sent_at=_iso_now(), transport_sid=sid,
+                account_id,
+                conversation_id,
+                message_id,
+                status="sent",
+                sent_at=_iso_now(),
+                transport_sid=sid,
             )
         finally:
             _scheduled_message_ids.discard(message_id)
@@ -328,10 +365,10 @@ def _schedule_ai_delivery(conversation_id: str, message_id: str, body: str, *, s
 
 def _bootstrap_pending_messages() -> None:
     """Re-arm any AI messages that were scheduled before server restart."""
-    for conversation_id, message in conversation_store.pending_scheduled_messages():
+    for account_id, conversation_id, message in conversation_store.pending_scheduled_messages():
         try:
             scheduled_for = (
-                datetime.fromisoformat(message.scheduled_send_at)
+                message.scheduled_send_at
                 if message.scheduled_send_at
                 else datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
             )
@@ -339,9 +376,13 @@ def _bootstrap_pending_messages() -> None:
             scheduled_for = datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
 
         conversation_store.update_message(
-            conversation_id, message.id, status="scheduled", scheduled_send_at=scheduled_for.isoformat(),
+            account_id,
+            conversation_id,
+            message.id,
+            status="scheduled",
+            scheduled_send_at=scheduled_for,
         )
-        _schedule_ai_delivery(conversation_id, message.id, message.text, scheduled_for=scheduled_for)
+        _schedule_ai_delivery(account_id, conversation_id, message.id, message.text, scheduled_for=scheduled_for)
 
 
 _bootstrap_pending_messages()
@@ -361,36 +402,61 @@ def whatsapp_webhook() -> Response:
     conversation_id = _conversation_id(from_number, wa_id)
     attachments = _collect_inbound_attachments(request.form)
 
+    account_id = DEFAULT_ACCOUNT_ID or conversation_store.default_account_id
+    if not account_id:
+        logging.error("🚫 DEFAULT_ACCOUNT_ID is not configured; cannot persist conversation")
+        return Response(str(MessagingResponse()), mimetype="application/xml", status=503)
+
     conversation_store.record_message(
-        conversation_id, text=inbound_text, author="customer", direction="inbound",
+        account_id,
+        conversation_id,
+        text=inbound_text,
+        author="customer",
+        direction="inbound",
         profile_name=profile_name, profile_photo_url=profile_photo_url, increment_unread=True,
         attachments=attachments,
     )
 
-    if conversation_store.default_responder_id:
-        conversation_store.assign_conversation(conversation_id, conversation_store.default_responder_id)
+    default_responder = conversation_store.get_default_responder(account_id)
+    if default_responder:
+        conversation_store.assign_conversation(account_id, conversation_id, default_responder)
 
-    convo_snapshot = conversation_store.get_conversation(conversation_id)
+    convo_snapshot = conversation_store.get_conversation(account_id, conversation_id)
     ai_enabled = convo_snapshot["aiEnabled"] if convo_snapshot else True
     response = MessagingResponse()
 
     if ai_enabled:
         drafting_message = conversation_store.record_message(
-            conversation_id, text="", author="ai", direction="outbound", status="drafting",
+            account_id,
+            conversation_id,
+            text="",
+            author="ai",
+            direction="outbound",
+            status="drafting",
         )
         try:
             reply_text = _build_reply(inbound_text, attachments)
         except Exception as exc:
             logging.exception("AI reply generation failed")
-            conversation_store.update_message(conversation_id, drafting_message.id, status="failed", error=str(exc))
+            conversation_store.update_message(
+                account_id,
+                conversation_id,
+                drafting_message.id,
+                status="failed",
+                error=str(exc),
+            )
             return Response(str(response), mimetype="application/xml")
 
         send_after = datetime.now(timezone.utc) + timedelta(seconds=AI_AUTOREPLY_DELAY_SECONDS)
         conversation_store.update_message(
-            conversation_id, drafting_message.id, text=reply_text,
-            status="scheduled", scheduled_send_at=send_after.isoformat(),
+            account_id,
+            conversation_id,
+            drafting_message.id,
+            text=reply_text,
+            status="scheduled",
+            scheduled_send_at=send_after,
         )
-        _schedule_ai_delivery(conversation_id, drafting_message.id, reply_text, scheduled_for=send_after)
+        _schedule_ai_delivery(account_id, conversation_id, drafting_message.id, reply_text, scheduled_for=send_after)
     else:
         logging.info("AI disabled for conversation %s; manual follow-up expected.", conversation_id)
 
@@ -415,31 +481,32 @@ def serve_uploaded_file(filename: str) -> Response:
 @app.get("/api/settings/responder")
 @require_account_member
 def api_get_default_responder() -> Response:
-    return jsonify({"defaultResponderId": conversation_store.default_responder_id})
+    account_id = getattr(g, "account_id", None)
+    return jsonify({"defaultResponderId": conversation_store.get_default_responder(account_id)})
 
 
 @app.post("/api/settings/responder")
-@require_account_member
+@require_admin
 def api_set_default_responder() -> Response:
     payload = request.get_json(silent=True) or {}
     responder_id = payload.get("responderId")
     if responder_id is not None and not isinstance(responder_id, str):
         abort(400, description="responderId must be a string")
-    conversation_store.set_default_responder(responder_id)
-    return jsonify({"defaultResponderId": conversation_store.default_responder_id})
+    conversation_store.set_default_responder(responder_id, account_id=g.account_id)
+    return jsonify({"defaultResponderId": conversation_store.get_default_responder(g.account_id)})
 
 
 @app.get("/api/conversations")
 @require_account_member
 def api_list_conversations() -> Response:
-    conversations = conversation_store.list_conversations()
+    conversations = conversation_store.list_conversations(g.account_id)
     return jsonify({"conversations": conversations})
 
 
 @app.get("/api/conversations/<conversation_id>")
 @require_account_member
 def api_get_conversation(conversation_id: str) -> Response:
-    convo = conversation_store.get_conversation(conversation_id, mark_read=True)
+    convo = conversation_store.get_conversation(g.account_id, conversation_id, mark_read=True)
     if convo is None:
         abort(404, description="Conversation not found")
     return jsonify(convo)
@@ -452,8 +519,8 @@ def api_toggle_ai(conversation_id: str) -> Response:
     enabled = bool(payload.get("enabled", True))
     responder_id = payload.get("responderId")
     if responder_id:
-        conversation_store.assign_conversation(conversation_id, responder_id)
-    result = conversation_store.set_ai_enabled(conversation_id, enabled)
+        conversation_store.assign_conversation(g.account_id, conversation_id, responder_id)
+    result = conversation_store.set_ai_enabled(g.account_id, conversation_id, enabled)
     return jsonify({"enabled": result})
 
 
@@ -472,9 +539,11 @@ def api_send_manual_message(conversation_id: str) -> Response:
     delivery_via = "whatsapp"
 
     if sender_id and isinstance(sender_id, str):
-        conversation_store.assign_conversation(conversation_id, sender_id)
+        conversation_store.assign_conversation(g.account_id, conversation_id, sender_id)
 
-    cancelled = conversation_store.cancel_pending_ai_messages(conversation_id, reason="Agent replied manually")
+    cancelled = conversation_store.cancel_pending_ai_messages(
+        g.account_id, conversation_id, reason="Agent replied manually"
+    )
     for cid in cancelled:
         _scheduled_message_ids.discard(cid)
 
@@ -492,9 +561,16 @@ def api_send_manual_message(conversation_id: str) -> Response:
         status, error_message = "failed", str(exc)
 
     message = conversation_store.record_message(
-        conversation_id, text=text, author="agent", direction="outbound",
-        via=delivery_via, transport_sid=sid, sent_at=_iso_now() if status == "sent" else None,
-        status=status, error=error_message,
+        g.account_id,
+        conversation_id,
+        text=text,
+        author="agent",
+        direction="outbound",
+        via=delivery_via,
+        transport_sid=sid,
+        sent_at=_iso_now() if status == "sent" else None,
+        status=status,
+        error=error_message,
     )
 
     payload = {"status": status, "sid": sid, "message": message.to_dict()}
@@ -506,7 +582,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
 @app.post("/api/conversations/<conversation_id>/messages/<message_id>/cancel")
 @require_account_member
 def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
-    message = conversation_store.cancel_scheduled_message(conversation_id, message_id)
+    message = conversation_store.cancel_scheduled_message(g.account_id, conversation_id, message_id)
     if message is None:
         abort(404, description="Scheduled AI message not found")
     _scheduled_message_ids.discard(message_id)
@@ -516,10 +592,10 @@ def api_cancel_ai_message(conversation_id: str, message_id: str) -> Response:
 @app.post("/api/conversations/<conversation_id>/ai-draft")
 @require_account_member
 def api_generate_ai_draft(conversation_id: str) -> Response:
-    convo = conversation_store.get_conversation(conversation_id)
+    convo = conversation_store.get_conversation(g.account_id, conversation_id)
     if convo is None:
         abort(404, description="Conversation not found")
-    latest = conversation_store.latest_customer_message(conversation_id)
+    latest = conversation_store.latest_customer_message(g.account_id, conversation_id)
     if latest is None:
         abort(400, description="No customer message available for drafting")
     draft = _build_reply(latest.text, latest.attachments)

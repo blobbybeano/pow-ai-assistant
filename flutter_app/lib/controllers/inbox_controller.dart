@@ -3,16 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/conversation.dart';
-import '../services/chat_api_client.dart';
+import '../services/firestore_chat_repository.dart';
 
 class InboxController extends ChangeNotifier {
-  InboxController({required this.apiClient}) {
-    _refreshInbox();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) => _refreshInbox());
-  }
+  InboxController({required this.chatRepository});
 
-  final ChatApiClient apiClient;
-  Timer? _pollingTimer;
+  final FirestoreChatRepository chatRepository;
+  StreamSubscription<List<ConversationSummary>>? _subscription;
+  String? _accountId;
   List<ConversationSummary> _conversations = [];
   bool _loading = false;
   Object? _error;
@@ -29,35 +27,40 @@ class InboxController extends ChangeNotifier {
       )
       .toList();
 
-  Future<void> refresh() => _refreshInbox(force: true);
-
-  Future<void> _refreshInbox({bool force = false}) async {
-    if (_loading && !force) return;
-    final tokenProvider = apiClient.tokenProvider;
-    if (tokenProvider != null) {
-      final token = await tokenProvider();
-      if (token == null || token.isEmpty) {
-        return;
-      }
-    }
-    _loading = true;
+  void updateAccount(String? accountId) {
+    if (_accountId == accountId) return;
+    _subscription?.cancel();
+    _accountId = accountId;
+    _conversations = [];
+    _loading = accountId != null;
     _error = null;
     notifyListeners();
 
-    try {
-      final items = await apiClient.fetchConversations();
-      _conversations = items;
-    } catch (error) {
-      _error = error;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
+    if (accountId == null) return;
+
+    _subscription = chatRepository.watchConversations(accountId).listen(
+      (items) {
+        _conversations = items;
+        _loading = false;
+        _error = null;
+        notifyListeners();
+      },
+      onError: (err) {
+        _error = err;
+        _loading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  Future<void> refresh() async {
+    if (_accountId == null) return;
+    updateAccount(_accountId);
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    _subscription?.cancel();
     super.dispose();
   }
 }

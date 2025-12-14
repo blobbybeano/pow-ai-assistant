@@ -1,105 +1,90 @@
-"""Conversation state management for WhatsApp/Twilio interactions."""
+"""Conversation state management backed by Firestore.
+
+This module replaces the file-backed conversation_state.json storage. Media
+payloads remain on disk and only references/paths are stored in Firestore.
+"""
 
 from __future__ import annotations
 
-import hashlib
-import json
+import logging
+import os
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from threading import Lock
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 from uuid import uuid4
 
-from urllib.parse import quote_plus
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+logger = logging.getLogger(__name__)
 
 
-def _utc_now() -> str:
-    """Return the current UTC timestamp as an ISO formatted string."""
-
-    return datetime.now(tz=timezone.utc).isoformat()
-
-
-_AVATAR_BACKGROUNDS = (
-    "0D8ABC",
-    "F4A261",
-    "2A9D8F",
-    "E76F51",
-    "8ECAE6",
-)
+# ---------------------------------------------------------------------------
+# Firebase helpers
+# ---------------------------------------------------------------------------
+_FIREBASE_APP = None
 
 
-def _generate_avatar(profile_name: Optional[str], phone_number: str) -> str:
-    """Return a deterministic avatar URL for a contact."""
+def _get_firebase_app():
+    global _FIREBASE_APP
+    if _FIREBASE_APP is not None:
+        return _FIREBASE_APP
+    try:
+        _FIREBASE_APP = firebase_admin.get_app()
+    except ValueError:
+        cred_path = os.getenv("FIREBASE_CREDENTIALS_FILE")
+        credentials_obj = credentials.Certificate(cred_path) if cred_path else None
+        _FIREBASE_APP = firebase_admin.initialize_app(credentials_obj)
+    return _FIREBASE_APP
 
-    base = (profile_name or phone_number or "PowWash").strip()
-    if not base:
-        base = phone_number or "PowWash"
-    encoded = quote_plus(base)
-    digest = hashlib.sha1(base.encode("utf-8")).digest()
-    color_index = digest[0] % len(_AVATAR_BACKGROUNDS)
-    color = _AVATAR_BACKGROUNDS[color_index]
-    return f"https://ui-avatars.com/api/?name={encoded}&background={color}&color=ffffff"
+
+def _firestore_client():
+    return firestore.client(app=_get_firebase_app())
 
 
-def _is_placeholder_avatar(url: Optional[str]) -> bool:
-    if not url:
-        return False
-    return url.startswith("https://ui-avatars.com/")
+def _utc_now() -> datetime:
+    return datetime.now(tz=timezone.utc)
 
 
 @dataclass
 class MessageRecord:
-    """Represents a single chat message stored in the conversation history."""
-
     id: str
     text: str
     author: str  # customer | ai | agent | system
     direction: str  # inbound | outbound
-    timestamp: str
+    timestamp: datetime
     via: str = "whatsapp"
     transport_sid: Optional[str] = None
-    status: str = (
-        "sent"  # sent | scheduled | failed | draft | sending | drafting | cancelled
-    )
-    scheduled_send_at: Optional[str] = None
-    sent_at: Optional[str] = None
+    status: str = "sent"
+    scheduled_send_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
     error: Optional[str] = None
     attachments: List[Any] = field(default_factory=list)
+    account_id: Optional[str] = None
+    conversation_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        def _iso(value: Optional[datetime]) -> Optional[str]:
+            return value.isoformat() if isinstance(value, datetime) else None
+
         return {
             "id": self.id,
             "text": self.text,
             "author": self.author,
             "direction": self.direction,
-            "timestamp": self.timestamp,
+            "timestamp": _iso(self.timestamp),
             "via": self.via,
             "transportSid": self.transport_sid,
             "status": self.status,
-            "scheduledSendAt": self.scheduled_send_at,
-            "sentAt": self.sent_at,
+            "scheduledSendAt": _iso(self.scheduled_send_at),
+            "sentAt": _iso(self.sent_at),
             "error": self.error,
             "attachments": list(self.attachments),
         }
 
-    def effective_datetime(self) -> datetime:
-        """Return the best timestamp to represent this message chronologically."""
-
-        for candidate in (self.sent_at, self.scheduled_send_at, self.timestamp):
-            if candidate:
-                try:
-                    return datetime.fromisoformat(candidate)
-                except ValueError:
-                    continue
-        # Fallback to now if parsing fails
-        return datetime.now(tz=timezone.utc)
-
 
 @dataclass
 class ConversationRecord:
-    """Represents a full conversation thread."""
-
     id: str
     phone_number: str
     contact_name: Optional[str] = None
@@ -107,13 +92,10 @@ class ConversationRecord:
     ai_enabled: bool = True
     unread_count: int = 0
     assigned_responder_id: Optional[str] = None
-    messages: List[MessageRecord] = field(default_factory=list)
-
-    def last_message(self) -> Optional[MessageRecord]:
-        return self.messages[-1] if self.messages else None
+    last_message: Optional[MessageRecord] = None
+    account_id: Optional[str] = None
 
     def to_summary(self) -> Dict[str, Any]:
-        last_msg = self.last_message()
         return {
             "id": self.id,
             "phoneNumber": self.phone_number,
@@ -122,10 +104,10 @@ class ConversationRecord:
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "assignedResponderId": self.assigned_responder_id,
-            "lastMessage": last_msg.to_dict() if last_msg else None,
+            "lastMessage": self.last_message.to_dict() if self.last_message else None,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, messages: List[MessageRecord]) -> Dict[str, Any]:
         return {
             "id": self.id,
             "phoneNumber": self.phone_number,
@@ -134,227 +116,191 @@ class ConversationRecord:
             "aiEnabled": self.ai_enabled,
             "unreadCount": self.unread_count,
             "assignedResponderId": self.assigned_responder_id,
-            "messages": [message.to_dict() for message in self.messages],
+            "messages": [message.to_dict() for message in messages],
         }
 
 
 class ConversationStore:
-    """Persistent storage for WhatsApp conversations handled by the webhook."""
+    """Firestore-backed storage for conversations/messages."""
 
-    def __init__(self, state_path: Path, *, seed_demo: bool = True) -> None:
-        self._state_path = state_path
-        self._lock = Lock()
-        self._conversations: Dict[str, ConversationRecord] = {}
-        self._settings: Dict[str, Any] = {}
-        self._seed_demo = seed_demo
-        self._load_state()
+    def __init__(self, *, default_account_id: Optional[str] = None) -> None:
+        self._client = _firestore_client()
+        self._default_account_id = default_account_id or os.getenv("DEFAULT_ACCOUNT_ID")
 
     # ------------------------------------------------------------------
-    # Persistence helpers
+    # Helpers
     # ------------------------------------------------------------------
-    def _load_state(self) -> None:
-        if not self._state_path.exists():
-            self._state_path.write_text("{}", encoding="utf-8")
-            payload: Dict[str, Any] = {}
-        else:
-            try:
-                payload = json.loads(self._state_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                payload = {}
-
-        self._settings = payload.get("settings", {}) if isinstance(payload, dict) else {}
-
-        for convo_id, record in payload.get("conversations", {}).items():
-            self._conversations[convo_id] = ConversationRecord(
-                id=convo_id,
-                phone_number=record.get("phoneNumber", convo_id),
-                contact_name=record.get("displayName"),
-                contact_photo_url=record.get("profilePhotoUrl"),
-                ai_enabled=record.get("aiEnabled", True),
-                unread_count=record.get("unreadCount", 0),
-                assigned_responder_id=record.get("assignedResponderId"),
-                messages=[
-                    MessageRecord(
-                        id=msg.get("id", str(uuid4())),
-                        text=msg.get("text", ""),
-                        author=msg.get("author", "customer"),
-                        direction=msg.get("direction", "inbound"),
-                        timestamp=msg.get("timestamp", _utc_now()),
-                        via=msg.get("via", "whatsapp"),
-                        transport_sid=msg.get("transportSid"),
-                        status=msg.get("status", "sent"),
-                        scheduled_send_at=msg.get("scheduledSendAt"),
-                        sent_at=msg.get("sentAt"),
-                        error=msg.get("error"),
-                        attachments=[
-                            attachment
-                            for attachment in msg.get("attachments", [])
-                            if isinstance(attachment, (str, dict))
-                        ],
-                    )
-                    for msg in record.get("messages", [])
-                ],
+    def _account_id(self, account_id: Optional[str]) -> str:
+        value = (account_id or self._default_account_id or "").strip()
+        if not value:
+            raise RuntimeError(
+                "No account id available. Set DEFAULT_ACCOUNT_ID or pass account_id explicitly."
             )
+        return value
 
-            convo = self._conversations[convo_id]
-            if not convo.contact_photo_url:
-                convo.contact_photo_url = _generate_avatar(
-                    convo.contact_name, convo.phone_number
-                )
+    def _conversation_ref(self, account_id: str, conversation_id: str):
+        return (
+            self._client.collection("accounts")
+            .document(account_id)
+            .collection("conversations")
+            .document(conversation_id)
+        )
 
-        if not self._conversations and self._seed_demo:
-            self._seed_demo_conversations()
-            self._persist()
+    @property
+    def default_account_id(self) -> Optional[str]:
+        return self._default_account_id
 
-    def _persist(self) -> None:
-        data = {
-            "settings": self._settings,
-            "conversations": {
-                convo_id: convo.to_dict()
-                for convo_id, convo in self._conversations.items()
-            },
-        }
-        self._state_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    def _messages_query(self, account_id: str, conversation_id: str):
+        return self._conversation_ref(account_id, conversation_id).collection("messages")
+
+    @staticmethod
+    def _serialize_datetime(value: Any) -> Optional[datetime]:
+        if isinstance(value, datetime):
+            return value
+        return None
+
+    def _message_from_snapshot(self, snapshot) -> MessageRecord:
+        data = snapshot.to_dict() or {}
+        timestamp = self._serialize_datetime(data.get("timestamp")) or _utc_now()
+        return MessageRecord(
+            id=snapshot.id,
+            text=data.get("text", ""),
+            author=data.get("author", "customer"),
+            direction=data.get("direction", "inbound"),
+            timestamp=timestamp,
+            via=data.get("via", "whatsapp"),
+            transport_sid=data.get("transportSid"),
+            status=data.get("status", "sent"),
+            scheduled_send_at=self._serialize_datetime(data.get("scheduledSendAt")),
+            sent_at=self._serialize_datetime(data.get("sentAt")),
+            error=data.get("error"),
+            attachments=list(data.get("attachments", [])),
+            account_id=data.get("accountId"),
+            conversation_id=data.get("conversationId"),
+        )
+
+    def _conversation_from_snapshot(self, snapshot, *, include_last_message: bool = True) -> ConversationRecord:
+        data = snapshot.to_dict() or {}
+        last_message = None
+        if include_last_message and data.get("lastMessage"):
+            msg = data["lastMessage"]
+            last_message = MessageRecord(
+                id=msg.get("id", ""),
+                text=msg.get("text", ""),
+                author=msg.get("author", "customer"),
+                direction=msg.get("direction", "inbound"),
+                timestamp=self._serialize_datetime(msg.get("timestamp")) or _utc_now(),
+                via=msg.get("via", "whatsapp"),
+                transport_sid=msg.get("transportSid"),
+                status=msg.get("status", "sent"),
+                scheduled_send_at=self._serialize_datetime(msg.get("scheduledSendAt")),
+                sent_at=self._serialize_datetime(msg.get("sentAt")),
+                error=msg.get("error"),
+                attachments=list(msg.get("attachments", [])),
+                account_id=data.get("accountId"),
+                conversation_id=snapshot.id,
+            )
+        return ConversationRecord(
+            id=snapshot.id,
+            phone_number=data.get("phoneNumber", snapshot.id),
+            contact_name=data.get("displayName"),
+            contact_photo_url=data.get("profilePhotoUrl"),
+            ai_enabled=data.get("aiEnabled", True),
+            unread_count=int(data.get("unreadCount", 0) or 0),
+            assigned_responder_id=data.get("assignedResponderId"),
+            last_message=last_message,
+            account_id=data.get("accountId"),
+        )
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def list_conversations(self) -> List[Dict[str, Any]]:
-        with self._lock:
-            return [
-                convo.to_summary()
-                for convo in sorted(
-                    self._conversations.values(),
-                    key=lambda c: (
-                        c.last_message().effective_datetime()
-                        if c.last_message()
-                        else datetime.fromtimestamp(0, tz=timezone.utc)
-                    ),
-                    reverse=True,
-                )
-            ]
+    def list_conversations(self, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        acct = self._account_id(account_id)
+        query = (
+            self._client.collection("accounts")
+            .document(acct)
+            .collection("conversations")
+            .order_by("lastMessageAt", direction=firestore.Query.DESCENDING)
+        )
+        conversations = []
+        for doc in query.stream():
+            conversations.append(self._conversation_from_snapshot(doc).to_summary())
+        return conversations
 
     def get_conversation(
-        self, conversation_id: str, *, mark_read: bool = False
+        self, account_id: Optional[str], conversation_id: str, *, mark_read: bool = False
     ) -> Optional[Dict[str, Any]]:
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                return None
+        acct = self._account_id(account_id)
+        convo_ref = self._conversation_ref(acct, conversation_id)
+        snapshot = convo_ref.get()
+        if not snapshot.exists:
+            return None
 
-            if mark_read:
-                convo.unread_count = 0
-                self._persist()
+        convo = self._conversation_from_snapshot(snapshot)
+        messages = [
+            self._message_from_snapshot(doc)
+            for doc in self._messages_query(acct, conversation_id)
+            .order_by("timestamp")
+            .stream()
+        ]
 
-            return convo.to_dict()
+        if mark_read:
+            try:
+                convo_ref.update({"unreadCount": 0})
+            except Exception:
+                logger.exception("Failed to mark conversation %s read", conversation_id)
 
-    def ensure_conversation(
-        self,
-        conversation_id: str,
-        *,
-        profile_name: Optional[str],
-        phone_number: str,
-        profile_photo_url: Optional[str] = None,
-    ) -> ConversationRecord:
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            updated = False
-            if not convo:
-                avatar = profile_photo_url or _generate_avatar(
-                    profile_name, phone_number
-                )
-                convo = ConversationRecord(
-                    id=conversation_id,
-                    phone_number=phone_number,
-                    contact_name=profile_name,
-                    contact_photo_url=avatar,
-                    assigned_responder_id=self.default_responder_id,
-                )
-                self._conversations[conversation_id] = convo
-                updated = True
-            else:
-                if profile_name and not convo.contact_name:
-                    convo.contact_name = profile_name
-                    updated = True
-                    if _is_placeholder_avatar(convo.contact_photo_url):
-                        convo.contact_photo_url = _generate_avatar(
-                            profile_name, phone_number
-                        )
+        return convo.to_dict(messages)
 
-                trimmed_photo = (profile_photo_url or "").strip() or None
-                if trimmed_photo and trimmed_photo != convo.contact_photo_url:
-                    convo.contact_photo_url = trimmed_photo
-                    updated = True
-                elif not convo.contact_photo_url:
-                    convo.contact_photo_url = _generate_avatar(
-                        convo.contact_name, phone_number
-                    )
-                    updated = True
-
-                if not convo.assigned_responder_id and self.default_responder_id:
-                    convo.assigned_responder_id = self.default_responder_id
-                    updated = True
-
-            if updated:
-                self._persist()
-            return convo
-
-    def set_ai_enabled(self, conversation_id: str, enabled: bool) -> bool:
-        with self._lock:
-            convo = self._conversations.setdefault(
-                conversation_id,
-                ConversationRecord(
-                    id=conversation_id,
-                    phone_number=conversation_id,
-                    assigned_responder_id=self.default_responder_id,
-                ),
-            )
-            convo.ai_enabled = enabled
-            self._persist()
-            return convo.ai_enabled
+    def set_ai_enabled(self, account_id: Optional[str], conversation_id: str, enabled: bool) -> bool:
+        acct = self._account_id(account_id)
+        convo_ref = self._conversation_ref(acct, conversation_id)
+        convo_ref.set({"aiEnabled": enabled, "accountId": acct}, merge=True)
+        return enabled
 
     @property
     def default_responder_id(self) -> Optional[str]:
-        value = self._settings.get("defaultResponderId")
-        if isinstance(value, str):
-            trimmed = value.strip()
-            return trimmed or None
-        return None
+        return self.get_default_responder()
 
-    def set_default_responder(self, responder_id: Optional[str]) -> None:
-        with self._lock:
-            trimmed = (responder_id or "").strip()
-            if trimmed:
-                self._settings["defaultResponderId"] = trimmed
-            else:
-                self._settings.pop("defaultResponderId", None)
-            self._persist()
+    def get_default_responder(self, account_id: Optional[str] = None) -> Optional[str]:
+        acct = account_id or self._default_account_id
+        if not acct:
+            return None
+        doc = self._client.collection("accounts").document(acct).get()
+        if not doc.exists:
+            return None
+        value = (doc.to_dict() or {}).get("defaultResponderId")
+        return value if isinstance(value, str) and value.strip() else None
+
+    def set_default_responder(self, responder_id: Optional[str], *, account_id: Optional[str] = None) -> None:
+        acct = self._account_id(account_id)
+        trimmed = (responder_id or "").strip()
+        doc_ref = self._client.collection("accounts").document(acct)
+        update = {"defaultResponderId": trimmed} if trimmed else {"defaultResponderId": firestore.DELETE_FIELD}
+        doc_ref.set(update, merge=True)
 
     def assign_conversation(
-        self, conversation_id: str, responder_id: Optional[str]
+        self, account_id: Optional[str], conversation_id: str, responder_id: Optional[str]
     ) -> Optional[str]:
-        if responder_id is None:
-            return None
-        responder = responder_id.strip()
+        acct = self._account_id(account_id)
+        responder = (responder_id or "").strip()
         if not responder:
             return None
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                convo = ConversationRecord(
-                    id=conversation_id,
-                    phone_number=conversation_id,
-                    assigned_responder_id=responder,
-                )
-                self._conversations[conversation_id] = convo
-            if convo.assigned_responder_id == responder:
-                return responder
-            convo.assigned_responder_id = responder
-            self._persist()
-            return responder
+        convo_ref = self._conversation_ref(acct, conversation_id)
+        convo_ref.set(
+            {
+                "assignedResponderId": responder,
+                "accountId": acct,
+                "phoneNumber": conversation_id,
+            },
+            merge=True,
+        )
+        return responder
 
     def record_message(
         self,
+        account_id: Optional[str],
         conversation_id: str,
         *,
         text: str,
@@ -366,24 +312,65 @@ class ConversationStore:
         profile_photo_url: Optional[str] = None,
         increment_unread: bool = False,
         status: str = "sent",
-        scheduled_send_at: Optional[str] = None,
-        sent_at: Optional[str] = None,
+        scheduled_send_at: Optional[datetime] = None,
+        sent_at: Optional[datetime] = None,
         error: Optional[str] = None,
         attachments: Optional[List[Any]] = None,
     ) -> MessageRecord:
-        convo = self.ensure_conversation(
-            conversation_id,
-            profile_name=profile_name,
-            phone_number=conversation_id,
-            profile_photo_url=profile_photo_url,
-        )
+        acct = self._account_id(account_id)
+        convo_ref = self._conversation_ref(acct, conversation_id)
+        messages_ref = convo_ref.collection("messages")
 
-        message = MessageRecord(
-            id=str(uuid4()),
+        now = _utc_now()
+        message_id = str(uuid4())
+        message_payload = {
+            "id": message_id,
+            "text": text,
+            "author": author,
+            "direction": direction,
+            "timestamp": now,
+            "via": via,
+            "transportSid": transport_sid,
+            "status": status,
+            "scheduledSendAt": scheduled_send_at,
+            "sentAt": sent_at,
+            "error": error,
+            "attachments": list(attachments or []),
+            "accountId": acct,
+            "conversationId": conversation_id,
+        }
+
+        def _txn(transaction):
+            snapshot = transaction.get(convo_ref)
+            unread = int(snapshot.get("unreadCount", 0) or 0)
+            if increment_unread:
+                unread += 1
+            transaction.set(
+                convo_ref,
+                {
+                    "accountId": acct,
+                    "phoneNumber": conversation_id,
+                    "displayName": profile_name or snapshot.get("displayName") or conversation_id,
+                    "profilePhotoUrl": profile_photo_url or snapshot.get("profilePhotoUrl"),
+                    "aiEnabled": snapshot.get("aiEnabled", True),
+                    "unreadCount": unread,
+                    "assignedResponderId": snapshot.get("assignedResponderId"),
+                    "lastMessage": message_payload,
+                    "lastMessageAt": now,
+                },
+                merge=True,
+            )
+            transaction.set(messages_ref.document(message_id), message_payload)
+
+        transaction = self._client.transaction()
+        transaction.call(_txn)
+
+        return MessageRecord(
+            id=message_id,
             text=text,
             author=author,
             direction=direction,
-            timestamp=_utc_now(),
+            timestamp=now,
             via=via,
             transport_sid=transport_sid,
             status=status,
@@ -391,333 +378,125 @@ class ConversationStore:
             sent_at=sent_at,
             error=error,
             attachments=list(attachments or []),
+            account_id=acct,
+            conversation_id=conversation_id,
         )
 
-        with self._lock:
-            convo.messages.append(message)
-            if increment_unread:
-                convo.unread_count += 1
-            self._persist()
+    def latest_customer_message(self, account_id: Optional[str], conversation_id: str) -> Optional[MessageRecord]:
+        acct = self._account_id(account_id)
+        query = (
+            self._messages_query(acct, conversation_id)
+            .where("author", "==", "customer")
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+            .limit(1)
+        )
+        docs = list(query.stream())
+        return self._message_from_snapshot(docs[0]) if docs else None
 
-        return message
+    def pending_scheduled_messages(self, *, account_id: Optional[str] = None) -> Iterable[Tuple[str, str, MessageRecord]]:
+        acct = account_id or self._default_account_id
+        query = self._client.collection_group("messages").where("author", "==", "ai")
+        query = query.where("status", "in", ["scheduled", "drafting"])
+        if acct:
+            query = query.where("accountId", "==", acct)
 
-    def latest_customer_message(self, conversation_id: str) -> Optional[MessageRecord]:
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                return None
+        for doc in query.stream():
+            data = doc.to_dict() or {}
+            convo_id = data.get("conversationId") or doc.reference.parent.parent.id
+            acct_id = data.get("accountId") or acct or ""
+            yield acct_id, convo_id, self._message_from_snapshot(doc)
 
-            for message in reversed(convo.messages):
-                if message.author == "customer":
-                    return message
-        return None
-
-    # ------------------------------------------------------------------
-    # Demo data
-    # ------------------------------------------------------------------
-    def _seed_demo_conversations(self) -> None:
-        """Populate the store with demo conversations for first-time setup."""
-
-        demo_threads = [
-            {
-                "phone": "+15551230001",
-                "displayName": "Alex Martinez",
-                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Alex+Martinez&background=0D8ABC&color=ffffff",
-                "aiEnabled": True,
-                "unreadCount": 1,
-                "assignedResponderId": "user-1",
-                "messages": [
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Good morning! I'd like to get a quote for driveway cleaning next week.",
-                    },
-                    {
-                        "author": "ai",
-                        "direction": "outbound",
-                        "text": "Hi Alex! A driveway refresh for two cars starts at $150, and includes a degreasing pre-soak and rinse. Do you have a preferred day next week?",
-                    },
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Could you do Friday at 10am? I can send photos if helpful.",
-                    },
-                ],
-            },
-            {
-                "phone": "+14085550100",
-                "displayName": "Jordan Lee",
-                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Jordan+Lee&background=2A9D8F&color=ffffff",
-                "aiEnabled": False,
-                "unreadCount": 1,
-                "assignedResponderId": "user-2",
-                "messages": [
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Our café patio is getting slippery. Can you fit us in for a wash this Thursday?",
-                    },
-                    {
-                        "author": "ai",
-                        "direction": "outbound",
-                        "text": "Hi Jordan! We can usually fit patio treatments within 48 hours. Does late morning Thursday work for you?",
-                    },
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Late morning works, thanks!",
-                    },
-                ],
-            },
-            {
-                "phone": "+447700900123",
-                "displayName": "Priya Sharma",
-                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Priya+Sharma&background=F4A261&color=ffffff",
-                "aiEnabled": True,
-                "unreadCount": 0,
-                "assignedResponderId": "user-3",
-                "messages": [
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Hello! Looking for gutter cleaning for a two-storey semi-detached.",
-                    },
-                    {
-                        "author": "ai",
-                        "direction": "outbound",
-                        "text": "Hi Priya! A two-storey gutter clear is £95 and includes a downpipe flush and photo report. Want me to pencil you in for next week?",
-                    },
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Yes please, any availability on Tuesday morning?",
-                    },
-                    {
-                        "author": "ai",
-                        "direction": "outbound",
-                        "text": "Tuesday at 9am is open. I'll schedule the crew and send you a confirmation shortly!",
-                        "status": "scheduled",
-                        "scheduled_in_seconds": 240,
-                    },
-                ],
-            },
-            {
-                "phone": "+16175550123",
-                "displayName": "Taylor Chen",
-                "profilePhotoUrl": "https://ui-avatars.com/api/?name=Taylor+Chen&background=8ECAE6&color=ffffff",
-                "aiEnabled": True,
-                "unreadCount": 1,
-                "assignedResponderId": "user-4",
-                "messages": [
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Could you quote a roof softwash for a 1,600 sq ft home?",
-                    },
-                    {
-                        "author": "ai",
-                        "direction": "outbound",
-                        "text": "Hi Taylor! A roof softwash for that size starts at $420 and includes plant-safe pretreatment. Would you like me to arrange a site visit?",
-                    },
-                    {
-                        "author": "customer",
-                        "direction": "inbound",
-                        "text": "Yes, please schedule something next week.",
-                    },
-                ],
-            },
-        ]
-
-        now = datetime.now(timezone.utc)
-        for payload in demo_threads:
-            phone = payload["phone"]
-            convo = ConversationRecord(
-                id=phone,
-                phone_number=phone,
-                contact_name=payload.get("displayName"),
-                contact_photo_url=payload.get("profilePhotoUrl")
-                or _generate_avatar(payload.get("displayName"), phone),
-                ai_enabled=payload.get("aiEnabled", True),
-                unread_count=payload.get("unreadCount", 0),
-                assigned_responder_id=payload.get("assignedResponderId"),
-            )
-
-            message_time = now
-            for message_payload in payload.get("messages", []):
-                message_time += timedelta(seconds=30)
-                status = message_payload.get("status", "sent")
-                scheduled_send_at: Optional[str] = None
-                sent_at: Optional[str] = message_time.isoformat()
-                if status == "scheduled":
-                    delay = message_payload.get("scheduled_in_seconds", 180)
-                    scheduled_send_at = (message_time + timedelta(seconds=delay)).isoformat()
-                    sent_at = None
-
-                convo.messages.append(
-                    MessageRecord(
-                        id=str(uuid4()),
-                        text=message_payload["text"],
-                        author=message_payload["author"],
-                        direction=message_payload["direction"],
-                        timestamp=message_time.isoformat(),
-                        sent_at=sent_at,
-                        status=status,
-                        scheduled_send_at=scheduled_send_at,
-                    )
-                )
-
-            self._conversations[phone] = convo
-
-        if "defaultResponderId" not in self._settings:
-            self._settings["defaultResponderId"] = "user-1"
-
-    def pending_scheduled_messages(self) -> List[tuple[str, MessageRecord]]:
-        """Return copies of AI messages that are scheduled for delivery."""
-
-        with self._lock:
-            pending: List[tuple[str, MessageRecord]] = []
-            for convo in self._conversations.values():
-                for message in convo.messages:
-                    if message.author == "ai" and message.status == "scheduled":
-                        pending.append(
-                            (
-                                convo.id,
-                                MessageRecord(
-                                    id=message.id,
-                                    text=message.text,
-                                    author=message.author,
-                                    direction=message.direction,
-                                    timestamp=message.timestamp,
-                                    via=message.via,
-                                    transport_sid=message.transport_sid,
-                                    status=message.status,
-                                    scheduled_send_at=message.scheduled_send_at,
-                                    sent_at=message.sent_at,
-                                    error=message.error,
-                                ),
-                            )
-                        )
-            return pending
-
-    def get_message(
-        self, conversation_id: str, message_id: str
-    ) -> Optional[MessageRecord]:
-        """Return a specific message from a conversation without mutating state."""
-
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                return None
-
-            for message in convo.messages:
-                if message.id == message_id:
-                    return MessageRecord(
-                        id=message.id,
-                        text=message.text,
-                        author=message.author,
-                        direction=message.direction,
-                        timestamp=message.timestamp,
-                        via=message.via,
-                        transport_sid=message.transport_sid,
-                        status=message.status,
-                        scheduled_send_at=message.scheduled_send_at,
-                        sent_at=message.sent_at,
-                        error=message.error,
-                        attachments=list(message.attachments),
-                    )
-
-        return None
+    def get_message(self, account_id: Optional[str], conversation_id: str, message_id: str) -> Optional[MessageRecord]:
+        acct = self._account_id(account_id)
+        doc = self._conversation_ref(acct, conversation_id).collection("messages").document(message_id).get()
+        if not doc.exists:
+            return None
+        return self._message_from_snapshot(doc)
 
     def update_message(
         self,
+        account_id: Optional[str],
         conversation_id: str,
         message_id: str,
         *,
         text: Optional[str] = None,
         status: Optional[str] = None,
-        sent_at: Optional[str] = None,
+        sent_at: Optional[datetime] = None,
         transport_sid: Optional[str] = None,
         error: Optional[str] = None,
-        scheduled_send_at: Optional[str] = None,
+        scheduled_send_at: Optional[datetime] = None,
         attachments: Optional[List[Any]] = None,
     ) -> Optional[MessageRecord]:
-        """Update a specific message record and persist the store."""
+        acct = self._account_id(account_id)
+        message_ref = self._conversation_ref(acct, conversation_id).collection("messages").document(message_id)
+        doc = message_ref.get()
+        if not doc.exists:
+            return None
 
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                return None
+        updates: Dict[str, Any] = {}
+        if text is not None:
+            updates["text"] = text
+        if status is not None:
+            updates["status"] = status
+        if sent_at is not None:
+            updates["sentAt"] = sent_at
+        if transport_sid is not None:
+            updates["transportSid"] = transport_sid
+        if error is not None:
+            updates["error"] = error
+        if scheduled_send_at is not None:
+            updates["scheduledSendAt"] = scheduled_send_at
+        if attachments is not None:
+            updates["attachments"] = list(attachments)
 
-            for message in convo.messages:
-                if message.id == message_id:
-                    if text is not None:
-                        message.text = text
-                    if status is not None:
-                        message.status = status
-                    if sent_at is not None:
-                        message.sent_at = sent_at
-                    if transport_sid is not None:
-                        message.transport_sid = transport_sid
-                    if error is not None:
-                        message.error = error
-                    if scheduled_send_at is not None:
-                        message.scheduled_send_at = scheduled_send_at
-                    if attachments is not None:
-                        message.attachments = list(attachments)
-                    self._persist()
-                    return message
+        if updates:
+            message_ref.update(updates)
 
-        return None
+        updated = message_ref.get()
+        message = self._message_from_snapshot(updated)
+
+        # keep conversation lastMessage consistent when appropriate
+        convo_ref = self._conversation_ref(acct, conversation_id)
+        convo_doc = convo_ref.get()
+        if convo_doc.exists:
+            last = (convo_doc.to_dict() or {}).get("lastMessage") or {}
+            if last.get("id") == message_id:
+                convo_ref.update({"lastMessage": message.to_dict()})
+
+        return message
 
     def cancel_scheduled_message(
-        self, conversation_id: str, message_id: str
+        self, account_id: Optional[str], conversation_id: str, message_id: str
     ) -> Optional[MessageRecord]:
-        """Mark a scheduled AI message as cancelled."""
-
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                return None
-
-            for message in convo.messages:
-                if message.id == message_id and message.author == "ai":
-                    if message.status not in {"scheduled", "drafting"}:
-                        return None
-                    message.status = "cancelled"
-                    message.scheduled_send_at = None
-                    message.error = "Cancelled by agent"
-                    self._persist()
-                    return message
-
-        return None
+        message = self.update_message(
+            account_id,
+            conversation_id,
+            message_id,
+            status="cancelled",
+            scheduled_send_at=None,
+            error="Cancelled by agent",
+        )
+        return message
 
     def cancel_pending_ai_messages(
-        self, conversation_id: str, *, reason: Optional[str] = None
+        self, account_id: Optional[str], conversation_id: str, *, reason: Optional[str] = None
     ) -> List[str]:
-        """Cancel all scheduled or drafting AI messages for a conversation."""
-
-        with self._lock:
-            convo = self._conversations.get(conversation_id)
-            if not convo:
-                return []
-
-            explanation = (reason or "Cancelled by agent").strip() or "Cancelled by agent"
-            cancelled_ids: List[str] = []
-
-            for message in convo.messages:
-                if message.author == "ai" and message.status in {"scheduled", "drafting"}:
-                    message.status = "cancelled"
-                    message.scheduled_send_at = None
-                    message.error = explanation
-                    cancelled_ids.append(message.id)
-
-            if cancelled_ids:
-                self._persist()
-
-            return cancelled_ids
+        acct = self._account_id(account_id)
+        query = (
+            self._messages_query(acct, conversation_id)
+            .where("author", "==", "ai")
+            .where("status", "in", ["scheduled", "drafting"])
+        )
+        cancelled_ids: List[str] = []
+        explanation = (reason or "Cancelled by agent").strip() or "Cancelled by agent"
+        for doc in query.stream():
+            doc.reference.update({
+                "status": "cancelled",
+                "scheduledSendAt": None,
+                "error": explanation,
+            })
+            cancelled_ids.append(doc.id)
+        return cancelled_ids
 
 
-# Convenience singleton -------------------------------------------------------
-
-_STORE_PATH = Path("conversation_state.json")
-conversation_store = ConversationStore(_STORE_PATH)
+conversation_store = ConversationStore()

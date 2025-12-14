@@ -9,6 +9,7 @@ import 'services/auth_repository.dart';
 import 'screens/chat_list_screen.dart';
 import 'screens/auth_screen.dart';
 import 'services/chat_api_client.dart';
+import 'services/firestore_chat_repository.dart';
 import 'theme/app_theme.dart';
 
 class PowWashApp extends StatefulWidget {
@@ -40,16 +41,24 @@ class _PowWashAppState extends State<PowWashApp> {
     return MultiProvider(
       providers: [
         Provider<ChatApiClient>.value(value: _apiClient),
+        Provider<FirestoreChatRepository>(create: (_) => FirestoreChatRepository()),
         Provider<AuthRepository>(create: (_) => AuthRepository()),
         ChangeNotifierProvider(
           create: (context) => UserController(
             authRepository: context.read<AuthRepository>(),
           ),
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<UserController, InboxController>(
           create: (context) => InboxController(
-            apiClient: context.read<ChatApiClient>(),
+            chatRepository: context.read<FirestoreChatRepository>(),
           ),
+          update: (context, userController, inbox) {
+            inbox ??= InboxController(
+              chatRepository: context.read<FirestoreChatRepository>(),
+            );
+            inbox.updateAccount(userController.currentUser?.accountId);
+            return inbox;
+          },
         ),
         ChangeNotifierProvider(create: (_) => ProfileController()),
       ],

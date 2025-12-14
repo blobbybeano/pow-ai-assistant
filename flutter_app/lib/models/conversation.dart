@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'message.dart';
 
 class ConversationSummary {
@@ -35,6 +37,25 @@ class ConversationSummary {
   final String? profilePhotoUrl;
   final ChatMessage? lastMessage;
   final String? assignedResponderId;
+
+  factory ConversationSummary.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data() ?? <String, dynamic>{};
+    final lastMessageJson = data['lastMessage'] as Map<String, dynamic>?;
+    return ConversationSummary(
+      id: doc.id,
+      phoneNumber: data['phoneNumber'] as String? ?? doc.id,
+      displayName: data['displayName'] as String? ?? doc.id,
+      aiEnabled: data['aiEnabled'] as bool? ?? true,
+      unreadCount: (data['unreadCount'] as int?) ?? 0,
+      profilePhotoUrl: data['profilePhotoUrl'] as String?,
+      lastMessage: lastMessageJson != null
+          ? ChatMessage.fromMap({...lastMessageJson, 'id': lastMessageJson['id'] ?? 'last-${doc.id}'})
+          : null,
+      assignedResponderId: data['assignedResponderId'] as String?,
+    );
+  }
 }
 
 class ConversationDetail {
@@ -73,4 +94,21 @@ class ConversationDetail {
   final List<ChatMessage> messages;
   final String? profilePhotoUrl;
   final String? assignedResponderId;
+
+  factory ConversationDetail.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc, {
+    required List<ChatMessage> messages,
+  }) {
+    final data = doc.data() ?? <String, dynamic>{};
+    return ConversationDetail(
+      id: doc.id,
+      phoneNumber: data['phoneNumber'] as String? ?? doc.id,
+      displayName: data['displayName'] as String? ?? doc.id,
+      aiEnabled: data['aiEnabled'] as bool? ?? true,
+      unreadCount: (data['unreadCount'] as int?) ?? 0,
+      messages: messages,
+      profilePhotoUrl: data['profilePhotoUrl'] as String?,
+      assignedResponderId: data['assignedResponderId'] as String?,
+    );
+  }
 }

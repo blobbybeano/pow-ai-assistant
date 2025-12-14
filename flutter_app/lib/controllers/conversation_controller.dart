@@ -5,16 +5,18 @@ import 'package:flutter/foundation.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
 import '../services/chat_api_client.dart';
+import '../services/firestore_chat_repository.dart';
 
 class ConversationController extends ChangeNotifier {
   ConversationController({
     required this.apiClient,
+    required this.chatRepository,
+    required this.accountId,
     required this.conversationId,
     required this.initialDisplayName,
     String? initialResponderId,
-  }) : _responderId = initialResponderId {
-    _loadConversation();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 6), (_) => _loadConversation());
+  })  : _responderId = initialResponderId {
+    _startListening();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (pendingAiMessage != null) {
         notifyListeners();
@@ -23,19 +25,22 @@ class ConversationController extends ChangeNotifier {
   }
 
   final ChatApiClient apiClient;
+  final FirestoreChatRepository chatRepository;
+  final String accountId;
   final String conversationId;
   final String initialDisplayName;
 
-  Timer? _pollingTimer;
+  StreamSubscription<ConversationDetail>? _conversationSubscription;
   Timer? _countdownTimer;
   ConversationDetail? _detail;
-  bool _loading = false;
+  bool _loading = true;
   bool _sending = false;
   bool _drafting = false;
   bool _cancellingPendingAi = false;
   Object? _error;
   String? _aiDraft;
   String? _responderId;
+  bool _markedRead = false;
 
   ConversationDetail? get detail => _detail;
   bool get isLoading => _loading;
@@ -59,7 +64,10 @@ class ConversationController extends ChangeNotifier {
     return null;
   }
 
-  Future<void> refresh() => _loadConversation(force: true);
+  Future<void> refresh() async {
+    _markedRead = false;
+    _startListening();
+  }
 
   Future<String?> cancelPendingAiMessage() async {
     final pending = pendingAiMessage;
@@ -72,7 +80,6 @@ class ConversationController extends ChangeNotifier {
         conversationId: conversationId,
         messageId: pending.id,
       );
-      await _loadConversation(force: true);
       return draftText;
     } catch (error) {
       _error = error;
@@ -97,7 +104,6 @@ class ConversationController extends ChangeNotifier {
         _aiDraft = null;
       }
       notifyListeners();
-      await _loadConversation(force: true);
     } catch (error) {
       _error = error;
       if (_detail != null) {
@@ -119,7 +125,6 @@ class ConversationController extends ChangeNotifier {
         senderId: senderId,
       );
       _aiDraft = null;
-      await _loadConversation(force: true);
     } catch (error) {
       _error = error;
     } finally {
@@ -161,28 +166,43 @@ class ConversationController extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadConversation({bool force = false}) async {
-    if (_loading && !force) return;
+  void _startListening() {
+    _conversationSubscription?.cancel();
     _loading = true;
     _error = null;
     notifyListeners();
-    try {
-      final detail = await apiClient.fetchConversation(conversationId);
-      _detail = detail;
-      if (_responderId == null && detail.assignedResponderId != null) {
-        _responderId = detail.assignedResponderId;
-      }
-    } catch (error) {
-      _error = error;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
+
+    _conversationSubscription = chatRepository
+        .watchConversation(accountId, conversationId)
+        .listen(
+      (detail) {
+        _detail = detail;
+        if (_responderId == null && detail.assignedResponderId != null) {
+          _responderId = detail.assignedResponderId;
+        }
+
+        if (!_markedRead && detail.unreadCount > 0) {
+          _markedRead = true;
+          chatRepository.markConversationRead(accountId, conversationId);
+        } else if (detail.unreadCount == 0) {
+          _markedRead = false;
+        }
+
+        _loading = false;
+        _error = null;
+        notifyListeners();
+      },
+      onError: (error) {
+        _error = error;
+        _loading = false;
+        notifyListeners();
+      },
+    );
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    _conversationSubscription?.cancel();
     _countdownTimer?.cancel();
     super.dispose();
   }

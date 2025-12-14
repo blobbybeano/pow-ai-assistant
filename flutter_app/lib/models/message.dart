@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class ChatMessage {
@@ -16,22 +17,24 @@ class ChatMessage {
     this.error,
   });
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
-    DateTime? _parseDate(String? value) =>
-        value != null ? DateTime.parse(value).toLocal() : null;
+  factory ChatMessage.fromJson(Map<String, dynamic> json) =>
+      ChatMessage.fromMap(json);
+
+  factory ChatMessage.fromMap(Map<String, dynamic> json) {
+    DateTime? _parseDate(dynamic value) => _parseTimestamp(value)?.toLocal();
     return ChatMessage(
-      id: json['id'] as String,
-      text: json['text'] as String,
-      author: json['author'] as String,
-      direction: json['direction'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String).toLocal(),
+      id: json['id'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+      author: json['author'] as String? ?? 'customer',
+      direction: json['direction'] as String? ?? 'inbound',
+      timestamp: _parseTimestamp(json['timestamp'])?.toLocal() ?? DateTime.now(),
       via: json['via'] as String? ?? 'whatsapp',
       status: json['status'] as String? ?? 'sent',
       attachments: _parseAttachments(
         json['attachments'] ?? json['media'],
       ),
-      scheduledSendAt: _parseDate(json['scheduledSendAt'] as String?),
-      sentAt: _parseDate(json['sentAt'] as String?),
+      scheduledSendAt: _parseDate(json['scheduledSendAt']),
+      sentAt: _parseDate(json['sentAt']),
       transportSid: json['transportSid'] as String?,
       error: json['error'] as String?,
     );
@@ -110,4 +113,11 @@ List<String> _parseAttachments(dynamic value) {
   }
 
   return paths;
+}
+
+DateTime? _parseTimestamp(dynamic value) {
+  if (value is Timestamp) return value.toDate();
+  if (value is DateTime) return value;
+  if (value is String && value.isNotEmpty) return DateTime.parse(value);
+  return null;
 }

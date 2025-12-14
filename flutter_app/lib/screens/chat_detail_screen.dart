@@ -8,6 +8,7 @@ import '../controllers/user_controller.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
 import '../services/chat_api_client.dart';
+import '../services/firestore_chat_repository.dart';
 import '../widgets/avatar_circle.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/profile_settings_sheet.dart';
@@ -23,11 +24,21 @@ class ChatDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final apiClient = context.read<ChatApiClient>();
     final initialResponderId = context.read<UserController>().respondingUser?.id;
+    final accountId = context.read<UserController>().currentUser?.accountId;
+    final chatRepository = context.read<FirestoreChatRepository>();
+
+    if (accountId == null || accountId.isEmpty) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return ChangeNotifierProvider(
       key: ValueKey(summary.id),
       create: (_) => ConversationController(
         apiClient: apiClient,
+        chatRepository: chatRepository,
+        accountId: accountId,
         conversationId: summary.id,
         initialDisplayName: summary.displayName,
         initialResponderId: initialResponderId,
