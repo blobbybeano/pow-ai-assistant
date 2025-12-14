@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyAGtvxGkvur8P4t8tzR6NITvMGzKY9-U6M</string>
+	<key>GCM_SENDER_ID</key>
+	<string>368120327650</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.powwashWorkspace</string>
+	<key>PROJECT_ID</key>
+	<string>pow-ai-messaging-app</string>
+	<key>STORAGE_BUCKET</key>
+	<string>pow-ai-messaging-app.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:368120327650:ios:7fe46aba71d3d9696f5dbb</string>
+</dict>
+</plist>

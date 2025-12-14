@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "368120327650",
+    "project_id": "pow-ai-messaging-app",
+    "storage_bucket": "pow-ai-messaging-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:368120327650:android:d2ec342112b4779b6f5dbb",
+        "android_client_info": {
+          "package_name": "com.example.powwash_workspace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIY1qvZXq0VVoare3SIuhaK5HN48O6Kdo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
