@@ -1,96 +1,51 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-import 'controllers/inbox_controller.dart';
-import 'controllers/profile_controller.dart';
-import 'controllers/user_controller.dart';
-import 'services/auth_repository.dart';
-import 'screens/chat_list_screen.dart';
+import 'models/app_user.dart';
 import 'screens/auth_screen.dart';
-import 'services/chat_api_client.dart';
-import 'services/firestore_chat_repository.dart';
+import 'screens/home_screen.dart';
+import 'services/auth_repository.dart';
 import 'theme/app_theme.dart';
 
-class PowWashApp extends StatefulWidget {
+class PowWashApp extends StatelessWidget {
   const PowWashApp({super.key});
 
   @override
-  State<PowWashApp> createState() => _PowWashAppState();
-}
-
-class _PowWashAppState extends State<PowWashApp> {
-  late final ChatApiClient _apiClient;
-
-  @override
-  void initState() {
-    super.initState();
-    _apiClient = ChatApiClient.fromEnvironment(
-      tokenProvider: () async {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return null;
-        return user.getIdToken();
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _apiClient.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<ChatApiClient>.value(value: _apiClient),
-        Provider<FirestoreChatRepository>(create: (_) => FirestoreChatRepository()),
-        Provider<AuthRepository>(create: (_) => AuthRepository()),
-        ChangeNotifierProvider(
-          create: (context) => UserController(
-            authRepository: context.read<AuthRepository>(),
-          ),
-        ),
-        ChangeNotifierProxyProvider<UserController, InboxController>(
-          create: (context) => InboxController(
-            chatRepository: context.read<FirestoreChatRepository>(),
-          ),
-          update: (context, userController, inbox) {
-            inbox ??= InboxController(
-              chatRepository: context.read<FirestoreChatRepository>(),
-            );
-            inbox.updateAccount(userController.currentUser?.accountId);
-            return inbox;
-          },
-        ),
-        ChangeNotifierProvider(create: (_) => ProfileController()),
-      ],
+    return Provider<AuthService>(
+      create: (_) => AuthService(),
       child: MaterialApp(
         title: 'PowWash Workspace',
         theme: buildPowWashTheme(),
-        home: const _AppRouter(),
+        home: const _AuthGate(),
       ),
     );
   }
 }
 
-class _AppRouter extends StatelessWidget {
-  const _AppRouter();
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserController>(
-      builder: (context, users, _) {
-        if (users.isLoading) {
+    final authService = context.read<AuthService>();
+
+    return StreamBuilder<AppUser?>(
+      stream: authService.userChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (!users.isSignedIn) {
+
+        final appUser = snapshot.data;
+        if (appUser == null || FirebaseAuth.instance.currentUser == null) {
           return const AuthScreen();
         }
-        return const ChatListScreen();
+
+        return HomeScreen(user: appUser);
       },
     );
   }

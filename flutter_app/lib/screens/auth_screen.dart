@@ -1,7 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../controllers/user_controller.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -14,48 +12,33 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
-  bool _isSignup = false;
   bool _isSubmitting = false;
-  String? _error;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
-    final userController = context.read<UserController>();
     if (!_formKey.currentState!.validate()) return;
-    setState(() {
-      _isSubmitting = true;
-      _error = null;
-    });
+    setState(() => _isSubmitting = true);
     try {
-      if (_isSignup) {
-        await userController.signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          displayName: _nameController.text.trim(),
-        );
-      } else {
-        await userController.signIn(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+    } on FirebaseAuthException catch (err) {
+      final message = err.message ?? 'Unable to sign in. Please try again.';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
         );
       }
-    } catch (err) {
-      setState(() {
-        _error = err.toString();
-      });
     } finally {
       if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -87,11 +70,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      _isSignup
-                          ? 'Create your account to start collaborating.'
-                          : 'Sign in with your workspace email.',
-                      style: const TextStyle(color: Color(0xFF8696A0)),
+                    const Text(
+                      'Sign in with your workspace email.',
+                      style: TextStyle(color: Color(0xFF8696A0)),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
@@ -110,24 +91,6 @@ class _AuthScreenState extends State<AuthScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    if (_isSignup)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Full name',
-                            filled: true,
-                            fillColor: Color(0xFF1F2C34),
-                          ),
-                          style: const TextStyle(color: Color(0xFFE9EDEF)),
-                          validator: (value) {
-                            if (!_isSignup) return null;
-                            if (value == null || value.isEmpty) return 'Name required';
-                            return null;
-                          },
-                        ),
-                      ),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -138,21 +101,13 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       style: const TextStyle(color: Color(0xFFE9EDEF)),
                       validator: (value) {
-                        if (value == null || value.length < 8) {
-                          return 'Use at least 8 characters';
+                        if (value == null || value.isEmpty) {
+                          return 'Password required';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.redAccent),
-                        ),
-                      ),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -165,19 +120,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : Text(_isSignup ? 'Create account' : 'Sign in'),
+                              : const Text('Sign in'),
                         ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () => setState(() => _isSignup = !_isSignup),
-                      child: Text(
-                        _isSignup
-                            ? 'Have an account? Sign in'
-                            : 'New to PowWash? Create account',
-                        style: const TextStyle(color: Color(0xFF00A884)),
                       ),
                     ),
                   ],
