@@ -26,19 +26,66 @@ class AuthService {
     }
   }
 
+  Future<void> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  Future<void> signUpWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    final credentials = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    final firebaseUser = credentials.user;
+    if (firebaseUser == null) {
+      throw FirebaseAuthException(
+        code: 'user-creation-failed',
+        message: 'Unable to create account.',
+      );
+    }
+
+    await _firestore.collection('users').doc(firebaseUser.uid).set({
+      'uid': firebaseUser.uid,
+      'email': email,
+      'role': 'user',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<AppUser?> _loadUserProfile(User firebaseUser) async {
-    final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-    final data = userDoc.data();
-    final role = (data != null && data['role'] is String)
-        ? data['role'] as String
-        : 'user';
     final email = firebaseUser.email ?? '';
     if (email.isEmpty) return null;
-    return AppUser(
-      uid: firebaseUser.uid,
-      email: email,
-      role: role,
-    );
+
+    try {
+      final userDoc =
+          await _firestore.collection('users').doc(firebaseUser.uid).get();
+      final data = userDoc.data();
+      final role = (data != null && data['role'] is String &&
+              (data['role'] as String).isNotEmpty)
+          ? data['role'] as String
+          : 'user';
+
+      return AppUser(
+        uid: firebaseUser.uid,
+        email: email,
+        role: role,
+      );
+    } catch (_) {
+      return AppUser(
+        uid: firebaseUser.uid,
+        email: email,
+        role: 'user',
+      );
+    }
   }
 
   Future<void> signOut() => _auth.signOut();
