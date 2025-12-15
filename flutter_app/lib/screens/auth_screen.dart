@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../services/auth_repository.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -12,6 +15,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLogin = true;
   bool _isSubmitting = false;
 
   @override
@@ -23,14 +27,18 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    final authService = context.read<AuthService>();
     setState(() => _isSubmitting = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      if (_isLogin) {
+        await authService.signIn(email, password);
+      } else {
+        await authService.signUp(email, password);
+      }
     } on FirebaseAuthException catch (err) {
-      final message = err.message ?? 'Unable to sign in. Please try again.';
+      final message = _messageForError(err);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
@@ -61,18 +69,20 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'PowWash Workspace',
-                      style: TextStyle(
+                    Text(
+                      _isLogin ? 'Sign in' : 'Create account',
+                      style: const TextStyle(
                         color: Color(0xFFE9EDEF),
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Sign in with your workspace email.',
-                      style: TextStyle(color: Color(0xFF8696A0)),
+                    Text(
+                      _isLogin
+                          ? 'Sign in with your workspace email.'
+                          : 'Create your workspace account.',
+                      style: const TextStyle(color: Color(0xFF8696A0)),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
@@ -120,8 +130,18 @@ class _AuthScreenState extends State<AuthScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('Sign in'),
+                              : Text(_isLogin ? 'Sign in' : 'Create account'),
                         ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => setState(() => _isLogin = !_isLogin),
+                      child: Text(
+                        _isLogin
+                            ? "Don't have an account? Create one"
+                            : 'Already have an account? Sign in',
                       ),
                     ),
                   ],
@@ -132,5 +152,20 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ),
     );
+  }
+
+  String _messageForError(FirebaseAuthException err) {
+    switch (err.code) {
+      case 'email-already-in-use':
+        return 'That email is already in use. Try signing in instead.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'user-not-found':
+        return 'No account found for that email.';
+      case 'weak-password':
+        return 'Choose a stronger password.';
+      default:
+        return err.message ?? 'Something went wrong. Please try again.';
+    }
   }
 }

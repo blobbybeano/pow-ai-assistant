@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -41,7 +40,7 @@ class _AuthGate extends StatelessWidget {
         }
 
         final appUser = snapshot.data;
-        if (appUser == null || FirebaseAuth.instance.currentUser == null) {
+        if (appUser == null) {
           return const AuthScreen();
         }
 

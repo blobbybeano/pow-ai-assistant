@@ -26,6 +26,33 @@ class AuthService {
     }
   }
 
+  Future<void> signIn(String email, String password) {
+    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signUp(String email, String password) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    final uid = credential.user?.uid;
+    final userEmail = credential.user?.email;
+    if (uid == null || userEmail == null) {
+      throw FirebaseAuthException(
+        code: 'invalid-user',
+        message: 'Unable to create account. Please try again.',
+      );
+    }
+
+    await _firestore.collection('users').doc(uid).set({
+      'uid': uid,
+      'email': userEmail,
+      'role': 'user',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<AppUser?> _loadUserProfile(User firebaseUser) async {
     final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
     final data = userDoc.data();
