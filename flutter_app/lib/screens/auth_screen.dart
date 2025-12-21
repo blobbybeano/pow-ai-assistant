@@ -1,5 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
+import '../services/auth_repository.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -12,6 +15,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLogin = true;
   bool _isSubmitting = false;
 
   @override
@@ -23,19 +27,18 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    final authService = context.read<AuthService>();
     setState(() => _isSubmitting = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-    } on FirebaseAuthException catch (err) {
-      final message = err.message ?? 'Unable to sign in. Please try again.';
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      if (_isLogin) {
+        await authService.signIn(email: email, password: password);
+      } else {
+        await authService.signUp(email: email, password: password);
       }
+    } on FirebaseAuthException catch (err) {
+      _showError(err);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -43,8 +46,32 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  void _showError(FirebaseAuthException err) {
+    if (!mounted) return;
+    final message = switch (err.code) {
+      'email-already-in-use' => 'An account already exists for that email.',
+      'wrong-password' => 'Incorrect password. Please try again.',
+      'user-not-found' => 'No account found for that email.',
+      'weak-password' => 'Password should be at least 6 characters.',
+      _ => err.message ?? 'Unable to process your request. Please try again.',
+    };
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _toggleMode() {
+    setState(() {
+      _isLogin = !_isLogin;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final title = _isLogin ? 'Sign in' : 'Create account';
+    final subtitle = _isLogin
+        ? 'Sign in with your workspace email.'
+        : 'Create your PowWash workspace account.';
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B141A),
       body: Center(
@@ -70,9 +97,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Sign in with your workspace email.',
-                      style: TextStyle(color: Color(0xFF8696A0)),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: Color(0xFF8696A0)),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
@@ -120,8 +147,16 @@ class _AuthScreenState extends State<AuthScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('Sign in'),
+                              : Text(title),
                         ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _isSubmitting ? null : _toggleMode,
+                      child: Text(
+                        _isLogin
+                            ? 'Need an account? Create one'
+                            : 'Already have an account? Sign in',
                       ),
                     ),
                   ],
