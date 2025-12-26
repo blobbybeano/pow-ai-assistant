@@ -14,7 +14,9 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from uuid import uuid4
 
 import firebase_admin
+from firebase_admin import exceptions as firebase_exceptions
 from firebase_admin import credentials, firestore
+from google.auth import exceptions as google_auth_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +36,43 @@ def _get_firebase_app():
     except ValueError:
         cred_path = os.getenv("FIREBASE_CREDENTIALS_FILE")
         credentials_obj = credentials.Certificate(cred_path) if cred_path else None
-        _FIREBASE_APP = firebase_admin.initialize_app(credentials_obj)
+        try:
+            _FIREBASE_APP = firebase_admin.initialize_app(credentials_obj)
+        except google_auth_exceptions.DefaultCredentialsError as exc:  # type: ignore[attr-defined]
+            logger.error(
+                "🔥 Firebase credentials are missing or invalid. "
+                "Set FIREBASE_CREDENTIALS_FILE or GOOGLE_APPLICATION_CREDENTIALS to a valid service account JSON. "
+                "Original error: %s",
+                exc,
+            )
+            raise
+        except firebase_exceptions.FirebaseError as exc:
+            logger.error(
+                "🔥 Firebase failed to initialize with the provided credentials file (%s): %s",
+                cred_path or "not provided",
+                exc,
+            )
+            raise
+        except Exception as exc:  # pragma: no cover - safeguard for unexpected errors
+            logger.error("🔥 Unexpected error initializing Firebase: %s", exc)
+            raise
     return _FIREBASE_APP
 
 
 def _firestore_client():
-    return firestore.client(app=_get_firebase_app())
+    try:
+        return firestore.client(app=_get_firebase_app())
+    except google_auth_exceptions.DefaultCredentialsError as exc:  # type: ignore[attr-defined]
+        logger.error(
+            "🚫 Firestore client creation failed: Google Application Default Credentials were not found. "
+            "Set FIREBASE_CREDENTIALS_FILE or GOOGLE_APPLICATION_CREDENTIALS to your service account JSON. "
+            "Original error: %s",
+            exc,
+        )
+        raise
+    except Exception as exc:
+        logger.error("🚫 Firestore client creation failed: %s", exc)
+        raise
 
 
 def _utc_now() -> datetime:
