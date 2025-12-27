@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -35,34 +36,59 @@ ThemeData buildPowWashTheme() {
 
   const fontFamily = 'Inter';
 
-  final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
+  final useGoogleFonts = !kIsWeb && defaultTargetPlatform != TargetPlatform.macOS;
+
+  final baseTextTheme = base.textTheme;
+
+  TextStyle buildPlatformTextStyle(
+    TextStyle fallback, {
+    FontWeight? fontWeight,
+    double? fontSize,
+    Color? color,
+  }) {
+    if (useGoogleFonts) {
+      return GoogleFonts.getFont(
+        fontFamily,
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        color: color,
+      );
+    }
+
+    return fallback.copyWith(
+      fontWeight: fontWeight,
+      fontSize: fontSize,
+      color: color,
+    );
+  }
+
+  final textTheme = (useGoogleFonts
+          ? GoogleFonts.interTextTheme(baseTextTheme)
+          : baseTextTheme)
+      .apply(
     bodyColor: textPrimary,
     displayColor: textPrimary,
   ).copyWith(
-    titleLarge: GoogleFonts.getFont(
-      fontFamily,
+    titleLarge: buildPlatformTextStyle(
+      baseTextTheme.titleLarge ?? const TextStyle(),
       fontWeight: FontWeight.w700,
       fontSize: 22,
       color: textPrimary,
-      // Prevent runtime downloads; uses bundled font assets.
-      fetchFonts: false,
     ),
-    bodyMedium: GoogleFonts.getFont(
-      fontFamily,
+    bodyMedium: buildPlatformTextStyle(
+      baseTextTheme.bodyMedium ?? const TextStyle(),
       fontSize: 15,
       color: textPrimary,
-      fetchFonts: false,
     ),
-    bodySmall: GoogleFonts.getFont(
-      fontFamily,
+    bodySmall: buildPlatformTextStyle(
+      baseTextTheme.bodySmall ?? const TextStyle(),
       fontSize: 13,
       color: textMuted,
-      fetchFonts: false,
     ),
   );
 
   return base.copyWith(
-    fontFamily: fontFamily,
+    fontFamily: useGoogleFonts ? fontFamily : null,
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
       backgroundColor: surface,
@@ -70,22 +96,20 @@ ThemeData buildPowWashTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: GoogleFonts.getFont(
-        fontFamily,
+      titleTextStyle: buildPlatformTextStyle(
+        baseTextTheme.titleLarge ?? const TextStyle(),
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: textPrimary,
-        fetchFonts: false,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: accent,
         foregroundColor: Colors.white,
-        textStyle: GoogleFonts.getFont(
-          fontFamily,
+        textStyle: buildPlatformTextStyle(
+          baseTextTheme.labelLarge ?? const TextStyle(),
           fontWeight: FontWeight.w600,
-          fetchFonts: false,
         ),
       ),
     ),
@@ -93,10 +117,9 @@ ThemeData buildPowWashTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: textPrimary,
         side: const BorderSide(color: Color(0x338696A0)),
-        textStyle: GoogleFonts.getFont(
-          fontFamily,
+        textStyle: buildPlatformTextStyle(
+          baseTextTheme.labelLarge ?? const TextStyle(),
           fontWeight: FontWeight.w600,
-          fetchFonts: false,
         ),
       ),
     ),
