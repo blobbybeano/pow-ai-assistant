@@ -5,7 +5,7 @@ import 'controllers/inbox_controller.dart';
 import 'controllers/profile_controller.dart';
 import 'controllers/user_controller.dart';
 import 'screens/auth_screen.dart';
-import 'screens/chat_list_screen.dart';
+import 'screens/workspace_home_shell.dart';
 import 'services/auth_repository.dart';
 import 'services/chat_api_client.dart';
 import 'services/firestore_chat_repository.dart';
@@ -71,7 +71,7 @@ class _AuthGate extends StatelessWidget {
           return const AuthScreen();
         }
 
-        return const ChatListScreen();
+        return const WorkspaceHomeShell();
       },
     );
   }
