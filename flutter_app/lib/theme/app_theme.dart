@@ -33,26 +33,36 @@ ThemeData buildPowWashTheme() {
     canvasColor: background,
   );
 
+  const fontFamily = 'Inter';
+
   final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
     bodyColor: textPrimary,
     displayColor: textPrimary,
   ).copyWith(
-    titleLarge: GoogleFonts.inter(
+    titleLarge: GoogleFonts.getFont(
+      fontFamily,
       fontWeight: FontWeight.w700,
       fontSize: 22,
       color: textPrimary,
+      // Prevent runtime downloads; uses bundled font assets.
+      fetchFonts: false,
     ),
-    bodyMedium: GoogleFonts.inter(
+    bodyMedium: GoogleFonts.getFont(
+      fontFamily,
       fontSize: 15,
       color: textPrimary,
+      fetchFonts: false,
     ),
-    bodySmall: GoogleFonts.inter(
+    bodySmall: GoogleFonts.getFont(
+      fontFamily,
       fontSize: 13,
       color: textMuted,
+      fetchFonts: false,
     ),
   );
 
   return base.copyWith(
+    fontFamily: fontFamily,
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
       backgroundColor: surface,
@@ -60,24 +70,34 @@ ThemeData buildPowWashTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: GoogleFonts.inter(
+      titleTextStyle: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: textPrimary,
+        fetchFonts: false,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: accent,
         foregroundColor: Colors.white,
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.getFont(
+          fontFamily,
+          fontWeight: FontWeight.w600,
+          fetchFonts: false,
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: textPrimary,
         side: const BorderSide(color: Color(0x338696A0)),
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.getFont(
+          fontFamily,
+          fontWeight: FontWeight.w600,
+          fetchFonts: false,
+        ),
       ),
     ),
     switchTheme: SwitchThemeData(
