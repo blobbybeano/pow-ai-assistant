@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/auth_repository.dart';
+import '../controllers/user_controller.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -15,6 +15,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _displayNameController = TextEditingController();
   bool _isLogin = true;
   bool _isSubmitting = false;
 
@@ -22,23 +23,31 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _displayNameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    final authService = context.read<AuthService>();
+    final userController = context.read<UserController>();
     setState(() => _isSubmitting = true);
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
+      final displayName = _displayNameController.text.trim();
       if (_isLogin) {
-        await authService.signIn(email: email, password: password);
+        await userController.signIn(email, password);
       } else {
-        await authService.signUp(email: email, password: password);
+        await userController.signUp(
+          email: email,
+          password: password,
+          displayName: displayName.isEmpty ? _deriveNameFromEmail(email) : displayName,
+        );
       }
     } on FirebaseAuthException catch (err) {
       _showError(err);
+    } catch (err) {
+      _showMessage(err.toString());
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -46,16 +55,29 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _showError(FirebaseAuthException err) {
-    if (!mounted) return;
-    final message = switch (err.code) {
-      'email-already-in-use' => 'An account already exists for that email.',
-      'wrong-password' => 'Incorrect password. Please try again.',
-      'user-not-found' => 'No account found for that email.',
-      'weak-password' => 'Password should be at least 6 characters.',
-      _ => err.message ?? 'Unable to process your request. Please try again.',
-    };
+  String _deriveNameFromEmail(String email) {
+    final localPart = email.split('@').first;
+    if (localPart.isEmpty) return 'Workspace user';
+    final cleaned = localPart.replaceAll(RegExp(r'[._]+'), ' ').trim();
+    if (cleaned.isEmpty) return 'Workspace user';
+    final words = cleaned.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+    return words.map((word) => word[0].toUpperCase() + word.substring(1)).join(' ');
+  }
 
+  void _showError(FirebaseAuthException err) {
+    _showMessage(
+      switch (err.code) {
+        'email-already-in-use' => 'An account already exists for that email.',
+        'wrong-password' => 'Incorrect password. Please try again.',
+        'user-not-found' => 'No account found for that email.',
+        'weak-password' => 'Password should be at least 6 characters.',
+        _ => err.message ?? 'Unable to process your request. Please try again.',
+      },
+    );
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
@@ -118,6 +140,28 @@ class _AuthScreenState extends State<AuthScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
+                    if (!_isLogin) ...[
+                      TextFormField(
+                        controller: _displayNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          filled: true,
+                          fillColor: Color(0xFF1F2C34),
+                        ),
+                        style: const TextStyle(color: Color(0xFFE9EDEF)),
+                        validator: (value) {
+                          if (_isLogin) return null;
+                          if (value != null && value.trim().isNotEmpty) {
+                            return null;
+                          }
+                          if (_emailController.text.trim().isNotEmpty) {
+                            return null;
+                          }
+                          return 'Enter your name';
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,

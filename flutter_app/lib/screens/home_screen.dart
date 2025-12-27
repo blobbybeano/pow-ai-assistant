@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = context.read<AuthService>();
+    final authService = context.read<AuthRepository>();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B141A),
@@ -47,6 +47,8 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _InfoRow(label: 'Name', value: user.displayName),
+                const SizedBox(height: 8),
                 _InfoRow(label: 'Email', value: user.email),
                 const SizedBox(height: 8),
                 _InfoRow(label: 'Role', value: user.role),
