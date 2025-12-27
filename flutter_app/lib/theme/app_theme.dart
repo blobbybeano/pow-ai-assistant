@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 ThemeData buildPowWashTheme() {
   const background = Color(0xFF0B141A);
@@ -34,61 +32,30 @@ ThemeData buildPowWashTheme() {
     canvasColor: background,
   );
 
-  const fontFamily = 'Inter';
-
-  final useGoogleFonts = !kIsWeb && defaultTargetPlatform != TargetPlatform.macOS;
-
   final baseTextTheme = base.textTheme;
 
-  TextStyle buildPlatformTextStyle(
-    TextStyle fallback, {
-    FontWeight? fontWeight,
-    double? fontSize,
-    Color? color,
-  }) {
-    if (useGoogleFonts) {
-      return GoogleFonts.getFont(
-        fontFamily,
-        fontWeight: fontWeight,
-        fontSize: fontSize,
-        color: color,
-      );
-    }
-
-    return fallback.copyWith(
-      fontWeight: fontWeight,
-      fontSize: fontSize,
-      color: color,
-    );
-  }
-
-  final textTheme = (useGoogleFonts
-          ? GoogleFonts.interTextTheme(baseTextTheme)
-          : baseTextTheme)
+  final textTheme = baseTextTheme
       .apply(
-    bodyColor: textPrimary,
-    displayColor: textPrimary,
-  ).copyWith(
-    titleLarge: buildPlatformTextStyle(
-      baseTextTheme.titleLarge ?? const TextStyle(),
-      fontWeight: FontWeight.w700,
-      fontSize: 22,
-      color: textPrimary,
-    ),
-    bodyMedium: buildPlatformTextStyle(
-      baseTextTheme.bodyMedium ?? const TextStyle(),
-      fontSize: 15,
-      color: textPrimary,
-    ),
-    bodySmall: buildPlatformTextStyle(
-      baseTextTheme.bodySmall ?? const TextStyle(),
-      fontSize: 13,
-      color: textMuted,
-    ),
-  );
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      )
+      .copyWith(
+        titleLarge: (baseTextTheme.titleLarge ?? const TextStyle()).copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 22,
+          color: textPrimary,
+        ),
+        bodyMedium: (baseTextTheme.bodyMedium ?? const TextStyle()).copyWith(
+          fontSize: 15,
+          color: textPrimary,
+        ),
+        bodySmall: (baseTextTheme.bodySmall ?? const TextStyle()).copyWith(
+          fontSize: 13,
+          color: textMuted,
+        ),
+      );
 
   return base.copyWith(
-    fontFamily: useGoogleFonts ? fontFamily : null,
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
       backgroundColor: surface,
@@ -96,8 +63,7 @@ ThemeData buildPowWashTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: buildPlatformTextStyle(
-        baseTextTheme.titleLarge ?? const TextStyle(),
+      titleTextStyle: (baseTextTheme.titleLarge ?? const TextStyle()).copyWith(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: textPrimary,
@@ -107,8 +73,7 @@ ThemeData buildPowWashTheme() {
       style: FilledButton.styleFrom(
         backgroundColor: accent,
         foregroundColor: Colors.white,
-        textStyle: buildPlatformTextStyle(
-          baseTextTheme.labelLarge ?? const TextStyle(),
+        textStyle: (baseTextTheme.labelLarge ?? const TextStyle()).copyWith(
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -117,8 +82,7 @@ ThemeData buildPowWashTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: textPrimary,
         side: const BorderSide(color: Color(0x338696A0)),
-        textStyle: buildPlatformTextStyle(
-          baseTextTheme.labelLarge ?? const TextStyle(),
+        textStyle: (baseTextTheme.labelLarge ?? const TextStyle()).copyWith(
           fontWeight: FontWeight.w600,
         ),
       ),
