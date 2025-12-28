@@ -20,6 +20,7 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
       TextEditingController();
   final TextEditingController _openAiKeyController = TextEditingController();
   final TextEditingController _openAiOrgController = TextEditingController();
+  final TextEditingController _openAiBaseUrlController = TextEditingController();
   final TextEditingController _otherIntegrationsController = TextEditingController();
   bool _enableSandbox = false;
   bool _twilioAuthConfigured = false;
@@ -43,6 +44,7 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
     _twilioMessagingServiceController.dispose();
     _openAiKeyController.dispose();
     _openAiOrgController.dispose();
+    _openAiBaseUrlController.dispose();
     _otherIntegrationsController.dispose();
     super.dispose();
   }
@@ -182,6 +184,14 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
                         label: 'Organization ID (optional)',
                         hint: 'org-...',
                       ),
+                      const SizedBox(height: 16),
+                      _TokenField(
+                        controller: _openAiBaseUrlController,
+                        label: 'API base URL (optional)',
+                        hint: 'https://api.openai.com/v1',
+                        helperText:
+                            'Set this when routing requests through Azure OpenAI or a proxy. Leave blank for default.',
+                      ),
                       const SizedBox(height: 12),
                       const Text(
                         'Need help rotating keys? Visit platform.openai.com/account/api-keys.',
@@ -267,6 +277,7 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
       _enableSandbox = settings.twilio?.sandboxMode ?? false;
       _openAiKeyController.clear();
       _openAiOrgController.text = settings.openAi?.organizationId ?? '';
+      _openAiBaseUrlController.text = settings.openAi?.baseUrl ?? '';
       _otherIntegrationsController.text = settings.otherNotes ?? '';
       _hasHydrated = true;
     });
@@ -319,17 +330,20 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
     final initial = _initialSettings?.openAi;
     final apiKey = _openAiKeyController.text.trim();
     final orgId = _openAiOrgController.text.trim();
+    final baseUrl = _openAiBaseUrlController.text.trim();
 
     final apiKeyProvided = apiKey.isNotEmpty;
     final orgChanged = _didChange(orgId, initial?.organizationId);
+    final baseUrlChanged = _didChange(baseUrl, initial?.baseUrl);
 
-    if (!(apiKeyProvided || orgChanged)) {
+    if (!(apiKeyProvided || orgChanged || baseUrlChanged)) {
       return null;
     }
 
     return OpenAiIntegrationUpdate(
       apiKey: apiKeyProvided ? apiKey : null,
       organizationId: orgChanged ? orgId : null,
+      baseUrl: baseUrlChanged ? baseUrl : null,
     );
   }
 

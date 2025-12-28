@@ -12,12 +12,13 @@ from pathlib import Path
 from typing import Dict, List, Set
 from uuid import uuid4
 
-import requests
 import firebase_admin
+import requests
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials, firestore
 from flask import Flask, Response, abort, g, jsonify, request, send_from_directory
 from flask_cors import CORS
+from openai import OpenAI
 from twilio.base.exceptions import TwilioRestException
 from twilio.twiml.messaging_response import MessagingResponse
 from flask_cors import cross_origin
@@ -158,6 +159,34 @@ def get_twilio_messenger(account_id: str | None = None) -> TwilioMessenger | Non
 
 
 # -----------------------------------------------------------
+# OpenAI client builder
+# -----------------------------------------------------------
+def _build_openai_client(account_id: str | None = None) -> OpenAI:
+    """Instantiate an OpenAI client, preferring stored per-account credentials."""
+    acct = account_id or DEFAULT_ACCOUNT_ID
+    overrides = {}
+    if acct:
+        try:
+            openai_settings = _integration_store.load(acct).openai
+        except Exception:
+            logging.exception("Failed to load OpenAI settings for account %s", acct)
+        else:
+            if openai_settings:
+                if openai_settings.api_key:
+                    overrides["api_key"] = openai_settings.api_key
+                if openai_settings.organization_id:
+                    overrides["organization"] = openai_settings.organization_id
+                if openai_settings.base_url:
+                    overrides["base_url"] = openai_settings.base_url
+
+    try:
+        return OpenAI(**overrides)
+    except Exception:
+        logging.exception("Falling back to default OpenAI client")
+        return OpenAI()
+
+
+# -----------------------------------------------------------
 # Utility functions
 # -----------------------------------------------------------
 def _resolve_media_extension(media_url: str | None, content_type: str | None) -> str:
@@ -239,7 +268,12 @@ def _collect_inbound_attachments(form) -> List[dict]:
     return attachments
 
 
-def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str:
+def _build_reply(
+    inbound_text: str,
+    attachments: List[str] | None = None,
+    *,
+    account_id: str | None = None,
+) -> str:
     """Generate an AI PowWash reply for an inbound WhatsApp message."""
     sanitized_text = (inbound_text or "").strip()
     attachment_list = list(attachments or [])
@@ -256,6 +290,8 @@ def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str
             "Please review the attachments and respond helpfully."
         )
 
+    client = _build_openai_client(account_id)
+
     return generate_reply(
         message=sanitized_text,
         price_list_path=PRICE_LIST_PATH,
@@ -263,6 +299,7 @@ def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str
         model="gpt-4o-mini",
         temperature=0.5,
         attachments=attachment_list,
+        client=client,
     )
 
 
@@ -329,7 +366,7 @@ def _schedule_ai_delivery(
             _scheduled_message_ids.discard(message_id)
             return
 
-        messenger = get_twilio_messenger()
+        messenger = get_twilio_messenger(account_id)
         if not messenger:
             logging.error("🚫 Twilio credentials missing; cannot deliver AI reply.")
             conversation_store.update_message(
@@ -457,7 +494,7 @@ def whatsapp_webhook() -> Response:
             status="drafting",
         )
         try:
-            reply_text = _build_reply(inbound_text, attachments)
+            reply_text = _build_reply(inbound_text, attachments, account_id=account_id)
         except Exception as exc:
             logging.exception("AI reply generation failed")
             conversation_store.update_message(
@@ -601,7 +638,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
     for cid in cancelled:
         _scheduled_message_ids.discard(cid)
 
-    messenger = get_twilio_messenger()
+    messenger = get_twilio_messenger(g.account_id)
     if not messenger:
         abort(503, description="Twilio not configured for outbound messaging.")
 
@@ -652,7 +689,7 @@ def api_generate_ai_draft(conversation_id: str) -> Response:
     latest = conversation_store.latest_customer_message(g.account_id, conversation_id)
     if latest is None:
         abort(400, description="No customer message available for drafting")
-    draft = _build_reply(latest.text, latest.attachments)
+    draft = _build_reply(latest.text, latest.attachments, account_id=g.account_id)
     return jsonify({"draft": draft, "model": "gpt-4o-mini"})
 
 

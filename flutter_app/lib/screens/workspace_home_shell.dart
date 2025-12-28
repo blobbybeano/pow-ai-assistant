@@ -175,6 +175,7 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final users = context.watch<UserController>().availableUsers;
+    final resolvedResponder = _resolveResponder(respondingUser, users);
 
     return Container(
       decoration: BoxDecoration(
@@ -239,10 +240,7 @@ class _UserCard extends StatelessWidget {
           const SizedBox(height: 8),
           DropdownButtonHideUnderline(
             child: DropdownButton<AppUser>(
-              value: respondingUser != null &&
-                      users.any((user) => user.id == respondingUser!.id)
-                  ? respondingUser
-                  : (users.isNotEmpty ? users.first : null),
+              value: resolvedResponder ?? (users.isNotEmpty ? users.first : null),
               icon: const Icon(Icons.expand_more, color: Color(0xFF8696A0)),
               dropdownColor: const Color(0xFF111B21),
               borderRadius: BorderRadius.circular(12),
@@ -303,6 +301,16 @@ class _UserCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  AppUser? _resolveResponder(AppUser? selected, List<AppUser> users) {
+    if (selected == null) return null;
+    for (final user in users) {
+      if (user.id == selected.id) {
+        return user;
+      }
+    }
+    return null;
   }
 }
 

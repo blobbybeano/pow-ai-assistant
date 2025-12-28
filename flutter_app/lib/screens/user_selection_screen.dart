@@ -279,6 +279,7 @@ class _AiResponderSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedSelection = _resolveSelectedUser(selectedUser, users);
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF111B21),
@@ -309,10 +310,7 @@ class _AiResponderSelector extends StatelessWidget {
           const SizedBox(height: 12),
           DropdownButtonHideUnderline(
             child: DropdownButton<AppUser>(
-              value: selectedUser != null &&
-                      users.any((user) => user.id == selectedUser!.id)
-                  ? selectedUser
-                  : null,
+              value: resolvedSelection,
               icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8696A0)),
               dropdownColor: const Color(0xFF111B21),
               borderRadius: BorderRadius.circular(12),
@@ -375,5 +373,15 @@ class _AiResponderSelector extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  AppUser? _resolveSelectedUser(AppUser? selected, List<AppUser> users) {
+    if (selected == null) return null;
+    for (final user in users) {
+      if (user.id == selected.id) {
+        return user;
+      }
+    }
+    return null;
   }
 }
