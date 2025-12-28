@@ -24,7 +24,8 @@ from flask_cors import cross_origin
 
 from auto_responder import generate_reply
 from conversation_store import conversation_store
-from twilio_helpers import TwilioMessenger
+from twilio_helpers import TwilioConfig, TwilioMessenger
+from integration_settings import IntegrationSettingsStore, integration_settings_store
 
 # -----------------------------------------------------------
 # Setup
@@ -48,6 +49,7 @@ _MEDIA_EXTENSION_MAP = {
 AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
 DEFAULT_ACCOUNT_ID = os.getenv("DEFAULT_ACCOUNT_ID")
+_integration_store: IntegrationSettingsStore = integration_settings_store
 
 
 # -----------------------------------------------------------
@@ -122,8 +124,28 @@ def require_admin(handler):
 # -----------------------------------------------------------
 # Twilio Messenger dynamic builder
 # -----------------------------------------------------------
-def get_twilio_messenger() -> TwilioMessenger | None:
-    """Always rebuild the TwilioMessenger from fresh environment variables."""
+def get_twilio_messenger(account_id: str | None = None) -> TwilioMessenger | None:
+    """Build a TwilioMessenger from stored per-account settings with env fallback."""
+    acct = account_id or DEFAULT_ACCOUNT_ID
+    settings = None
+    if acct:
+        try:
+            settings = _integration_store.load(acct).twilio
+        except Exception:
+            logging.exception("Failed to load integration settings for account %s", acct)
+
+    if settings:
+        messenger = TwilioMessenger.from_settings(
+            TwilioConfig(
+                account_sid=settings.account_sid or "",
+                auth_token=settings.auth_token or "",
+                messaging_service_sid=settings.messaging_service_sid,
+                whatsapp_from=settings.whatsapp_from,
+            )
+        )
+        if messenger:
+            return messenger
+
     messenger = TwilioMessenger.from_env()
     if messenger:
         cfg = messenger._config
@@ -483,6 +505,38 @@ def serve_uploaded_file(filename: str) -> Response:
 def api_get_default_responder() -> Response:
     account_id = getattr(g, "account_id", None)
     return jsonify({"defaultResponderId": conversation_store.get_default_responder(account_id)})
+
+
+@app.get("/api/settings/integrations")
+@require_account_member
+def api_get_integrations() -> Response:
+    account_id = getattr(g, "account_id", None)
+    if not account_id:
+        abort(400, description="Account not resolved")
+    settings = _integration_store.load(account_id)
+    return jsonify(settings.to_safe_dict())
+
+
+@app.post("/api/settings/integrations")
+@require_admin
+def api_update_integrations() -> Response:
+    account_id = getattr(g, "account_id", None)
+    if not account_id:
+        abort(400, description="Account not resolved")
+
+    payload = request.get_json(silent=True) or {}
+    twilio_updates = payload.get("twilio") if isinstance(payload.get("twilio"), dict) else None
+    openai_updates = payload.get("openAi") if isinstance(payload.get("openAi"), dict) else None
+    other_notes = payload.get("otherNotes")
+
+    settings = _integration_store.update(
+        account_id,
+        twilio_updates=twilio_updates,
+        openai_updates=openai_updates,
+        other_notes=other_notes if isinstance(other_notes, str) else None,
+    )
+
+    return jsonify(settings.to_safe_dict())
 
 
 @app.post("/api/settings/responder")
