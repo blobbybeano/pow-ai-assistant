@@ -24,6 +24,7 @@ from flask_cors import cross_origin
 
 from auto_responder import generate_reply
 from conversation_store import conversation_store
+from integration_settings import IntegrationSettings, integration_settings_store
 from twilio_helpers import TwilioMessenger
 
 # -----------------------------------------------------------
@@ -122,17 +123,37 @@ def require_admin(handler):
 # -----------------------------------------------------------
 # Twilio Messenger dynamic builder
 # -----------------------------------------------------------
-def get_twilio_messenger() -> TwilioMessenger | None:
-    """Always rebuild the TwilioMessenger from fresh environment variables."""
-    messenger = TwilioMessenger.from_env()
+def _load_integration_settings(account_id: str | None) -> IntegrationSettings:
+    """Fetch integration settings for the account, falling back to environment variables."""
+    effective_account = account_id or DEFAULT_ACCOUNT_ID
+    if not effective_account:
+        raise RuntimeError("No account id available for integration settings lookup.")
+    settings = integration_settings_store.get(effective_account).with_env_defaults()
+    return settings
+
+
+def get_twilio_messenger(account_id: str | None = None) -> TwilioMessenger | None:
+    """Build a TwilioMessenger using per-account settings when available."""
+    try:
+        settings = _load_integration_settings(account_id)
+    except Exception as exc:
+        logging.error("⚠️ Unable to load integration settings: %s", exc)
+        return None
+
+    messenger = TwilioMessenger.from_settings(
+        account_sid=settings.twilio_account_sid or "",
+        auth_token=settings.twilio_auth_token or "",
+        messaging_service_sid=settings.twilio_messaging_service_sid,
+        whatsapp_from=settings.twilio_whatsapp_number,
+    )
     if messenger:
         cfg = messenger._config
         if cfg.messaging_service_sid:
             cfg.whatsapp_from = None
         return messenger
 
-    logging.warning("⚠️ Twilio credentials not detected or invalid.")
-    return None
+    logging.warning("⚠️ Twilio credentials not detected or invalid for account %s.", settings.account_id)
+    return TwilioMessenger.from_env()
 
 
 # -----------------------------------------------------------
@@ -217,7 +238,7 @@ def _collect_inbound_attachments(form) -> List[dict]:
     return attachments
 
 
-def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str:
+def _build_reply(inbound_text: str, attachments: List[str] | None = None, *, account_id: str) -> str:
     """Generate an AI PowWash reply for an inbound WhatsApp message."""
     sanitized_text = (inbound_text or "").strip()
     attachment_list = list(attachments or [])
@@ -234,6 +255,8 @@ def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str
             "Please review the attachments and respond helpfully."
         )
 
+    settings = _load_integration_settings(account_id)
+
     return generate_reply(
         message=sanitized_text,
         price_list_path=PRICE_LIST_PATH,
@@ -241,6 +264,8 @@ def _build_reply(inbound_text: str, attachments: List[str] | None = None) -> str
         model="gpt-4o-mini",
         temperature=0.5,
         attachments=attachment_list,
+        openai_api_key=settings.openai_api_key,
+        openai_org_id=settings.openai_org_id,
     )
 
 
@@ -307,7 +332,7 @@ def _schedule_ai_delivery(
             _scheduled_message_ids.discard(message_id)
             return
 
-        messenger = get_twilio_messenger()
+        messenger = get_twilio_messenger(account_id)
         if not messenger:
             logging.error("🚫 Twilio credentials missing; cannot deliver AI reply.")
             conversation_store.update_message(
@@ -435,7 +460,7 @@ def whatsapp_webhook() -> Response:
             status="drafting",
         )
         try:
-            reply_text = _build_reply(inbound_text, attachments)
+            reply_text = _build_reply(inbound_text, attachments, account_id=account_id)
         except Exception as exc:
             logging.exception("AI reply generation failed")
             conversation_store.update_message(
@@ -496,6 +521,22 @@ def api_set_default_responder() -> Response:
     return jsonify({"defaultResponderId": conversation_store.get_default_responder(g.account_id)})
 
 
+@app.get("/api/settings/integrations")
+@require_account_member
+def api_get_integrations() -> Response:
+    settings = _load_integration_settings(getattr(g, "account_id", None))
+    hydrated = settings.with_env_defaults()
+    return jsonify(hydrated.to_public_dict())
+
+
+@app.post("/api/settings/integrations")
+@require_admin
+def api_update_integrations() -> Response:
+    payload = request.get_json(silent=True) or {}
+    updated = integration_settings_store.update(g.account_id, payload).with_env_defaults()
+    return jsonify(updated.to_public_dict())
+
+
 @app.get("/api/conversations")
 @require_account_member
 def api_list_conversations() -> Response:
@@ -547,7 +588,7 @@ def api_send_manual_message(conversation_id: str) -> Response:
     for cid in cancelled:
         _scheduled_message_ids.discard(cid)
 
-    messenger = get_twilio_messenger()
+    messenger = get_twilio_messenger(g.account_id)
     if not messenger:
         abort(503, description="Twilio not configured for outbound messaging.")
 
@@ -598,7 +639,7 @@ def api_generate_ai_draft(conversation_id: str) -> Response:
     latest = conversation_store.latest_customer_message(g.account_id, conversation_id)
     if latest is None:
         abort(400, description="No customer message available for drafting")
-    draft = _build_reply(latest.text, latest.attachments)
+    draft = _build_reply(latest.text, latest.attachments, account_id=g.account_id)
     return jsonify({"draft": draft, "model": "gpt-4o-mini"})
 
 

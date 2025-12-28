@@ -1,8 +1,7 @@
-"""
-Utilities for sending outbound WhatsApp messages via Twilio.
+"""Utilities for sending outbound WhatsApp messages via Twilio.
 
-This version is simplified for Messaging Service use only.
-It ignores TWILIO_WHATSAPP_NUMBER entirely.
+Supports either Messaging Service SIDs or direct WhatsApp senders so each
+account can bring its own credentials.
 """
 
 from __future__ import annotations
@@ -21,7 +20,8 @@ from twilio.rest import Client
 class TwilioConfig:
     account_sid: str
     auth_token: str
-    messaging_service_sid: str
+    messaging_service_sid: Optional[str] = None
+    whatsapp_from: Optional[str] = None
 
 
 # ==========================================================
@@ -41,7 +41,7 @@ class TwilioMessenger:
         auth_token = os.getenv("TWILIO_AUTH_TOKEN")
         messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID")
 
-        if not all([account_sid, auth_token, messaging_service_sid]):
+        if not all([account_sid, auth_token]) or not (messaging_service_sid or os.getenv("TWILIO_WHATSAPP_NUMBER")):
             print("⚠️ Missing Twilio environment variables; messenger not initialized.")
             return None
 
@@ -49,6 +49,26 @@ class TwilioMessenger:
             account_sid=account_sid,
             auth_token=auth_token,
             messaging_service_sid=messaging_service_sid,
+            whatsapp_from=os.getenv("TWILIO_WHATSAPP_NUMBER"),
+        )
+        return cls(config)
+
+    @classmethod
+    def from_settings(
+        cls,
+        account_sid: str,
+        auth_token: str,
+        *,
+        messaging_service_sid: Optional[str] = None,
+        whatsapp_from: Optional[str] = None,
+    ) -> Optional["TwilioMessenger"]:
+        if not account_sid or not auth_token or not (messaging_service_sid or whatsapp_from):
+            return None
+        config = TwilioConfig(
+            account_sid=account_sid,
+            auth_token=auth_token,
+            messaging_service_sid=messaging_service_sid,
+            whatsapp_from=whatsapp_from,
         )
         return cls(config)
 
@@ -61,13 +81,16 @@ class TwilioMessenger:
         if not to_address:
             raise ValueError("Recipient phone number is invalid.")
 
-        kwargs = {
-            "to": to_address,
-            "body": body,
-            "messaging_service_sid": self._config.messaging_service_sid,
-        }
+        kwargs = {"to": to_address, "body": body}
+        if self._config.messaging_service_sid:
+            kwargs["messaging_service_sid"] = self._config.messaging_service_sid
+            print(f"[TwilioMessenger] Sending via Messaging Service SID: {self._config.messaging_service_sid}")
+        elif self._config.whatsapp_from:
+            kwargs["from_"] = self._config.whatsapp_from
+            print(f"[TwilioMessenger] Sending via WhatsApp number: {self._config.whatsapp_from}")
+        else:
+            raise RuntimeError("Twilio Messenger is misconfigured: no sender configured.")
 
-        print(f"[TwilioMessenger] Sending via Messaging Service SID: {self._config.messaging_service_sid}")
         print(f"[TwilioMessenger] → {to_address}")
 
         try:

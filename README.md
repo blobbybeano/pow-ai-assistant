@@ -57,6 +57,10 @@ you can follow the combined logs in a single terminal.
   `auto_responder.generate_reply` helper to draft AI responses.
 * **`conversation_store.py`** – Thread-safe in-memory + JSON persisted store
   backing the conversation list.
+* **`integration_settings.py`** – Persists per-account OpenAI and Twilio
+  credentials under `accounts/{accountId}/settings/integrations`, and exposes
+  readiness masks via `/api/settings/integrations` so every workspace can bring
+  its own provider keys.
 * **`auto_responder.py`** – Standalone CLI for composing replies from the price
   list and tone guide.
 * **`twilio_helpers.py`** – Convenience wrapper around the Twilio REST API.
