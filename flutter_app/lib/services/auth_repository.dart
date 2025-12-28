@@ -74,7 +74,11 @@ class AuthRepository {
 
   Future<void> signOut() => _auth.signOut();
 
-  Future<String?> getIdToken() => _auth.currentUser?.getIdToken();
+  Future<String?> getIdToken() async {
+  final user = _auth.currentUser;
+  if (user == null) return null;
+  return user.getIdToken();
+}
 
   Future<AppUser> _ensureMembership(
     User firebaseUser, {
