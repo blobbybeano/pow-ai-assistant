@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'controllers/inbox_controller.dart';
+import 'controllers/integration_settings_controller.dart';
 import 'controllers/profile_controller.dart';
 import 'controllers/user_controller.dart';
 import 'screens/auth_screen.dart';
@@ -42,6 +43,11 @@ class PowWashApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<ProfileController>(
           create: (_) => ProfileController(),
+        ),
+        ChangeNotifierProvider<IntegrationSettingsController>(
+          create: (context) => IntegrationSettingsController(
+            apiClient: context.read<ChatApiClient>(),
+          ),
         ),
       ],
       child: MaterialApp(

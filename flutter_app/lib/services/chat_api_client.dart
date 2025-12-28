@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
+import '../models/integration_settings.dart';
 
 typedef TokenProvider = Future<String?> Function();
 
@@ -19,6 +20,33 @@ class ChatApiClient {
       defaultValue: 'http://127.0.0.1:5002',
     );
     return ChatApiClient(baseUrl: defaultUrl, tokenProvider: tokenProvider);
+  }
+
+  Future<IntegrationSettings> fetchIntegrationSettings() async {
+    final response = await _client.get(
+      _uri('/api/settings/integrations'),
+      headers: await _withAuthHeaders(),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load integration settings (${response.statusCode})');
+    }
+    final payload = json.decode(response.body) as Map<String, dynamic>;
+    return IntegrationSettings.fromJson(payload);
+  }
+
+  Future<IntegrationSettings> updateIntegrationSettings(
+    IntegrationSettingsUpdate update,
+  ) async {
+    final response = await _client.post(
+      _uri('/api/settings/integrations'),
+      headers: await _withAuthHeaders({'Content-Type': 'application/json'}),
+      body: json.encode(update.toJson()),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to save integration settings (${response.statusCode})');
+    }
+    final payload = json.decode(response.body) as Map<String, dynamic>;
+    return IntegrationSettings.fromJson(payload);
   }
 
   final String baseUrl;
