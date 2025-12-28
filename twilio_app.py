@@ -49,7 +49,6 @@ _MEDIA_EXTENSION_MAP = {
 
 AI_AUTOREPLY_DELAY_SECONDS = 180
 _scheduled_message_ids: Set[str] = set()
-DEFAULT_ACCOUNT_ID = os.getenv("DEFAULT_ACCOUNT_ID")
 _integration_store: IntegrationSettingsStore = integration_settings_store
 
 
@@ -137,7 +136,7 @@ def require_admin(handler):
 # -----------------------------------------------------------
 def get_twilio_messenger(account_id: str | None = None) -> TwilioMessenger | None:
     """Build a TwilioMessenger from stored per-account settings with env fallback."""
-    acct = account_id or DEFAULT_ACCOUNT_ID
+    acct = account_id
     settings = _load_account_settings(acct)
     twilio_settings = settings.twilio if settings else None
 
@@ -171,7 +170,7 @@ def get_twilio_messenger(account_id: str | None = None) -> TwilioMessenger | Non
 # -----------------------------------------------------------
 def _build_openai_client(account_id: str | None = None) -> OpenAI:
     """Instantiate an OpenAI client, preferring stored per-account credentials."""
-    acct = account_id or DEFAULT_ACCOUNT_ID
+    acct = account_id
     overrides = {}
     settings = _load_account_settings(acct)
     openai_settings = settings.openai if settings else None
@@ -410,6 +409,68 @@ def _conversation_id(from_number: str, wa_id: str | None = None) -> str:
     return fallback or "unknown"
 
 
+def _resolve_account_id_from_twilio_payload(
+    *,
+    messaging_service_sid: str | None,
+    to_address: str | None,
+) -> str | None:
+    """Determine the owning account for an incoming Twilio webhook."""
+    client = _firestore_client()
+
+    def _account_from_settings_doc(doc) -> str | None:
+        parent = doc.reference.parent if doc else None
+        if parent and parent.parent:
+            return parent.parent.id
+        return None
+
+    def _lookup_account(field_path: str, value: str) -> str | None:
+        try:
+            account_query = client.collection("accounts").where(field_path, "==", value).limit(1)
+            for doc in account_query.stream():
+                return doc.id
+        except Exception:
+            logging.exception("Failed to query accounts by %s", field_path)
+            raise
+
+        try:
+            settings_query = (
+                client.collection_group("settings")
+                .where(field_path, "==", value)
+                .limit(1)
+            )
+            for doc in settings_query.stream():
+                account_id = _account_from_settings_doc(doc)
+                if account_id:
+                    return account_id
+        except Exception:
+            logging.exception("Failed to query account settings by %s", field_path)
+            raise
+
+        return None
+
+    if messaging_service_sid:
+        account_id = _lookup_account("twilio.messagingServiceSid", messaging_service_sid)
+        if account_id:
+            return account_id
+
+    normalized_to = _normalize_msisdn(to_address or "")
+    to_candidates: List[str] = []
+    for candidate in (to_address, normalized_to):
+        if candidate and candidate not in to_candidates:
+            to_candidates.append(candidate)
+    if normalized_to:
+        whatsapp_prefixed = f"whatsapp:{normalized_to}"
+        if whatsapp_prefixed not in to_candidates:
+            to_candidates.append(whatsapp_prefixed)
+
+    for candidate in to_candidates:
+        account_id = _lookup_account("twilio.whatsappFrom", candidate)
+        if account_id:
+            return account_id
+
+    return None
+
+
 def _iso_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -526,16 +587,38 @@ def whatsapp_webhook() -> Response:
     """Receives inbound WhatsApp messages from Twilio."""
     inbound_text = request.form.get("Body", "").strip()
     from_number = request.form.get("From", "")
+    to_number = (request.form.get("To") or "").strip()
     profile_name = request.form.get("ProfileName") or request.form.get("WaId")
     profile_photo_url = request.form.get("ProfilePictureUrl") or request.form.get("ProfileImageUrl")
     wa_id = request.form.get("WaId")
+    messaging_service_sid = (request.form.get("MessagingServiceSid") or "").strip()
     conversation_id = _conversation_id(from_number, wa_id)
     attachments = _collect_inbound_attachments(request.form)
 
-    account_id = DEFAULT_ACCOUNT_ID or conversation_store.default_account_id
+    try:
+        account_id = _resolve_account_id_from_twilio_payload(
+            messaging_service_sid=messaging_service_sid,
+            to_address=to_number,
+        )
+    except Exception:
+        logging.exception("Failed to resolve account for incoming Twilio webhook")
+        return Response(
+            "Failed to resolve account for incoming Twilio webhook.",
+            mimetype="text/plain",
+            status=500,
+        )
+
     if not account_id:
-        logging.error("🚫 DEFAULT_ACCOUNT_ID is not configured; cannot persist conversation")
-        return Response(str(MessagingResponse()), mimetype="application/xml", status=503)
+        logging.error(
+            "🚫 No account mapping found for Twilio webhook (MessagingServiceSid=%s, To=%s)",
+            messaging_service_sid or "<missing>",
+            to_number or "<missing>",
+        )
+        return Response(
+            "No matching account found for incoming Twilio webhook.",
+            mimetype="text/plain",
+            status=400,
+        )
 
     conversation_store.record_message(
         account_id,

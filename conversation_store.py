@@ -158,7 +158,7 @@ class ConversationStore:
 
     def __init__(self, *, default_account_id: Optional[str] = None) -> None:
         self._client = _firestore_client()
-        self._default_account_id = default_account_id or os.getenv("DEFAULT_ACCOUNT_ID")
+        self._default_account_id = (default_account_id or "").strip() or None
 
     # ------------------------------------------------------------------
     # Helpers
@@ -167,7 +167,7 @@ class ConversationStore:
         value = (account_id or self._default_account_id or "").strip()
         if not value:
             raise RuntimeError(
-                "No account id available. Set DEFAULT_ACCOUNT_ID or pass account_id explicitly."
+                "No account id available. Pass account_id explicitly."
             )
         return value
 
