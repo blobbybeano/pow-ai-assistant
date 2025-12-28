@@ -59,6 +59,16 @@ _integration_store: IntegrationSettingsStore = integration_settings_store
 _FIREBASE_APP = None
 
 
+def _load_account_settings(account_id: str | None):
+    if not account_id:
+        return None
+    try:
+        return _integration_store.load(account_id)
+    except Exception:
+        logging.exception("Failed to load integration settings for account %s", account_id)
+        return None
+
+
 def _get_firebase_app():
     global _FIREBASE_APP
     if _FIREBASE_APP is not None:
@@ -128,24 +138,22 @@ def require_admin(handler):
 def get_twilio_messenger(account_id: str | None = None) -> TwilioMessenger | None:
     """Build a TwilioMessenger from stored per-account settings with env fallback."""
     acct = account_id or DEFAULT_ACCOUNT_ID
-    settings = None
-    if acct:
-        try:
-            settings = _integration_store.load(acct).twilio
-        except Exception:
-            logging.exception("Failed to load integration settings for account %s", acct)
+    settings = _load_account_settings(acct)
+    twilio_settings = settings.twilio if settings else None
 
-    if settings:
+    if twilio_settings:
         messenger = TwilioMessenger.from_settings(
             TwilioConfig(
-                account_sid=settings.account_sid or "",
-                auth_token=settings.auth_token or "",
-                messaging_service_sid=settings.messaging_service_sid,
-                whatsapp_from=settings.whatsapp_from,
+                account_sid=twilio_settings.account_sid or "",
+                auth_token=twilio_settings.auth_token or "",
+                messaging_service_sid=twilio_settings.messaging_service_sid,
+                whatsapp_from=twilio_settings.whatsapp_from,
             )
         )
         if messenger:
             return messenger
+        logging.warning("⚠️ Stored Twilio settings are present but incomplete.")
+        return None
 
     messenger = TwilioMessenger.from_env()
     if messenger:
@@ -165,25 +173,88 @@ def _build_openai_client(account_id: str | None = None) -> OpenAI:
     """Instantiate an OpenAI client, preferring stored per-account credentials."""
     acct = account_id or DEFAULT_ACCOUNT_ID
     overrides = {}
-    if acct:
-        try:
-            openai_settings = _integration_store.load(acct).openai
-        except Exception:
-            logging.exception("Failed to load OpenAI settings for account %s", acct)
-        else:
-            if openai_settings:
-                if openai_settings.api_key:
-                    overrides["api_key"] = openai_settings.api_key
-                if openai_settings.organization_id:
-                    overrides["organization"] = openai_settings.organization_id
-                if openai_settings.base_url:
-                    overrides["base_url"] = openai_settings.base_url
+    settings = _load_account_settings(acct)
+    openai_settings = settings.openai if settings else None
+    if openai_settings:
+        if openai_settings.api_key:
+            overrides["api_key"] = openai_settings.api_key
+        if openai_settings.organization_id:
+            overrides["organization"] = openai_settings.organization_id
+        if openai_settings.base_url:
+            overrides["base_url"] = openai_settings.base_url
 
+    if overrides:
+        try:
+            return OpenAI(**overrides)
+        except Exception:
+            logging.exception("Failed to instantiate OpenAI client with stored settings")
+            raise
+
+    return OpenAI()
+
+
+# -----------------------------------------------------------
+# Integration test helpers
+# -----------------------------------------------------------
+def _test_twilio_connection(account_id: str | None):
+    settings = _load_account_settings(account_id)
+
+    messenger = None
+    twilio_settings = settings.twilio if settings else None
+    if twilio_settings:
+        messenger = TwilioMessenger.from_settings(
+            TwilioConfig(
+                account_sid=twilio_settings.account_sid or "",
+                auth_token=twilio_settings.auth_token or "",
+                messaging_service_sid=twilio_settings.messaging_service_sid,
+                whatsapp_from=twilio_settings.whatsapp_from,
+            )
+        )
+    else:
+        messenger = TwilioMessenger.from_env()
+
+    if messenger is None:
+        return False, "Twilio credentials are not configured for this workspace.", None
+
+    config = messenger._config
     try:
-        return OpenAI(**overrides)
-    except Exception:
-        logging.exception("Falling back to default OpenAI client")
-        return OpenAI()
+        if config.messaging_service_sid:
+            service = messenger._client.messaging.services(config.messaging_service_sid).fetch()
+            return True, f"Messaging Service {service.sid} is reachable.", service.sid
+
+        account = messenger._client.api.accounts(config.account_sid).fetch()
+        return True, f"Twilio account {account.sid} is reachable.", account.sid
+    except TwilioRestException as exc:
+        logging.error("Twilio validation failed: %s", exc, exc_info=True)
+        identifier = config.messaging_service_sid or config.account_sid
+        message = f"Twilio error {exc.code}: {exc.msg}"
+        return False, message, identifier
+    except Exception as exc:
+        logging.exception("Unexpected error validating Twilio connection")
+        identifier = config.messaging_service_sid or config.account_sid
+        return False, str(exc), identifier
+
+
+def _test_openai_connection(account_id: str | None):
+    try:
+        client = _build_openai_client(account_id)
+    except Exception as exc:
+        logging.exception("OpenAI client initialization failed")
+        return False, str(exc), None
+    try:
+        models = client.models.list()
+        first_id = None
+        try:
+            first_id = models.data[0].id if getattr(models, "data", None) else None
+        except Exception:
+            first_id = None
+        message = "OpenAI credentials validated."
+        if first_id:
+            message = f"OpenAI credentials validated; first model: {first_id}."
+        return True, message, first_id
+    except Exception as exc:
+        logging.exception("OpenAI validation failed")
+        return False, str(exc), None
 
 
 # -----------------------------------------------------------
@@ -574,6 +645,30 @@ def api_update_integrations() -> Response:
     )
 
     return jsonify(settings.to_safe_dict())
+
+
+@app.post("/api/settings/test-twilio")
+@require_account_member
+def api_test_twilio_settings() -> Response:
+    account_id = getattr(g, "account_id", None)
+    ok, message, identifier = _test_twilio_connection(account_id)
+    payload = {"ok": ok, "message": message}
+    if identifier:
+        payload["serviceSid"] = identifier
+    status = 200 if ok else 502
+    return jsonify(payload), status
+
+
+@app.post("/api/settings/test-openai")
+@require_account_member
+def api_test_openai_settings() -> Response:
+    account_id = getattr(g, "account_id", None)
+    ok, message, model_id = _test_openai_connection(account_id)
+    payload = {"ok": ok, "message": message}
+    if model_id:
+        payload["modelId"] = model_id
+    status = 200 if ok else 502
+    return jsonify(payload), status
 
 
 @app.post("/api/settings/responder")

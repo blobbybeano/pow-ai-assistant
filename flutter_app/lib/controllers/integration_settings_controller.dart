@@ -51,6 +51,14 @@ class IntegrationSettingsController extends ChangeNotifier {
     }
   }
 
+  Future<ConnectionTestResult> testTwilioConnection() {
+    return _apiClient.testTwilioConnection();
+  }
+
+  Future<ConnectionTestResult> testOpenAiConnection() {
+    return _apiClient.testOpenAiConnection();
+  }
+
   void reset() {
     _settings = null;
     _error = null;

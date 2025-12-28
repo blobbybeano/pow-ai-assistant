@@ -193,7 +193,38 @@ class ChatApiClient {
     }
   }
 
+  Future<ConnectionTestResult> testTwilioConnection() async {
+    return _postConnectionTest('/api/settings/test-twilio');
+  }
+
+  Future<ConnectionTestResult> testOpenAiConnection() async {
+    return _postConnectionTest('/api/settings/test-openai');
+  }
+
+  Future<ConnectionTestResult> _postConnectionTest(String path) async {
+    final response = await _client.post(
+      _uri(path),
+      headers: await _withAuthHeaders(),
+    );
+    final payload = response.body.isNotEmpty
+        ? json.decode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+    final ok = payload['ok'] == true;
+    final message = payload['message'] as String? ??
+        (ok ? 'Connection validated successfully.' : 'Connection test failed.');
+    final identifier = (payload['serviceSid'] ?? payload['modelId'] ?? payload['id']) as String?;
+    return ConnectionTestResult(ok: ok, message: message, identifier: identifier);
+  }
+
   void close() {
     _client.close();
   }
+}
+
+class ConnectionTestResult {
+  const ConnectionTestResult({required this.ok, required this.message, this.identifier});
+
+  final bool ok;
+  final String message;
+  final String? identifier;
 }

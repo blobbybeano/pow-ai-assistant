@@ -26,6 +26,8 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
   bool _twilioAuthConfigured = false;
   bool _openAiKeyConfigured = false;
   bool _hasHydrated = false;
+  bool _isTestingTwilio = false;
+  bool _isTestingOpenAi = false;
   IntegrationSettings? _initialSettings;
 
   @override
@@ -160,6 +162,21 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
                         activeColor: const Color(0xFF00A884),
                         contentPadding: EdgeInsets.zero,
                       ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: isSaving || _isTestingTwilio ? null : _testTwilio,
+                          icon: _isTestingTwilio
+                              ? const SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.check_circle_outline),
+                          label: const Text('Test Twilio connection'),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -196,6 +213,21 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
                       const Text(
                         'Need help rotating keys? Visit platform.openai.com/account/api-keys.',
                         style: TextStyle(color: Color(0xFF8696A0), fontSize: 12),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: isSaving || _isTestingOpenAi ? null : _testOpenAi,
+                          icon: _isTestingOpenAi
+                              ? const SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.check_circle_outline),
+                          label: const Text('Test OpenAI connection'),
+                        ),
                       ),
                     ],
                   ),
@@ -384,17 +416,60 @@ class _IntegrationSettingsScreenState extends State<IntegrationSettingsScreen> {
       if (!mounted) return;
       _applySettings(updatedSettings);
       _clearSensitiveFields();
-      _showMessage('Credentials encrypted and stored for this workspace.');
+      _showMessage('Credentials encrypted and stored for this workspace.', success: true);
     } catch (err) {
       if (!mounted) return;
       _showMessage('Failed to save credentials: $err');
     }
   }
 
-  void _showMessage(String message) {
+  Future<void> _testTwilio() async {
+    setState(() {
+      _isTestingTwilio = true;
+    });
+    try {
+      final controller = context.read<IntegrationSettingsController>();
+      final result = await controller.testTwilioConnection();
+      if (!mounted) return;
+      _showMessage(result.message, success: result.ok);
+    } catch (err) {
+      if (!mounted) return;
+      _showMessage('Unable to test Twilio: $err');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTestingTwilio = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _testOpenAi() async {
+    setState(() {
+      _isTestingOpenAi = true;
+    });
+    try {
+      final controller = context.read<IntegrationSettingsController>();
+      final result = await controller.testOpenAiConnection();
+      if (!mounted) return;
+      _showMessage(result.message, success: result.ok);
+    } catch (err) {
+      if (!mounted) return;
+      _showMessage('Unable to test OpenAI: $err');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTestingOpenAi = false;
+        });
+      }
+    }
+  }
+
+  void _showMessage(String message, {bool success = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: const Color(0xFF1F2C34),
+        backgroundColor:
+            success ? const Color(0xFF0E6245) : const Color(0xFF1F2C34),
         content: Text(message),
       ),
     );
