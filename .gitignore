@@ -1,0 +1,50 @@
+__pycache__/
+*.pyc
+*.pyo
+.idea/
+.vscode/
+.DS_Store
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Environment / secrets — never commit real values
+.env
+.env.local
+.env.*.local
+.local_secrets/
+token.json
+
+# Credentials — runtime data lives in Postgres, not files
+ai_estimator_demo/.secret_key
+ai_estimator_demo/calendar_credentials.json
+ai_estimator_demo/calendar_tokens.json
+ai_estimator_demo/twilio_settings.json
+ai_estimator_demo/users.json
+ai_estimator_demo/data_exports/
+flutter_app/android/app/google-services.json
+flutter_app/ios/Runner/GoogleService-Info.plist
+flutter_app/macos/Runner/GoogleService-Info.plist
+flutter_app/ios/*service-account*.json
+flutter_app/ios/*.json
+**/*service-account*.json
+flutter_app/firebase.json
+
+# Runtime/customer data
+uploads/*
+!uploads/.gitkeep
+attached_assets/
+ai_estimator_demo/conversations_local.json
+ai_estimator_demo/checkatrade_leads.json
+ai_estimator_demo/diagnostics.json
+ai_estimator_demo/tune_examples.json
+ai_estimator_demo/postcode_cache.json
+ai_estimator_demo/scheduler/postcode_cache.json
+
+# Data exports — download these, don't commit them
+powwash_data_export.sql
+
+# Replit internals
+.replit.nix
+.cache/
+.local/

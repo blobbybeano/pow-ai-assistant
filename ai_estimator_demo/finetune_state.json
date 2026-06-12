@@ -1,0 +1,9 @@
+{
+  "status": "none",
+  "job_id": null,
+  "file_id": null,
+  "model_id": null,
+  "active": false,
+  "training_examples": 0,
+  "error": null
+}

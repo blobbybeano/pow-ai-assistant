@@ -1,0 +1,105 @@
+system_prompt: |-
+  You are PowWash's estimating assistant. You evaluate exterior cleaning jobs from customer messages and photos.
+  - Consider services such as driveway, patio, decking, render, roof, gutters, walls, pathways, and windows.
+  - Always extract a realistic area estimate in square metres. If unsure provide your best estimate and note unknowns.
+  - Assess surface condition, flag notable issues (oil stains, algae, weeds, poor drainage, delicate surfaces, loose joints).
+  - Ask for at most one targeted additional photo when confidence is below the configured threshold or the coverage policy allows.
+  - Produce concise reasoning in the notes field.
+  - When coverage is incomplete, specify exactly one next_request describing the photo angle or detail needed.
+  - When enough information is present, confirm whether on-site validation may be required for a final quote.
+service_presets:
+  driveway:
+    label: Driveway Cleaning
+    focus: |-
+      Prioritise oil stains, tyre marks, jointing condition, drainage falls, and nearby structures that may need masking.
+    multipliers:
+      heavy_soiling: 0.2
+      oil_stains: 0.15
+      algae_biocide: 0.1
+      access_difficulty: 0.15
+  patio:
+    label: Patio Cleaning
+    focus: |-
+      Pay attention to pointing stability, weed growth, algae build-up, and delicate slabs that may limit pressure.
+    multipliers:
+      heavy_soiling: 0.18
+      oil_stains: 0.1
+      algae_biocide: 0.12
+      access_difficulty: 0.1
+  decking:
+    label: Decking Restoration
+    focus: |-
+      Consider algae slip risk, board spacing, soft spots, and need for biocide or sanding.
+    multipliers:
+      heavy_soiling: 0.22
+      oil_stains: 0.08
+      algae_biocide: 0.15
+      access_difficulty: 0.1
+  render:
+    label: Render Cleaning
+    focus: |-
+      Evaluate staining severity, biological growth, and access constraints for facades.
+    multipliers:
+      heavy_soiling: 0.15
+      oil_stains: 0.05
+      algae_biocide: 0.15
+      access_difficulty: 0.2
+  roof:
+    label: Roof Cleaning
+    focus: |-
+      Assess moss coverage, tile condition, guttering, and fall protection considerations.
+    multipliers:
+      heavy_soiling: 0.25
+      oil_stains: 0.1
+      algae_biocide: 0.18
+      access_difficulty: 0.25
+  gutters:
+    label: Gutter Clearing
+    focus: |-
+      Check blockages, downpipes, fascia staining, and ladder access issues.
+    multipliers:
+      heavy_soiling: 0.12
+      oil_stains: 0.05
+      algae_biocide: 0.08
+      access_difficulty: 0.12
+  walls:
+    label: Wall Cleaning
+    focus: |-
+      Inspect pointing, efflorescence, biological growth, and neighbouring surfaces.
+    multipliers:
+      heavy_soiling: 0.16
+      oil_stains: 0.08
+      algae_biocide: 0.12
+      access_difficulty: 0.15
+  pathways:
+    label: Pathway Cleaning
+    focus: |-
+      Look for trip hazards, drainage channels, weed growth, and surrounding planting that may need protection.
+    multipliers:
+      heavy_soiling: 0.18
+      oil_stains: 0.12
+      algae_biocide: 0.1
+      access_difficulty: 0.1
+  windows:
+    label: Window Cleaning
+    focus: |-
+      Note access constraints, frames, sills, and whether ladder or pole systems are needed.
+    multipliers:
+      heavy_soiling: 0.1
+      oil_stains: 0.05
+      algae_biocide: 0.05
+      access_difficulty: 0.18
+pricing:
+  base_callout: 25.0
+  rate_per_m2: 2.5
+  multipliers:
+    heavy_soiling: 0.2
+    oil_stains: 0.15
+    algae_biocide: 0.1
+    access_difficulty: 0.15
+coverage_policy:
+  max_additional_photo_requests: 1
+  confidence_threshold: 0.7
+response_format: json+explanation
+limits:
+  max_image_size_mb: 8

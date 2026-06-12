@@ -1,0 +1,10 @@
+{
+  "instructions": "Use the configured engineer profiles, working hours, travel buffers, service durations, and service-area rules. Group nearby jobs where practical, avoid overlapping bookings, and clearly label estimated travel times. Do not assume an engineer's location, availability, or priority when it has not been configured.",
+  "maxDaysAhead": 21,
+  "preferredWorkingHours": {
+    "start": "09:00",
+    "end": "17:00"
+  },
+  "defaultJobDurationMins": 120,
+  "serviceDurationsMins": {}
+}

@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PowWash</title>
+    <link rel="manifest" href="/static/manifest.json" />
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PowWash" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=32" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Compact top bar (visible on all screens) -->
+      <header class="app-header">
+        <div class="app-header-brand">
+          <img src="https://www.svgrepo.com/show/529415/pressure-washer.svg" alt="PowWash" />
+          <span>PowWash</span>
+        </div>
+        <p id="header-user-label" class="app-header-user"></p>
+        <button class="app-burger-btn" id="app-burger-btn" aria-label="Menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </header>
+
+      <!-- Slide-down menu -->
+      <div class="app-menu" id="app-menu" hidden>
+        <nav class="app-menu-tabs" role="tablist">
+          <button class="tab-btn active" data-tab="estimator" data-access="admin-desktop" role="tab">Estimator</button>
+          <button class="tab-btn" data-tab="messages" data-access="all" role="tab">Messages</button>
+          <button class="tab-btn" data-tab="tune" data-access="admin-desktop" role="tab">Tune AI</button>
+          <button class="tab-btn" data-tab="kb" data-access="admin" role="tab">Knowledge</button>
+          <button class="tab-btn" data-tab="settings" data-access="admin-desktop" role="tab">Settings</button>
+          <button class="tab-btn" data-tab="calendar" data-access="admin-desktop" role="tab">Calendar</button>
+          <button class="tab-btn" data-tab="checkatrade" data-access="admin-desktop" role="tab">Checkatrade</button>
+        </nav>
+        <div class="app-menu-actions">
+          <button id="toggle-params" class="secondary">Training &amp; Parameters</button>
+          <button id="logout-btn" class="secondary" style="display:none;">Sign out</button>
+        </div>
+      </div>
+
+      <!-- ESTIMATOR TAB -->
+      <main id="tab-estimator" class="tab-content active">
+        <section class="chat-pane" aria-label="Chat conversation">
+          <div class="chat-pane__header">
+            <div>
+              <h2>Conversation</h2>
+              <p>Share context or upload site photos to create an instant quote.</p>
+            </div>
+            <button type="button" id="clear-chat" class="ghost">Clear chat</button>
+          </div>
+          <div id="chat-log" class="chat-log">
+            <div id="empty-state" class="empty-state">
+              <h3>Ready when you are</h3>
+              <p>Describe the cleaning job or drop a few photos to see pricing suggestions here.</p>
+              <ul>
+                <li>Drag &amp; drop multiple images at once.</li>
+                <li>Mention surfaces or stubborn areas that need extra attention.</li>
+                <li>We'll ask for more photos automatically if confidence is low.</li>
+              </ul>
+            </div>
+          </div>
+          <form id="chat-form" class="chat-input" autocomplete="off">
+            <div class="drop-zone" id="drop-zone">
+              <div class="drop-zone__content">
+                <strong>Upload photos</strong>
+                <p>Drop images here or <span class="link">browse your files</span></p>
+                <small>JPEG, PNG, WEBP, or HEIC up to your configured size limit.</small>
+              </div>
+              <input
+                type="file"
+                id="image-input"
+                name="images[]"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                multiple
+              />
+              <div id="preview-strip" class="preview-strip"></div>
+            </div>
+            <label class="message-label" for="message">Message</label>
+            <textarea
+              id="message"
+              name="message"
+              rows="3"
+              placeholder="Type a note for the estimator..."
+            ></textarea>
+            <div class="chat-actions">
+              <span id="upload-info" class="upload-info"></span>
+              <button type="submit" class="primary">Send</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="sidebar" aria-label="Quote snapshot">
+          <section class="summary-card empty" id="summary-card">
+            <header>
+              <h2>Quote snapshot</h2>
+              <p id="summary-helper">Send a message to see the live quote overview.</p>
+            </header>
+            <div class="summary-metrics">
+              <div class="metric">
+                <span class="metric-label">Estimated price</span>
+                <span class="metric-value" id="summary-price">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Service</span>
+                <span class="metric-value" id="summary-service">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Area</span>
+                <span class="metric-value" id="summary-area">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Confidence</span>
+                <span class="metric-value" id="summary-confidence">—</span>
+              </div>
+            </div>
+            <div class="summary-notes" id="summary-notes">
+              <h3>Highlights</h3>
+              <ul id="summary-highlights">
+                <li>No analysis yet.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="tips-card">
+            <h3>Tips for better estimates</h3>
+            <ul>
+              <li>Capture wide shots plus any heavy staining or tricky access points.</li>
+              <li>Call out surfaces (block paving, render, decking) in your message.</li>
+              <li>Use the training panel to tweak pricing or service focus.</li>
+            </ul>
+            <button id="open-params-secondary" class="secondary" type="button">Adjust parameters</button>
+          </section>
+        </aside>
+      </main>
+
+      <!-- TUNE MY AI TAB -->
+      <main id="tab-tune" class="tab-content tune-layout">
+
+        <!-- LEFT: Upload + Q&A + Generate -->
+        <section class="tune-pane" aria-label="Tune My AI">
+          <div class="tune-pane__header">
+            <div>
+              <h2>AI Training</h2>
+              <p>Shape how the AI sounds, what it knows, and how it handles different situations.</p>
+            </div>
+          </div>
+
+          <!-- General Aim -->
+          <div class="tune-config-card" id="tune-aim-card">
+            <div class="tune-config-card__header">
+              <div class="tune-config-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              </div>
+              <div>
+                <h3>General aim</h3>
+                <p class="muted-text">What is this AI here to do? This is added to every conversation so the AI always knows its purpose.</p>
+              </div>
+            </div>
+            <textarea id="tune-aim-text" class="tune-config-textarea" rows="3" placeholder="e.g. Book exterior cleaning jobs efficiently, provide instant quotes, and convert enquiries into bookings — while sounding like a knowledgeable, friendly local business owner."></textarea>
+            <div class="tune-config-actions">
+              <button id="tune-aim-save-btn" class="primary" type="button">Save aim</button>
+              <span id="tune-aim-status" class="cal-save-status"></span>
+            </div>
+          </div>
+
+          <!-- Per-person instructions -->
+          <div class="tune-config-card" id="tune-userinstr-card">
+            <div class="tune-config-card__header">
+              <div class="tune-config-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div>
+                <h3>Instructions per person</h3>
+                <p class="muted-text">Add specific context for up to 2 people who use this AI. Each person's instructions are included when they're interacting with customers.</p>
+              </div>
+            </div>
+            <div id="tune-userinstr-list" class="tune-userinstr-list"></div>
+            <button id="tune-userinstr-add-btn" class="ghost tune-userinstr-add-btn" type="button">+ Add person</button>
+            <div class="tune-config-actions" id="tune-userinstr-actions" style="display:none">
+              <button id="tune-userinstr-save-btn" class="primary" type="button">Save</button>
+              <span id="tune-userinstr-status" class="cal-save-status"></span>
+            </div>
+          </div>
+
+          <!-- Step 1: Upload -->
+          <div id="tune-step-upload" class="tune-step">
+            <div class="tune-step-label">Step 1 — Upload conversations</div>
+            <div class="tune-drop-zone" id="tune-drop-zone">
+              <div class="drop-zone__content">
+                <strong>Upload conversation files</strong>
+                <p>Drop CSV or text exports here or <span class="link">browse your files</span></p>
+                <small>WhatsApp .txt exports or .csv files. You can add files from multiple folders.</small>
+              </div>
+              <input
+                type="file"
+                id="tune-file-input"
+                accept=".csv,.txt,text/csv,text/plain"
+                multiple
+              />
+            </div>
+            <div id="tune-file-list" class="tune-file-list"></div>
+            <div class="tune-upload-actions">
+              <button id="tune-add-more-btn" class="ghost tune-add-more hidden" type="button">+ Add more files</button>
+              <span id="tune-upload-info" class="upload-info"></span>
+              <button id="tune-analyse-btn" class="primary" type="button">Analyse conversations</button>
+            </div>
+            <div id="tune-import-only-row" class="tune-import-only-row hidden">
+              <button id="tune-import-only-btn" class="ghost" type="button">Import examples only (no questions)</button>
+              <span class="tune-import-hint">Adds conversations to the example library without updating your tone profile.</span>
+            </div>
+            <div id="tune-import-result" class="tune-import-result hidden"></div>
+          </div>
+
+          <!-- Step 2: Q&A chat -->
+          <div id="tune-step-qa" class="tune-step hidden">
+            <div class="tune-step-label">Step 2 — Answer the coach's questions</div>
+            <div id="tune-update-banner" class="tune-update-banner hidden">
+              Updating your existing profile — questions will focus on new scenarios and gaps only.
+            </div>
+            <div id="tune-examples-extracted-banner" class="tune-examples-extracted-banner hidden"></div>
+            <div class="tune-analysis-summary" id="tune-analysis-summary"></div>
+            <div id="tune-qa-log" class="tune-qa-log"></div>
+            <div id="tune-qa-input-area" class="tune-qa-input-area">
+              <textarea id="tune-qa-answer" rows="3" placeholder="Type your answer..."></textarea>
+              <div class="tune-qa-actions">
+                <button id="tune-qa-submit" class="primary" type="button">Answer</button>
+                <button id="tune-done-btn" class="ghost" type="button">I'm done — generate profile</button>
+              </div>
+            </div>
+            <div id="tune-qa-complete" class="tune-qa-complete hidden">
+              <p>All questions answered. Ready to generate your profile.</p>
+              <button id="tune-generate-btn" class="primary" type="button">Generate my profile</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Profile preview -->
+          <div id="tune-step-profile" class="tune-step hidden">
+            <div class="tune-step-label">Step 3 — Review and apply your profile</div>
+            <div class="tune-profile-preview">
+              <label>
+                <span>Tone Profile</span>
+                <textarea id="tune-tone-profile" rows="8"></textarea>
+              </label>
+              <label>
+                <span>System Prompt</span>
+                <textarea id="tune-system-prompt" rows="4"></textarea>
+              </label>
+            </div>
+            <div class="tune-apply-actions">
+              <button id="tune-apply-btn" class="primary" type="button">Apply this profile</button>
+              <button id="tune-regenerate-btn" class="ghost" type="button">Regenerate</button>
+            </div>
+            <div id="tune-apply-status" class="tune-apply-status hidden"></div>
+          </div>
+        </section>
+
+        <!-- RIGHT: Simulate panel -->
+        <aside class="tune-sidebar">
+
+          <!-- Coach Me (collapsible) -->
+          <section class="coach-card" id="coach-card">
+            <button class="coach-toggle" id="coach-toggle" type="button" aria-expanded="false">
+              <span class="coach-toggle-label">
+                <strong>Coach Me</strong>
+                <span class="muted-text">AI asks gap-filling questions about your profile</span>
+              </span>
+              <span class="coach-chevron" id="coach-chevron">▸</span>
+            </button>
+            <div id="coach-body" class="coach-body hidden">
+              <div id="coach-idle" class="coach-idle">
+                <p class="muted-text">The AI reviews your current profile and asks about the most important gaps — one question at a time. Your answers are merged in immediately.</p>
+                <button id="coach-start-btn" class="primary" type="button">Start coaching session</button>
+              </div>
+              <div id="coach-session" class="coach-session hidden">
+                <div id="coach-qa-log" class="coach-qa-log"></div>
+                <div id="coach-input-area" class="coach-input-area">
+                  <textarea id="coach-answer" rows="2" placeholder="Type your answer…"></textarea>
+                  <div class="coach-actions">
+                    <button id="coach-submit-btn" class="primary" type="button">Submit</button>
+                    <button id="coach-done-btn" class="ghost" type="button">Done — update profile</button>
+                  </div>
+                </div>
+                <div id="coach-complete" class="coach-complete hidden"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Fine-tune card -->
+          <section class="finetune-card" id="finetune-card">
+            <h2>Train My Model</h2>
+            <p class="muted-text">Train a real AI model on your conversations so it genuinely sounds like you — not just one that reads instructions.</p>
+
+            <div id="ft-status-bar" class="ft-status-bar">
+              <div class="ft-stat">
+                <span class="ft-stat-val" id="ft-examples-count">—</span>
+                <span class="ft-stat-label">examples ready</span>
+              </div>
+              <div class="ft-stat">
+                <span class="ft-stat-val" id="ft-model-badge" class="ft-badge">Base model</span>
+                <span class="ft-stat-label">currently active</span>
+              </div>
+            </div>
+
+            <div id="ft-idle" class="ft-section">
+              <button id="ft-train-btn" class="primary" type="button">Train Now</button>
+              <p class="ft-hint">Takes 30–60 min. Uses your saved example conversations. Free to retry.</p>
+            </div>
+
+            <div id="ft-running" class="ft-section hidden">
+              <div class="ft-progress">
+                <span class="spinner"></span>
+                <span id="ft-progress-label">Training in progress…</span>
+              </div>
+              <button id="ft-poll-btn" class="ghost" type="button">Check status</button>
+              <p class="ft-hint">Training runs in the background. Come back and check status anytime.</p>
+            </div>
+
+            <div id="ft-ready" class="ft-section hidden">
+              <div class="ft-success-msg">✓ Training complete! Your custom model is ready.</div>
+              <button id="ft-activate-btn" class="primary" type="button">Activate fine-tuned model</button>
+            </div>
+
+            <div id="ft-active" class="ft-section hidden">
+              <div class="ft-active-badge">⚡ Fine-tuned model is active</div>
+              <div class="ft-active-id" id="ft-active-id"></div>
+              <div class="ft-active-actions">
+                <button id="ft-retrain-btn" class="ghost" type="button">Retrain with new examples</button>
+                <button id="ft-deactivate-btn" class="ghost ft-danger" type="button">Switch back to base model</button>
+              </div>
+            </div>
+
+            <div id="ft-error" class="ft-section hidden">
+              <div class="ft-error-msg" id="ft-error-msg"></div>
+              <button id="ft-retry-btn" class="ghost" type="button">Try again</button>
+            </div>
+          </section>
+
+          <section class="simulate-card">
+            <h2>Simulate a customer</h2>
+            <p class="muted-text">Type a customer message to see how your AI would reply with the current profile.</p>
+            <div id="simulate-log" class="simulate-log"></div>
+            <div class="simulate-input-area">
+              <textarea id="simulate-message" rows="2" placeholder="e.g. Hi, how much to clean my driveway?"></textarea>
+              <button id="simulate-btn" class="primary" type="button">Send</button>
+            </div>
+          </section>
+
+          <section class="examples-card">
+            <div class="examples-header">
+              <h3>Style corrections</h3>
+              <span id="examples-count" class="examples-count">0 saved</span>
+            </div>
+            <p class="muted-text">When the AI gets it wrong, correct it here. Each correction teaches it your style.</p>
+            <div id="examples-list" class="examples-list"></div>
+          </section>
+
+          <section class="insight-card">
+            <h2>Ask about your training</h2>
+            <p class="muted-text">Ask what the AI has learned, what gaps it has, or how it would handle a situation.</p>
+            <div id="insight-suggestions" class="insight-suggestions">
+              <button class="insight-chip" data-q="What do you know about how I quote jobs?">What do you know about how I quote?</button>
+              <button class="insight-chip" data-q="What gaps do you have in your training so far?">What gaps do you have?</button>
+              <button class="insight-chip" data-q="What job types or scenarios have you not been trained on yet?">Untrained scenarios?</button>
+              <button class="insight-chip" data-q="How would you handle a customer who pushes back on price?">Handling price pushback?</button>
+            </div>
+            <div id="insight-log" class="insight-log"></div>
+            <div class="insight-input-area">
+              <textarea id="insight-message" rows="2" placeholder="e.g. What do you know about gutter cleaning?"></textarea>
+              <button id="insight-btn" class="primary" type="button">Ask</button>
+            </div>
+          </section>
+        </aside>
+
+      </main>
+
+      <!-- KNOWLEDGE BASE TAB -->
+      <main id="tab-kb" class="tab-content kb-layout">
+
+        <!-- LEFT COLUMN -->
+        <div class="kb-left">
+
+          <!-- Conversation Goal & Process -->
+          <section class="kb-card kb-goal-card">
+            <div class="kb-card__header">
+              <h2>Conversation Goal &amp; Process</h2>
+              <p class="muted-text">Tell the AI what it's ultimately trying to achieve and the steps to get there. This gets injected into every reply the AI drafts.</p>
+            </div>
+
+            <div class="kb-goal-body">
+
+              <div class="kb-goal-field">
+                <label for="kb-goal-text" class="kb-goal-label">
+                  Ultimate goal
+                  <span class="kb-goal-hint">One clear sentence — e.g. "Get a confirmed, paid job booked into the calendar with all details captured."</span>
+                </label>
+                <textarea id="kb-goal-text" rows="2" placeholder="e.g. Get every enquiry converted into a confirmed job booking with full details, agreed price, and a date in the calendar."></textarea>
+              </div>
+
+              <div class="kb-goal-field">
+                <label for="kb-goal-process" class="kb-goal-label">
+                  Process to follow
+                  <span class="kb-goal-hint">Write the steps in plain English — numbered or bullet points. The AI will follow this order in every conversation.</span>
+                </label>
+                <textarea id="kb-goal-process" rows="6" placeholder="1. Greet the customer warmly and ask what they need.&#10;2. Gather the key details: service type, property address, and any photos.&#10;3. Give a price range based on the description, or explain what info is needed for an accurate quote.&#10;4. If you can quote, present the price and offer a booking.&#10;5. Ask for their preferred date and time.&#10;6. Confirm all details (name, address, service, price) and tell them what happens next."></textarea>
+              </div>
+
+              <!-- AI Refine -->
+              <div class="kb-goal-refine-panel">
+                <label class="kb-goal-label">
+                  Refine with AI
+                  <span class="kb-goal-hint">Describe anything to add or update — the AI will merge it in without losing what's already there. Contradictions replace the old version.</span>
+                </label>
+                <textarea id="kb-goal-refine-input" rows="3" placeholder="e.g. Also ask for the customer's name early in the conversation, and mention our 5-star Google reviews when closing the booking."></textarea>
+                <div class="kb-goal-refine-actions">
+                  <button id="kb-goal-refine-btn" class="kb-goal-refine-button" type="button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    Refine with AI
+                  </button>
+                  <span id="kb-goal-refine-status" class="kb-goal-refine-status"></span>
+                </div>
+              </div>
+
+              <!-- Escalation -->
+              <div class="kb-goal-section-label">Escalation — when AI should hand off to a human</div>
+
+              <div class="kb-goal-field">
+                <label for="kb-goal-escalation-triggers" class="kb-goal-label">
+                  Situations that require human review
+                  <span class="kb-goal-hint">When any of these arise, the AI will flag the draft for your attention and send you a notification. One per line.</span>
+                </label>
+                <textarea id="kb-goal-escalation-triggers" rows="4" placeholder="- The customer asks about a very large or complex commercial job&#10;- Roof cleaning or render cleaning where photos are essential&#10;- A complaint or dispute about a previous job&#10;- The customer mentions a property access issue I can't assess remotely"></textarea>
+              </div>
+
+              <div class="kb-goal-field-row">
+                <div class="kb-goal-field kb-goal-field--grow">
+                  <label for="kb-goal-escalation-phone" class="kb-goal-label">Your phone number (for notifications)</label>
+                  <input type="tel" id="kb-goal-escalation-phone" placeholder="+447700900000" autocomplete="off">
+                </div>
+                <div class="kb-goal-field kb-goal-field--fixed">
+                  <label for="kb-goal-escalation-channel" class="kb-goal-label">Send via</label>
+                  <select id="kb-goal-escalation-channel">
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="sms">SMS</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Calendar triggers -->
+              <div class="kb-goal-section-label">Calendar — when to trigger scheduling</div>
+
+              <div class="kb-goal-toggle-row">
+                <label class="kb-goal-toggle">
+                  <input type="checkbox" id="kb-goal-cal-check" checked>
+                  <span class="kb-goal-toggle-track"><span class="kb-goal-toggle-thumb"></span></span>
+                </label>
+                <div>
+                  <strong>Request availability</strong>
+                  <p class="kb-goal-hint" style="margin:0">Once the AI knows the customer's address, service type, and estimated duration, it will trigger a calendar availability check automatically.</p>
+                </div>
+              </div>
+
+              <div class="kb-goal-toggle-row">
+                <label class="kb-goal-toggle">
+                  <input type="checkbox" id="kb-goal-cal-book" checked>
+                  <span class="kb-goal-toggle-track"><span class="kb-goal-toggle-thumb"></span></span>
+                </label>
+                <div>
+                  <strong>Confirm booking</strong>
+                  <p class="kb-goal-hint" style="margin:0">Once the customer confirms a date/time and all details are collected (name, email, service, price), the AI triggers the calendar booking.</p>
+                </div>
+              </div>
+
+              <div class="kb-goal-actions">
+                <button id="kb-goal-save" class="primary" type="button">Save</button>
+                <span id="kb-goal-status" class="kb-goal-status"></span>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- Tone & Style -->
+          <section class="kb-card">
+            <div class="kb-card__header">
+              <h2>Tone &amp; Style</h2>
+              <p class="muted-text">Describe how you want the AI to sound — plain English. It'll format your words into clean, organised rules.</p>
+            </div>
+            <textarea id="kb-tone-input" rows="5" placeholder="e.g. Be friendly and casual but professional. Use the customer's name if they give it. Always sign off as 'The PowWash Team'. Keep replies short — 2 or 3 sentences max. Don't be salesy. Use £ for prices…"></textarea>
+            <button id="kb-tone-save" class="primary" type="button">Save &amp; Format with AI</button>
+            <div id="kb-tone-result" class="kb-tone-result hidden">
+              <div class="kb-result-label">✓ Tone rules saved</div>
+              <pre id="kb-tone-preview" class="kb-tone-preview"></pre>
+            </div>
+          </section>
+
+          <!-- Services -->
+          <section class="kb-card">
+            <div class="kb-card__header">
+              <h2>Services</h2>
+              <p class="muted-text">Build out your service knowledge. The AI uses this to quote accurately and stay focused on the right service.</p>
+            </div>
+            <div class="kb-price-form">
+
+              <!-- Step 1: Service -->
+              <div class="kb-step-label">1 — Service</div>
+              <div class="kb-form-row">
+                <label class="kb-label">
+                  <select id="kb-service-select">
+                    <option value="">— pick a service —</option>
+                    <option value="gutter_cleaning">Gutter Cleaning</option>
+                    <option value="driveway_cleaning">Driveway Cleaning</option>
+                    <option value="patio_cleaning">Patio &amp; Decking</option>
+                    <option value="window_cleaning">Window Cleaning</option>
+                    <option value="roof_cleaning">Roof Cleaning</option>
+                    <option value="fascia_soffit">Fascia &amp; Soffit Cleaning</option>
+                    <option value="conservatory">Conservatory Cleaning</option>
+                    <option value="render_cleaning">Render &amp; Wall Cleaning</option>
+                    <option value="soft_washing">Soft Washing</option>
+                    <option value="commercial">Commercial Cleaning</option>
+                    <option value="custom">Custom / Other…</option>
+                  </select>
+                </label>
+              </div>
+              <div id="kb-custom-wrap" class="kb-form-row hidden">
+                <input type="text" id="kb-custom-name" class="kb-custom-input" placeholder="Type your service name…" />
+              </div>
+
+              <!-- Step 2+3: Sub-category + Details -->
+              <div id="kb-subcat-section" class="hidden">
+                <div class="kb-step-label">2 — Sub-category</div>
+                <div class="kb-form-row">
+                  <input type="text" id="kb-subcat-name" class="kb-custom-input" placeholder="e.g. Standard Terrace, Semi-Detached, Detached…" />
+                </div>
+
+                <div class="kb-step-label" style="margin-top:0.5rem">3 — Details</div>
+                <div class="kb-form-row">
+                  <label class="kb-label kb-label--full">
+                    <span>Pricing &amp; Time</span>
+                    <textarea id="kb-pricing-time" rows="2" placeholder="e.g. £125+VAT, approx 1–2 hours. Add £10 per extension."></textarea>
+                  </label>
+                </div>
+                <div class="kb-form-row">
+                  <label class="kb-label kb-label--full">
+                    <span>Common Questions</span>
+                    <textarea id="kb-common-q" rows="2" placeholder="e.g. Is it front and back? Yes. Can gutters be accessed from a ladder?"></textarea>
+                  </label>
+                </div>
+                <div class="kb-form-row">
+                  <label class="kb-label kb-label--full">
+                    <span>Things we may need to know</span>
+                    <textarea id="kb-things-know" rows="2" placeholder="e.g. Ask if there are extensions (+£10 each) or a loft conversion (+£10)."></textarea>
+                  </label>
+                </div>
+                <button id="kb-ai-save" class="primary" type="button">Save Sub-category</button>
+              </div>
+
+            </div>
+
+            <div id="kb-price-list" class="kb-price-list"></div>
+          </section>
+
+          <!-- Diagnostic Scenarios -->
+          <section class="kb-card">
+            <div class="kb-card__header">
+              <h2>Diagnostic Scenarios</h2>
+              <p class="muted-text">Add troubleshooting knowledge so the AI can recognise issues and ask the right questions — organised by service and situation type.</p>
+            </div>
+
+            <div class="scen-form">
+              <div class="kb-form-row scen-dropdowns">
+                <label class="kb-label">
+                  <span>Service</span>
+                  <select id="scen-service">
+                    <option value="">— pick a service —</option>
+                    <option value="gutter_cleaning" data-label="Gutter Cleaning">Gutter Cleaning</option>
+                    <option value="driveway_cleaning" data-label="Driveway Cleaning">Driveway Cleaning</option>
+                    <option value="patio_cleaning" data-label="Patio &amp; Decking">Patio &amp; Decking</option>
+                    <option value="window_cleaning" data-label="Window Cleaning">Window Cleaning</option>
+                    <option value="roof_cleaning" data-label="Roof Cleaning">Roof Cleaning</option>
+                    <option value="fascia_soffit" data-label="Fascia &amp; Soffit">Fascia &amp; Soffit</option>
+                    <option value="conservatory" data-label="Conservatory Cleaning">Conservatory Cleaning</option>
+                    <option value="render_cleaning" data-label="Render &amp; Wall Cleaning">Render &amp; Wall Cleaning</option>
+                    <option value="general" data-label="General">General</option>
+                  </select>
+                </label>
+                <label class="kb-label">
+                  <span>Situation type</span>
+                  <select id="scen-category">
+                    <option value="fault_diagnosis" data-label="Fault Diagnosis">Fault Diagnosis</option>
+                    <option value="common_issues" data-label="Common Issues">Common Issues</option>
+                    <option value="what_to_expect" data-label="What to Expect">What to Expect</option>
+                    <option value="pricing_concerns" data-label="Pricing Concerns">Pricing Concerns</option>
+                    <option value="after_care" data-label="After Care">After Care</option>
+                    <option value="access_safety" data-label="Access &amp; Safety">Access &amp; Safety</option>
+                    <option value="seasonal" data-label="Seasonal Notes">Seasonal Notes</option>
+                    <option value="general_advice" data-label="General Advice">General Advice</option>
+                  </select>
+                </label>
+              </div>
+              <div class="kb-form-row">
+                <label class="kb-label kb-label--full">
+                  <span>Knowledge &amp; guidance</span>
+                  <textarea id="scen-content" rows="4" placeholder="Describe the scenario and how to handle it — the AI will use this to ask the right questions and set customer expectations. e.g. If a customer says water is dripping from underneath PVC gutters, this is likely a joint leak rather than a blockage…"></textarea>
+                </label>
+              </div>
+              <button id="scen-add" class="primary" type="button">Add Scenario</button>
+            </div>
+
+            <div id="scen-list" class="scen-list"></div>
+          </section>
+
+          <!-- Operator Contacts -->
+          <section class="kb-card kb-operators-card">
+            <div class="kb-card__header">
+              <h2>Operator Contacts</h2>
+              <p class="kb-card__hint">Numbers the AI can WhatsApp with a question about an unusual job. Their reply is routed straight back to the customer automatically. Toggle each number on or off.</p>
+            </div>
+            <div class="kb-op-add-form">
+              <div class="kb-op-add-row">
+                <input type="text"  id="op-name"  class="kb-op-input" placeholder="Name (e.g. Dave)" />
+                <input type="tel"   id="op-phone" class="kb-op-input" placeholder="+44 7911 123456" />
+                <input type="text"  id="op-role"  class="kb-op-input" placeholder="Role (optional)" />
+                <button id="op-add-btn" class="kb-btn kb-btn--primary">Add</button>
+              </div>
+            </div>
+            <div id="op-list" class="kb-op-list">
+              <p class="kb-op-empty">No operators saved yet — add one above.</p>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT COLUMN: AI Assistant -->
+        <div class="kb-right">
+          <section class="kb-card kb-chat-card">
+            <div class="kb-card__header">
+              <h2>AI Assistant</h2>
+              <p class="muted-text">Describe something the AI is doing wrong and it will diagnose which rule needs changing and fix it. Works across tone, pricing, booking flow, and process steps.</p>
+            </div>
+            <div id="kb-chat-log" class="kb-chat-log">
+              <div class="kb-bubble kb-bubble--ai">
+                <span class="kb-bubble__text">Hi! I know your full setup — tone rules, pricing, booking flow, process steps. Tell me what the AI is doing wrong and I'll figure out where the problem is and fix it. For example: "the AI is using em dashes" or "it's asking for email before showing available dates" or "terraced house with extension is being quoted at £165 instead of £135".</span>
+              </div>
+            </div>
+            <div class="kb-chat-input-area">
+              <textarea id="kb-chat-input" rows="2" placeholder="e.g. The AI is asking for name and email before showing available dates — fix that"></textarea>
+              <button id="kb-chat-send" class="primary" type="button">Send</button>
+            </div>
+          </section>
+        </div>
+
+      </main>
+
+      <!-- MESSAGES TAB — WhatsApp workspace -->
+      <main id="tab-messages" class="tab-content" aria-hidden="true">
+        <div class="wa-app">
+
+          <!-- Top bar -->
+          <header class="wa-top-bar">
+            <span class="wa-top-bar-title">Messages</span>
+            <!-- Global flashing light: shows whenever the AI is drafting/sending a
+                 reply in ANY conversation, so operators know their quote answers
+                 are being relayed to the customer even from another screen. -->
+            <button class="wa-ai-activity-banner" id="wa-ai-activity-banner" style="display:none" title="AI is drafting or sending a reply">
+              <span class="wa-ai-activity-banner__light"></span>
+              <span class="wa-ai-activity-banner__text">AI is replying…</span>
+            </button>
+          </header>
+
+          <!-- Screens -->
+          <div class="wa-screen" id="wa-screen-area">
+
+            <!-- Lightweight activity toasts (new message / AI responding) -->
+            <div class="wa-toast-stack" id="wa-toast-stack" aria-live="polite"></div>
+
+            <!-- ── Overview ── -->
+            <section id="wa-view-overview" class="wa-view">
+              <div class="wa-content-stack">
+                <div class="wa-section-heading">
+                  <h2>Workspace overview</h2>
+                  <p>Monitor WhatsApp enquiries, AI drafts, and integration readiness from one operator view.</p>
+                </div>
+                <div id="wa-overview-notifications"></div>
+                <div id="wa-overview-errors"></div>
+                <div id="wa-overview-pending"></div>
+                <div id="wa-overview-quotes"></div>
+                <div class="wa-profile-panel">
+                  <div class="wa-avatar">PW</div>
+                  <div class="wa-profile-copy">
+                    <p class="wa-label">Responding as</p>
+                    <h3>PowWash Demo</h3>
+                    <p>demo@powwash.local</p>
+                  </div>
+                  <span class="wa-role-pill">admin</span>
+                </div>
+                <div class="wa-metric-grid">
+                  <button class="wa-metric-card" id="wa-metric-convos">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span class="wa-metric-value" id="wa-metric-convos-val">0</span>
+                    <span class="wa-metric-label">Conversations</span>
+                  </button>
+                  <button class="wa-metric-card" id="wa-metric-quotes">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    <span class="wa-metric-value" id="wa-metric-quotes-val">0</span>
+                    <span class="wa-metric-label">Quotes</span>
+                  </button>
+                  <button class="wa-metric-card" id="wa-metric-bookings">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="wa-metric-value" id="wa-metric-bookings-val">0</span>
+                    <span class="wa-metric-label">Bookings this week</span>
+                    <span class="wa-metric-today" id="wa-metric-bookings-today"></span>
+                  </button>
+                  <button class="wa-metric-card" id="wa-metric-status">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span class="wa-metric-value">Ready</span>
+                    <span class="wa-metric-label">Integrations</span>
+                  </button>
+                </div>
+                <div class="wa-action-row">
+                  <button class="wa-primary-btn" id="wa-btn-open-chats">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    Open conversations
+                  </button>
+                  <button class="wa-ghost-btn" id="wa-btn-open-settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── Quote Requests ── -->
+            <section id="wa-view-quotes" class="wa-view wa-hidden">
+              <div class="wa-content-stack">
+                <div class="wa-list-header">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <button class="wa-back-btn" id="wa-quotes-back-btn" style="flex-shrink:0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div>
+                      <h2>Quote requests</h2>
+                      <p id="wa-quotes-subtitle">Loading…</p>
+                    </div>
+                  </div>
+                </div>
+                <div id="wa-quotes-list"></div>
+              </div>
+            </section>
+
+            <!-- ── Bookings ── -->
+            <section id="wa-view-bookings" class="wa-view wa-hidden">
+              <div class="wa-content-stack">
+                <div class="wa-list-header">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <button class="wa-back-btn" id="wa-bookings-back-btn" style="flex-shrink:0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div>
+                      <h2>Bookings</h2>
+                      <p id="wa-bookings-subtitle">Loading…</p>
+                    </div>
+                  </div>
+                </div>
+                <div id="wa-bookings-stats"></div>
+                <div id="wa-bookings-list"></div>
+              </div>
+            </section>
+
+            <!-- ── Conversations ── -->
+            <section id="wa-view-conversations" class="wa-view wa-hidden">
+              <div class="wa-content-stack">
+                <div class="wa-list-header">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <button class="wa-back-btn" id="wa-convos-back-btn" style="flex-shrink:0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div>
+                      <h2>Chats</h2>
+                      <p id="wa-convos-subtitle">Loading…</p>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center">
+                  <button class="wa-primary-btn" id="wa-new-convo-btn" style="padding:7px 14px;font-size:13px">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New
+                  </button>
+                  <button class="wa-icon-btn" id="wa-refresh-btn" aria-label="Refresh">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  </button>
+                  </div>
+                </div>
+                <div class="wa-search-wrap">
+                  <svg class="wa-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input class="wa-search-input" id="wa-search-input" type="search" placeholder="Search by name, number or message…" autocomplete="off" spellcheck="false">
+                </div>
+                <div id="wa-list-pending-banners"></div>
+                <div id="wa-conversation-list" class="wa-conversation-list">
+                  <p class="wa-empty-state">Loading conversations…</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── Chat detail ── -->
+            <section id="wa-view-chat" class="wa-view wa-hidden wa-chat-layout">
+              <header class="wa-chat-header" id="wa-chat-header"></header>
+              <!-- countdown bar removed — timer lives inside the message bubble -->
+              <div class="wa-message-list" id="wa-message-list"></div>
+              <div id="wa-draft-btn-wrap"></div>
+              <form class="wa-composer" id="wa-composer">
+                <textarea id="wa-composer-input" placeholder="Type a message" rows="1" maxlength="1600"></textarea>
+                <button class="wa-send-btn" id="wa-send-btn" type="submit" disabled>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+              </form>
+            </section>
+
+            <!-- ── Settings ── -->
+            <section id="wa-view-settings" class="wa-view wa-hidden">
+              <div class="wa-content-stack">
+                <div class="wa-section-heading">
+                  <h2>Integration settings</h2>
+                  <p>Connection status for Twilio WhatsApp and OpenAI.</p>
+                </div>
+                <div id="wa-settings-content">
+                  <p class="wa-empty-state">Loading…</p>
+                </div>
+              </div>
+            </section>
+
+          </div><!-- /wa-screen-area -->
+
+          <!-- Bottom nav -->
+          <nav class="wa-bottom-nav" id="wa-bottom-nav">
+            <button class="wa-nav-item active" data-waview="overview">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              <span>Workspace</span>
+            </button>
+            <button class="wa-nav-item" data-waview="conversations">
+              <span class="wa-nav-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <span class="wa-nav-badge" id="wa-nav-convos-badge" style="display:none"></span>
+              </span>
+              <span>Conversations</span>
+            </button>
+            <button class="wa-nav-item" data-waview="quotes">
+              <span class="wa-nav-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                <span class="wa-nav-badge" id="wa-nav-quotes-badge" style="display:none"></span>
+              </span>
+              <span>Quotes</span>
+            </button>
+          </nav>
+
+          <!-- ── Customer Simulator (split preview) ── -->
+          <div id="wa-simulator" class="wa-simulator wa-sim-closed">
+
+            <!-- Title bar -->
+            <div class="wa-sim-titlebar">
+              <div class="wa-sim-titlebar-left">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <span>Customer Simulator</span>
+                <span class="wa-sim-badge">Preview</span>
+              </div>
+              <div class="wa-sim-titlebar-right">
+                <button class="wa-ghost-btn small" id="wa-sim-reset">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  New chat
+                </button>
+                <button class="wa-icon-btn" id="wa-sim-close" aria-label="Close simulator">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Split body -->
+            <div class="wa-sim-split">
+
+              <!-- LEFT: Customer phone -->
+              <div class="wa-sim-pane customer-pane">
+                <div class="wa-sim-pane-header">
+                  <div class="wa-sim-pane-avatar">👤</div>
+                  <div class="wa-sim-pane-info">
+                    <div class="wa-sim-pane-name">You (Customer)</div>
+                    <div class="wa-sim-pane-sub">Texting PowWash on WhatsApp</div>
+                  </div>
+                </div>
+                <div class="wa-sim-messages" id="wa-sim-messages">
+                  <div class="wa-sim-welcome">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <p>Type a customer enquiry to begin.<br>Try <em>"how much for a driveway clean?"</em></p>
+                  </div>
+                </div>
+                <form class="wa-sim-composer" id="wa-sim-composer">
+                  <textarea id="wa-sim-input" placeholder="Type as a customer…" rows="1" maxlength="800"></textarea>
+                  <button class="wa-send-btn" id="wa-sim-send" type="submit" disabled>
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                  </button>
+                </form>
+              </div>
+
+              <!-- Centre divider -->
+              <div class="wa-sim-divider">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+              </div>
+
+              <!-- RIGHT: App / Operator view -->
+              <div class="wa-sim-pane app-pane">
+                <div class="wa-sim-pane-header app">
+                  <div class="wa-sim-pane-avatar app">PW</div>
+                  <div class="wa-sim-pane-info">
+                    <div class="wa-sim-pane-name">PowWash App</div>
+                    <div class="wa-sim-pane-sub" id="wa-sim-app-status">Waiting for messages</div>
+                  </div>
+                </div>
+                <div class="wa-sim-app-thread" id="wa-sim-app-thread">
+                  <div class="wa-sim-app-empty" id="wa-sim-app-empty">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <p>Operator view — incoming messages<br>and AI drafts appear here.</p>
+                  </div>
+                </div>
+                <!-- AI generating bar -->
+                <div class="wa-sim-generating" id="wa-sim-generating">
+                  <div class="wa-sim-typing"><span></span><span></span><span></span></div>
+                  <span class="wa-sim-generating-label">AI drafting reply…</span>
+                </div>
+                <!-- Pending AI draft card -->
+                <div class="wa-sim-pending" id="wa-sim-pending">
+                  <div class="wa-sim-pending-top">
+                    <div class="wa-sim-pending-label">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      Sending in <span id="wa-sim-countdown">20</span>s
+                    </div>
+                    <div class="wa-sim-pending-tag">AI Draft</div>
+                  </div>
+                  <div class="wa-sim-progress-track">
+                    <div class="wa-sim-progress-fill" id="wa-sim-progress"></div>
+                  </div>
+                  <textarea class="wa-sim-draft-text" id="wa-sim-draft-text" rows="3" spellcheck="false"></textarea>
+                  <div class="wa-sim-pending-actions">
+                    <button class="wa-ghost-btn small" id="wa-sim-send-now">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                      Send now
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /wa-sim-split -->
+          </div><!-- /wa-simulator -->
+
+          <!-- Simulator toggle button -->
+          <button id="wa-sim-toggle" class="wa-sim-toggle" title="Open Customer Simulator">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>Test AI</span>
+          </button>
+
+        </div><!-- /wa-app -->
+      </main>
+
+      <!-- SETTINGS TAB -->
+      <main id="tab-settings" class="tab-content settings-layout" aria-hidden="true">
+        <div class="settings-page">
+
+          <div class="settings-page-header">
+            <h1>Settings</h1>
+            <p>Configure your WhatsApp integration, users, and message templates.</p>
+          </div>
+
+          <!-- Users section (admin only) -->
+          <section class="stg-card" id="stg-users-card" style="display:none;">
+            <div class="stg-card-header">
+              <div class="stg-card-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Users</h2>
+                <p>Manage who has access to PowWash and their role.</p>
+              </div>
+            </div>
+            <div class="stg-form" id="stg-users-list" style="padding:0.75rem 1rem;"></div>
+            <div class="stg-form" style="padding:0.75rem 1rem;border-top:1px solid var(--border);">
+              <p style="font-size:0.82rem;font-weight:600;margin-bottom:0.5rem;">Add a user</p>
+              <div class="stg-field-row">
+                <div class="stg-field">
+                  <label for="new-user-name">Name</label>
+                  <input type="text" id="new-user-name" placeholder="e.g. Sarah" />
+                </div>
+                <div class="stg-field">
+                  <label for="new-user-email">Email</label>
+                  <input type="email" id="new-user-email" placeholder="user@example.com" />
+                </div>
+              </div>
+              <div class="stg-field-row">
+                <div class="stg-field">
+                  <label for="new-user-password">Password</label>
+                  <input type="password" id="new-user-password" placeholder="Temporary password" />
+                </div>
+                <div class="stg-field">
+                  <label for="new-user-role">Role</label>
+                  <select id="new-user-role">
+                    <option value="user">User (Messages only)</option>
+                    <option value="admin">Admin (full access)</option>
+                  </select>
+                </div>
+              </div>
+              <button class="stg-save-btn" id="new-user-add-btn">Add user</button>
+              <p id="new-user-status" style="font-size:0.8rem;margin-top:0.4rem;"></p>
+            </div>
+          </section>
+
+          <!-- Notifications section -->
+          <section class="stg-card" id="stg-notif-card">
+            <div class="stg-card-header">
+              <div class="stg-card-icon" style="background:#f0fdf4;color:#16a34a;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Notifications</h2>
+                <p>Choose which alerts you receive and the sound for each.</p>
+              </div>
+              <div id="notif-permission-badge" class="stg-badge stg-badge-off">Off</div>
+            </div>
+            <div class="stg-form" style="padding:0.75rem 1rem;">
+              <div id="notif-permission-row" style="margin-bottom:1rem;display:none;">
+                <button class="stg-save-btn" id="notif-enable-btn" style="width:auto;">🔔 Enable push notifications</button>
+                <p style="font-size:0.78rem;color:#64748b;margin-top:0.4rem;">Tap above then tap <strong>Allow</strong> — this lets PowWash alert you when the app is closed.</p>
+                <div style="margin-top:0.75rem;padding:0.65rem 0.85rem;border-radius:10px;background:#fef9c3;border:1px solid #fde047;">
+                  <p style="font-size:0.78rem;color:#713f12;margin:0;font-weight:600;">📱 iPhone users</p>
+                  <p style="font-size:0.75rem;color:#854d0e;margin:0.3rem 0 0;">Notifications only work when saved to your Home Screen. In Safari tap <strong>Share → Add to Home Screen</strong>, then open the app from your home screen and enable notifications here. Requires iOS 16.4 or later.</p>
+                </div>
+              </div>
+              <div id="notif-rows">
+                <!-- customer_message -->
+                <div class="notif-row" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border);">
+                  <label class="toggle-switch" title="Enable/disable">
+                    <input type="checkbox" class="notif-toggle" data-type="customer_message" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <div style="flex:1;">
+                    <p style="font-size:0.88rem;font-weight:600;margin:0;">Customer message</p>
+                    <p style="font-size:0.75rem;color:#64748b;margin:0;">When a new WhatsApp message arrives</p>
+                  </div>
+                  <select class="notif-tone-sel" data-type="customer_message" style="font-size:0.8rem;padding:3px 6px;border:1px solid #d1d5db;border-radius:6px;">
+                    <option value="customer">Soft ding</option>
+                    <option value="human">Alert beep</option>
+                    <option value="booking">Success chime</option>
+                  </select>
+                  <button class="notif-test-btn secondary" data-type="customer_message" style="font-size:0.78rem;padding:3px 10px;">Test</button>
+                </div>
+                <!-- human_input -->
+                <div class="notif-row" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border);">
+                  <label class="toggle-switch" title="Enable/disable">
+                    <input type="checkbox" class="notif-toggle" data-type="human_input" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <div style="flex:1;">
+                    <p style="font-size:0.88rem;font-weight:600;margin:0;">Human input needed</p>
+                    <p style="font-size:0.75rem;color:#64748b;margin:0;">When the AI needs you to step in</p>
+                  </div>
+                  <select class="notif-tone-sel" data-type="human_input" style="font-size:0.8rem;padding:3px 6px;border:1px solid #d1d5db;border-radius:6px;">
+                    <option value="customer">Soft ding</option>
+                    <option value="human" selected>Alert beep</option>
+                    <option value="booking">Success chime</option>
+                  </select>
+                  <button class="notif-test-btn secondary" data-type="human_input" style="font-size:0.78rem;padding:3px 10px;">Test</button>
+                </div>
+                <!-- booking_complete -->
+                <div class="notif-row" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;">
+                  <label class="toggle-switch" title="Enable/disable">
+                    <input type="checkbox" class="notif-toggle" data-type="booking_complete" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <div style="flex:1;">
+                    <p style="font-size:0.88rem;font-weight:600;margin:0;">Booking complete</p>
+                    <p style="font-size:0.75rem;color:#64748b;margin:0;">When a job is confirmed and added to calendar</p>
+                  </div>
+                  <select class="notif-tone-sel" data-type="booking_complete" style="font-size:0.8rem;padding:3px 6px;border:1px solid #d1d5db;border-radius:6px;">
+                    <option value="customer">Soft ding</option>
+                    <option value="human">Alert beep</option>
+                    <option value="booking" selected>Success chime</option>
+                  </select>
+                  <button class="notif-test-btn secondary" data-type="booking_complete" style="font-size:0.78rem;padding:3px 10px;">Test</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Twilio section -->
+          <section class="stg-card">
+            <div class="stg-card-header">
+              <div class="stg-card-icon stg-icon-twilio">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.46 14 19.79 19.79 0 0 1 1.38 5.42 2 2 0 0 1 3.38 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17v-.08z"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Twilio WhatsApp</h2>
+                <p>Connect your Twilio account to send and receive WhatsApp messages.</p>
+              </div>
+              <div id="stg-twilio-badge" class="stg-badge stg-badge-off">Not configured</div>
+            </div>
+
+            <div class="stg-form" id="stg-twilio-form">
+              <div class="stg-field-row">
+                <div class="stg-field">
+                  <label for="stg-account-sid">Account SID</label>
+                  <input type="text" id="stg-account-sid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="stg-field">
+                  <label for="stg-auth-token">Auth Token</label>
+                  <input type="password" id="stg-auth-token" placeholder="Paste token (leave blank to keep saved)" autocomplete="new-password">
+                </div>
+              </div>
+              <div class="stg-field-row">
+                <div class="stg-field">
+                  <label for="stg-whatsapp-from">
+                    WhatsApp Number
+                    <span class="stg-label-hint">Your Twilio WhatsApp-enabled number</span>
+                  </label>
+                  <input type="text" id="stg-whatsapp-from" placeholder="whatsapp:+14155238886" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="stg-field">
+                  <label for="stg-messaging-sid">
+                    Messaging Service SID <span class="stg-optional">(optional)</span>
+                    <span class="stg-label-hint">Use instead of a number for branded senders</span>
+                  </label>
+                  <input type="text" id="stg-messaging-sid" placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+                </div>
+              </div>
+              <div class="stg-field-row">
+                <div class="stg-field">
+                  <label for="stg-sender-name">
+                    Your name
+                    <span class="stg-label-hint">Auto-fills <code style="font-size:11px">{{user_name}}</code> in templates</span>
+                  </label>
+                  <input type="text" id="stg-sender-name" placeholder="e.g. Alex" autocomplete="off" spellcheck="false">
+                </div>
+              </div>
+
+              <label class="stg-check-row">
+                <input type="checkbox" id="stg-sandbox-mode">
+                <span class="stg-check-label">
+                  Sandbox / test mode
+                  <small>Use the Twilio sandbox for testing — no real messages sent.</small>
+                </span>
+              </label>
+
+              <div id="stg-sandbox-info" class="stg-info-box stg-hidden">
+                <div class="stg-info-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div>
+                  <strong>Sandbox opt-in:</strong> Customers must text your sandbox keyword to the Twilio sandbox number before they can receive messages.
+                  <div class="stg-sandbox-keyword-row">
+                    <span>Sandbox keyword:</span>
+                    <input type="text" id="stg-sandbox-keyword" placeholder="join example-word" class="stg-inline-input">
+                  </div>
+                </div>
+              </div>
+
+              <div class="stg-actions">
+                <button class="stg-save-btn" id="stg-twilio-save">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Save
+                </button>
+                <button class="stg-test-btn" id="stg-twilio-test">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  Test connection
+                </button>
+              </div>
+              <div id="stg-test-result" class="stg-hidden"></div>
+
+              <div class="stg-divider"></div>
+
+              <div class="stg-send-test-block">
+                <div class="stg-send-test-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.46 14 19.79 19.79 0 0 1 1.38 5.42 2 2 0 0 1 3.38 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17v-.08z"/></svg>
+                  Send a test WhatsApp message
+                </div>
+                <div class="stg-send-test-row">
+                  <div class="stg-send-test-field">
+                    <input type="text" id="stg-test-to" class="stg-send-test-input" placeholder="+447700900123" autocomplete="off" spellcheck="false">
+                    <span class="stg-send-test-hint">Full international format — include country code, no spaces (e.g. <strong>+44</strong>7565708252 not 07565…)</span>
+                  </div>
+                  <input type="text" id="stg-test-body" class="stg-send-test-input stg-send-test-body" placeholder="Message text" autocomplete="off" spellcheck="false">
+                  <button class="stg-test-btn" id="stg-send-test-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    Send
+                  </button>
+                </div>
+                <div id="stg-send-test-result" class="stg-hidden"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Approved Message Templates section -->
+          <section class="stg-card">
+            <div class="stg-card-header">
+              <div class="stg-card-icon stg-icon-templates">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Approved Message Templates</h2>
+                <p>Store your pre-approved WhatsApp templates for outbound messages to new customers.</p>
+              </div>
+            </div>
+
+            <div class="stg-info-box" style="margin-bottom:20px">
+              <div class="stg-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div>
+                <strong>Why templates?</strong> WhatsApp requires any business-initiated conversation to use a Meta-approved template message. If a customer messages you first, you can reply freely within 24 hours. Templates are needed for follow-ups, booking confirmations, and cold outreach. Create and approve them in your <a href="https://console.twilio.com/us1/develop/sms/content-template-builder" target="_blank" style="color:#2563eb">Twilio Content Template Builder</a>.
+              </div>
+            </div>
+
+            <div id="stg-templates-list" class="stg-templates-list">
+              <p class="stg-empty-state">Loading…</p>
+            </div>
+
+            <button class="stg-add-template-btn" id="stg-add-template">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add template
+            </button>
+
+            <div class="stg-actions" style="margin-top:18px">
+              <button class="stg-save-btn" id="stg-templates-save">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save templates
+              </button>
+            </div>
+          </section>
+
+          <!-- Webhook & Live Inbox section -->
+          <section class="stg-card">
+            <div class="stg-card-header">
+              <div class="stg-card-icon stg-icon-webhook">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Webhook &amp; Live Inbox</h2>
+                <p>Point Twilio to this URL so incoming messages reach the app. Open the inbox to watch messages arrive in real time.</p>
+              </div>
+            </div>
+
+            <div class="stg-webhook-block">
+              <label class="stg-field-label">WhatsApp webhook URL</label>
+              <div class="stg-webhook-url-row">
+                <code id="stg-webhook-url" class="stg-webhook-url"></code>
+                <button class="stg-test-btn" id="stg-copy-webhook">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copy
+                </button>
+              </div>
+
+              <label class="stg-field-label" style="margin-top:10px">SMS webhook URL</label>
+              <div class="stg-webhook-url-row">
+                <code id="stg-sms-webhook-url" class="stg-webhook-url"></code>
+                <button class="stg-test-btn" id="stg-copy-sms-webhook">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copy
+                </button>
+              </div>
+
+              <div class="stg-webhook-steps">
+                <div class="stg-step"><span class="stg-step-num">1</span>Go to <strong>Twilio Console → Messaging → Senders → WhatsApp Senders</strong> and paste the WhatsApp URL. For SMS, go to <strong>Phone Numbers → Active Numbers</strong> and paste the SMS URL.</div>
+                <div class="stg-step"><span class="stg-step-num">2</span>Set <strong>"A message comes in"</strong> to the relevant URL above (HTTP POST) and save.</div>
+                <div class="stg-step"><span class="stg-step-num">3</span>Send a WhatsApp or SMS message to your Twilio number — both will appear in the live inbox below, labelled by channel.</div>
+              </div>
+
+              <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap">
+                <button class="stg-test-btn" id="stg-webhook-test-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>
+                  Test webhook
+                </button>
+                <div id="stg-webhook-test-result" class="stg-hidden"></div>
+              </div>
+              <button class="stg-open-inbox-btn" id="stg-open-inbox" style="margin-top:10px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                Open live inbox
+                <span class="stg-inbox-dot" id="stg-inbox-dot"></span>
+              </button>
+            </div>
+          </section>
+
+        </div>
+      </main>
+
+      <!-- CHECKATRADE TAB -->
+      <main id="tab-checkatrade" class="tab-content settings-layout" aria-hidden="true">
+        <div class="settings-grid">
+          <section class="stg-card" id="stg-scraper-card" style="grid-column:1 / -1">
+            <div class="stg-card-header">
+              <div class="stg-card-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Checkatrade Scraper</h2>
+                <p>Enter your Gmail credentials below first, then use the control screen to log in and fetch leads.</p>
+              </div>
+            </div>
+
+            <!-- Gmail credentials — lives here in PowWash, not inside the iframe -->
+            <div id="ca-gmail-section" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:18px 20px;margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div>
+                  <h3 style="margin:0 0 3px;font-size:14px;font-weight:600;color:#111827">Gmail Credentials</h3>
+                  <p style="margin:0;font-size:12px;color:#6b7280">The scraper reads these inboxes to watch for new leads and auto-read login codes. Use <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" style="color:#3b82f6">Google app passwords</a>, not your real Gmail password.</p>
+                </div>
+                <span id="ca-gmail-badge" style="font-size:12px;font-weight:600;white-space:nowrap;margin-left:12px"></span>
+              </div>
+              <!-- Login Gmail row -->
+              <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+                <div class="stg-field" style="flex:1;min-width:180px">
+                  <label for="ca-login-email">Login Gmail <span style="color:#6b7280;font-weight:400">(receives Checkatrade OTP codes)</span></label>
+                  <input id="ca-login-email" type="email" placeholder="ben@example.com" autocomplete="off" />
+                </div>
+                <div class="stg-field" style="flex:1;min-width:160px">
+                  <label for="ca-login-pass">App password</label>
+                  <input id="ca-login-pass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password" />
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding-bottom:2px">
+                  <button class="stg-save-btn" id="ca-login-test" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;white-space:nowrap">Test</button>
+                  <span id="ca-login-test-result" style="font-size:12px;white-space:nowrap"></span>
+                </div>
+              </div>
+              <!-- Enquiry Gmail row -->
+              <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+                <div class="stg-field" style="flex:1;min-width:180px">
+                  <label for="ca-enquiry-email">Enquiry Gmail <span style="color:#6b7280;font-weight:400">(receives new-lead alert emails)</span></label>
+                  <input id="ca-enquiry-email" type="email" placeholder="enquiries@example.com" autocomplete="off" />
+                </div>
+                <div class="stg-field" style="flex:1;min-width:160px">
+                  <label for="ca-enquiry-pass">App password</label>
+                  <input id="ca-enquiry-pass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password" />
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding-bottom:2px">
+                  <button class="stg-save-btn" id="ca-enquiry-test" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;white-space:nowrap">Test</button>
+                  <span id="ca-enquiry-test-result" style="font-size:12px;white-space:nowrap"></span>
+                </div>
+              </div>
+              <button class="stg-save-btn" id="ca-gmail-save">Save Gmail credentials</button>
+            </div>
+
+            <div style="margin-bottom:14px">
+              <a href="/checkatrade-tools" target="_blank" rel="noopener"
+                 style="display:inline-flex;align-items:center;gap:8px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600">
+                ▶ Test Checkatrade scraper
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+              <span style="font-size:12px;color:#9ca3af;margin-left:10px">Opens in a new tab</span>
+            </div>
+
+            <div id="ca-scraper-wrap" style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#0f1117">
+              <iframe id="ca-scraper-frame" title="Checkatrade Scraper control screen" style="width:100%;height:780px;border:0;display:block"></iframe>
+            </div>
+            <p id="ca-scraper-fallback" style="display:none;margin-top:10px;color:#b45309;font-size:13px"></p>
+          </section>
+
+          <section class="stg-card" id="stg-checkatrade-card">
+            <div class="stg-card-header">
+              <div class="stg-card-icon" style="background:#fff7ed;color:#ea580c;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div class="stg-card-title">
+                <h2>Checkatrade Lead Intake</h2>
+                <p>Auto-reply to new Checkatrade enquiries — seed the customer's name, postcode, email & job, then send the right opening template.</p>
+              </div>
+              <span class="stg-badge stg-badge-off" id="ca-status-badge">Off</span>
+            </div>
+
+            <label class="stg-toggle-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <input type="checkbox" id="ca-active" />
+              <span><strong>Activate Checkatrade intake</strong> — when on, incoming leads are messaged automatically.</span>
+            </label>
+
+            <div class="stg-field">
+              <label for="ca-default-template">Default template (used when nothing else matches — make this your neutral catch-all)</label>
+              <select id="ca-default-template"><option value="">— none —</option></select>
+            </div>
+
+            <label class="stg-toggle-row" style="display:flex;align-items:flex-start;gap:10px;margin:12px 0">
+              <input type="checkbox" id="ca-aimatch" checked style="margin-top:3px" />
+              <span><strong>Let AI choose the template</strong> — the AI reads each lead and picks the best-fitting template (e.g. gutter clearing → your gutter template, driveway/patio → pressure washing). It automatically considers any new template you add, so just create one and it's recognised.</span>
+            </label>
+
+            <label class="stg-toggle-row" style="display:flex;align-items:flex-start;gap:10px;margin:12px 0">
+              <input type="checkbox" id="ca-automatch" checked style="margin-top:3px" />
+              <span>Fallback keyword match — if the AI is off or unsure, match the job to template names (e.g. "gutter" → Gutter Cleaning Template).</span>
+            </label>
+
+            <div class="stg-field">
+              <label>Templates the router can choose from</label>
+              <div id="ca-template-pool" style="font-size:13px;color:#374151;display:flex;flex-direction:column;gap:4px">—</div>
+            </div>
+
+            <div class="stg-info-box" style="margin:14px 0">
+              <div class="stg-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div>
+                <strong>Webhook URL</strong> — point the Checkatrade scraper here:<br>
+                <code id="ca-webhook-url" style="word-break:break-all">—</code>
+                <span id="ca-token-note" style="display:none;color:#b45309"><br>A shared secret is required (send it in the <code>X-Checkatrade-Token</code> header).</span>
+              </div>
+            </div>
+
+            <div class="stg-actions" style="margin-bottom:24px">
+              <button class="stg-save-btn" id="ca-save">Save settings</button>
+            </div>
+
+            <div class="stg-divider" style="border-top:1px solid #e5e7eb;margin:8px 0 18px"></div>
+
+            <h3 style="margin:0 0 4px;font-size:15px">Test the route</h3>
+            <p style="margin:0 0 14px;color:#6b7280;font-size:13px">Fill in what Checkatrade would supply and preview which template fires — or send a live test even while intake is off.</p>
+
+            <div class="stg-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="stg-field"><label for="ca-test-name">Customer name</label><input id="ca-test-name" placeholder="Geraint Jones" /></div>
+              <div class="stg-field"><label for="ca-test-phone">Phone</label><input id="ca-test-phone" placeholder="+447700900000" /></div>
+              <div class="stg-field"><label for="ca-test-email">Email</label><input id="ca-test-email" placeholder="geraint@example.com" /></div>
+              <div class="stg-field"><label for="ca-test-postcode">Postcode</label><input id="ca-test-postcode" placeholder="SW19 1AA" /></div>
+              <div class="stg-field"><label for="ca-test-jobtitle">Job title</label><input id="ca-test-jobtitle" placeholder="Gutter Cleaning" /></div>
+              <div class="stg-field"><label for="ca-test-profile">Profile</label><input id="ca-test-profile" placeholder="London" /></div>
+            </div>
+            <div class="stg-field"><label for="ca-test-desc">Job description / message</label><textarea id="ca-test-desc" rows="2" placeholder="Need the gutters cleared on a 3-bed semi"></textarea></div>
+
+            <div class="stg-actions" style="display:flex;gap:10px;margin-top:6px">
+              <button class="stg-save-btn" id="ca-preview" style="background:#475569">Preview route</button>
+              <button class="stg-save-btn" id="ca-send-test">Send live test</button>
+            </div>
+
+            <div id="ca-test-result" class="stg-hidden" style="margin-top:16px"></div>
+          </section>
+        </div>
+      </main>
+
+      <!-- Live Inbox Modal -->
+      <div id="stg-inbox-overlay" class="stg-inbox-overlay stg-hidden" role="dialog" aria-modal="true">
+        <div class="stg-inbox-panel">
+          <div class="stg-inbox-header">
+            <div class="stg-inbox-header-left">
+              <span class="stg-inbox-pulse" id="stg-inbox-pulse"></span>
+              <span class="stg-inbox-title">Live Inbox</span>
+              <span class="stg-inbox-status" id="stg-inbox-status">connecting…</span>
+            </div>
+            <div class="stg-inbox-header-right">
+              <button class="stg-inbox-clear-btn" id="stg-inbox-clear">Clear</button>
+              <button class="stg-inbox-close-btn" id="stg-inbox-close" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="stg-inbox-empty" id="stg-inbox-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <p>No messages yet.</p>
+            <small>Send a WhatsApp message to your Twilio number and it will appear here.</small>
+          </div>
+          <div id="stg-inbox-list" class="stg-inbox-list"></div>
+        </div>
+      </div>
+
+      <!-- Outbound template picker modal -->
+      <div id="wa-outbound-overlay" class="stg-inbox-overlay stg-hidden" role="dialog" aria-modal="true">
+        <div class="stg-inbox-panel" style="max-width:480px">
+          <div class="stg-inbox-header">
+            <div class="stg-inbox-header-left">
+              <span class="stg-inbox-title">Reach out to a customer</span>
+            </div>
+            <div class="stg-inbox-header-right">
+              <button class="stg-inbox-close-btn" id="wa-outbound-close" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label class="stg-field-label">Customer phone number (E.164)</label>
+              <input class="stg-input" id="wa-outbound-phone" type="tel" placeholder="+447700900000" style="width:100%;box-sizing:border-box;margin-top:4px">
+            </div>
+            <div>
+              <label class="stg-field-label">Channel</label>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                  <input type="radio" name="wa-outbound-channel" value="whatsapp" checked> WhatsApp
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                  <input type="radio" name="wa-outbound-channel" value="sms"> SMS
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="stg-field-label">Template</label>
+              <select class="stg-input" id="wa-outbound-template" style="width:100%;box-sizing:border-box;margin-top:4px">
+                <option value="">— choose a template —</option>
+              </select>
+            </div>
+            <div id="wa-outbound-vars" style="display:none;flex-direction:column;gap:10px"></div>
+            <div>
+              <label class="stg-field-label">Message preview</label>
+              <textarea class="stg-input" id="wa-outbound-preview" rows="4" placeholder="Select a template above, or type a message" style="width:100%;box-sizing:border-box;resize:vertical;margin-top:4px;font-family:inherit;line-height:1.5;background:#f9fafb;color:#374151" readonly></textarea>
+              <p id="wa-outbound-nosid-hint" style="display:none;margin:4px 0 0;font-size:12px;color:#f59e0b">⚠ This template hasn't been submitted to Twilio yet — it may not send on WhatsApp.</p>
+            </div>
+            <div id="wa-outbound-error" style="display:none;color:#dc2626;font-size:13px"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="stg-test-btn" id="wa-outbound-cancel">Cancel</button>
+              <button class="wa-primary-btn" id="wa-outbound-send" style="min-width:100px">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="params-overlay" class="params-overlay" aria-hidden="true"></div>
+      <aside
+        id="params-panel"
+        class="params-panel"
+        aria-label="Training and parameters"
+        aria-hidden="true"
+      >
+        <div class="panel-header">
+          <h2>Training &amp; Parameters</h2>
+          <button id="close-params" aria-label="Close panel">×</button>
+        </div>
+        <div class="panel-content">
+          <label>
+            <span>System Prompt</span>
+            <textarea id="system-prompt" rows="8"></textarea>
+          </label>
+
+          <label>
+            <span>Service Preset</span>
+            <select id="service-preset"></select>
+            <small id="service-focus"></small>
+          </label>
+
+          <fieldset>
+            <legend>Pricing</legend>
+            <div class="field-grid">
+              <label>
+                <span>Base Call-out (£)</span>
+                <input type="number" id="pricing-base" step="0.01" />
+              </label>
+              <label>
+                <span>Rate per m² (£)</span>
+                <input type="number" id="pricing-rate" step="0.01" />
+              </label>
+              <label>
+                <span>Heavy Soiling Multiplier</span>
+                <input type="number" id="pricing-heavy" step="0.01" />
+              </label>
+              <label>
+                <span>Oil Stains Multiplier</span>
+                <input type="number" id="pricing-oil" step="0.01" />
+              </label>
+              <label>
+                <span>Algae/Biocide Multiplier</span>
+                <input type="number" id="pricing-algae" step="0.01" />
+              </label>
+              <label>
+                <span>Access Difficulty Multiplier</span>
+                <input type="number" id="pricing-access" step="0.01" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Coverage Policy</legend>
+            <label>
+              <span>Max Additional Photo Requests</span>
+              <input type="number" id="coverage-max" min="0" step="1" />
+            </label>
+            <label>
+              <span>Confidence Threshold</span>
+              <input type="number" id="coverage-confidence" min="0" max="1" step="0.05" />
+            </label>
+            <label>
+              <span>Max Image Size (MB)</span>
+              <input type="number" id="limit-image-size" min="1" step="1" />
+            </label>
+          </fieldset>
+
+          <label>
+            <span>Response Format</span>
+            <select id="response-format">
+              <option value="json">JSON Only</option>
+              <option value="json+explanation">JSON + Explanation</option>
+              <option value="markdown">Markdown</option>
+            </select>
+          </label>
+
+          <button id="save-params" class="primary" type="button">Apply &amp; Save</button>
+        </div>
+      </aside>
+
+      <!-- CALENDAR TAB -->
+      <main id="tab-calendar" class="tab-content cal-layout" aria-hidden="true">
+        <div class="cal-page">
+
+          <div class="cal-page-header">
+            <h1>Calendar Scheduler</h1>
+            <p>Connect Google Calendar to enable smart booking — the AI will find the best slot, drop a hold, and confirm once the customer says yes.</p>
+          </div>
+
+          <!-- OAuth credentials card (one-time setup) -->
+          <section class="cal-card" id="cal-creds-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-hours">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Google OAuth App Credentials</h2>
+                <p>One-time setup — enter your Google Cloud OAuth Client ID &amp; Secret once and they're saved.</p>
+              </div>
+              <div id="cal-creds-badge" class="cal-badge cal-badge-off">Not set</div>
+            </div>
+            <div class="cal-creds-body">
+              <p class="cal-hint">
+                Create an OAuth 2.0 Client (Web application) in
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a>
+                and paste the credentials here.
+              </p>
+              <div class="cal-redirect-uri-block">
+                <p class="cal-redirect-uri-label">
+                  <strong>Step 1 — paste this exact URL into the "Authorised redirect URIs" field in Google Cloud Console:</strong>
+                </p>
+                <div class="cal-redirect-uri-row">
+                  <code id="cal-redirect-uri-display" class="cal-code-pill">loading…</code>
+                  <button class="cal-copy-uri-btn" id="cal-copy-uri-btn" title="Copy to clipboard">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy
+                  </button>
+                </div>
+                <p class="cal-hint" style="margin-top:6px">Then enter your Client ID and Client Secret below.</p>
+              </div>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="cal-client-id-input">Client ID</label>
+                  <input type="text" id="cal-client-id-input" placeholder="123456789-abc….apps.googleusercontent.com" autocomplete="off">
+                </div>
+              </div>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="cal-client-secret-input">Client Secret</label>
+                  <input type="password" id="cal-client-secret-input" placeholder="GOCSPX-…" autocomplete="off">
+                </div>
+              </div>
+              <div class="cal-connect-row">
+                <button class="cal-btn-primary" id="cal-save-creds-btn">Save credentials</button>
+                <span id="cal-creds-status" class="cal-save-status"></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Connection card -->
+          <section class="cal-card" id="cal-connect-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-google">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Google Calendar</h2>
+                <p>Authorise access so the scheduler can read your diary and write bookings.</p>
+              </div>
+              <div id="cal-status-badge" class="cal-badge cal-badge-off">Not connected</div>
+            </div>
+
+            <div class="cal-connect-body" id="cal-connect-body">
+              <p id="cal-connect-hint" class="cal-hint">Click the button below to connect your Google account. A Google sign-in window will open — approve access and you're done.</p>
+              <div class="cal-connect-row">
+                <button class="cal-btn-primary" id="cal-connect-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  Connect Google Calendar
+                </button>
+                <button class="cal-btn-ghost" id="cal-recheck-btn">Re-check connection</button>
+                <button class="cal-btn-ghost" id="cal-test-btn" style="display:none">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  Test connection
+                </button>
+                <button class="cal-btn-ghost" id="cal-disconnect-btn" style="display:none;color:#dc2626">Disconnect</button>
+              </div>
+              <div id="cal-connect-error" class="cal-error-msg" style="display:none"></div>
+              <div id="cal-test-result" class="cal-test-result" style="display:none"></div>
+            </div>
+
+            <!-- Calendar picker (shown once connected) -->
+            <div class="cal-field-row" id="cal-picker-row" style="display:none">
+              <div class="cal-field">
+                <label for="cal-calendar-select">Which calendar to use</label>
+                <select id="cal-calendar-select">
+                  <option value="">Loading calendars…</option>
+                </select>
+              </div>
+              <button class="cal-btn-secondary" id="cal-use-calendar-btn">Use this calendar</button>
+            </div>
+          </section>
+
+          <!-- Working hours & scheduling rules card -->
+          <section class="cal-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-hours">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Working Hours &amp; Rules</h2>
+                <p>When engineers work and how the scheduler spaces jobs.</p>
+              </div>
+            </div>
+            <div class="cal-form">
+              <p class="cal-section-label">Working hours</p>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="cal-start-time">Day start</label>
+                  <input type="time" id="cal-start-time" value="08:00">
+                </div>
+                <div class="cal-field">
+                  <label for="cal-end-time">Day end</label>
+                  <input type="time" id="cal-end-time" value="17:30">
+                </div>
+              </div>
+              <div class="cal-field">
+                <label>Working days</label>
+                <div class="cal-days-row">
+                  <label class="cal-day-check"><input type="checkbox" value="1" class="cal-day-cb" checked> Mon</label>
+                  <label class="cal-day-check"><input type="checkbox" value="2" class="cal-day-cb" checked> Tue</label>
+                  <label class="cal-day-check"><input type="checkbox" value="3" class="cal-day-cb" checked> Wed</label>
+                  <label class="cal-day-check"><input type="checkbox" value="4" class="cal-day-cb" checked> Thu</label>
+                  <label class="cal-day-check"><input type="checkbox" value="5" class="cal-day-cb" checked> Fri</label>
+                  <label class="cal-day-check"><input type="checkbox" value="6" class="cal-day-cb"> Sat</label>
+                  <label class="cal-day-check"><input type="checkbox" value="0" class="cal-day-cb"> Sun</label>
+                </div>
+              </div>
+
+              <div class="cal-settings-divider"></div>
+              <p class="cal-section-label">Scheduling rules</p>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="cal-travel-buffer">Minimum gap between jobs (minutes)</label>
+                  <input type="number" id="cal-travel-buffer" min="0" max="180" step="5" value="60">
+                  <span class="cal-hint-inline">The minimum breathing room between back-to-back jobs — covers travel time and any overrun. 60 minutes is a sensible default; the AI can squeeze this when a day is tight.</span>
+                </div>
+                <div class="cal-field">
+                  <label for="cal-hold-timeout">Hold timeout (hours)</label>
+                  <input type="number" id="cal-hold-timeout" min="0.5" max="48" step="0.5" value="1">
+                  <span class="cal-hint-inline">How long a provisional hold stays in the calendar before it's automatically removed if the customer hasn't confirmed.</span>
+                </div>
+              </div>
+
+              <div class="cal-form-actions">
+                <button class="cal-btn-primary cal-save-btn-instance" onclick="calSaveSettings()">Save settings</button>
+                <span class="cal-save-status-all cal-save-status"></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Event format card -->
+          <section class="cal-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-format">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Event Format</h2>
+                <p>How confirmed bookings appear in Google Calendar.</p>
+              </div>
+            </div>
+            <div class="cal-form">
+              <p class="cal-hint" style="margin:0 0 12px">Available variables: <code>{postcodeStart}</code>, <code>{serviceAbbr}</code>, <code>{customerName}</code>, <code>{service}</code>, <code>{address}</code>, <code>{price}</code>, <code>{phone}</code>, <code>{notes}</code>.</p>
+              <div class="cal-field">
+                <label for="cal-title-tmpl">Event title template</label>
+                <input type="text" id="cal-title-tmpl" placeholder="{postcodeStart} {serviceAbbr} {customerName}">
+              </div>
+              <div class="cal-field">
+                <label for="cal-desc-tmpl">Event description template</label>
+                <textarea id="cal-desc-tmpl" rows="5" placeholder="Customer: {customerName}&#10;Phone: {phone}&#10;Address: {address}&#10;Service: {service}&#10;Quote: £{price}&#10;Notes: {notes}"></textarea>
+              </div>
+              <div class="cal-field">
+                <label for="cal-color-select">Event colour</label>
+                <select id="cal-color-select">
+                  <option value="1">Lavender</option>
+                  <option value="2" selected>Sage (green)</option>
+                  <option value="3">Grape</option>
+                  <option value="4">Flamingo</option>
+                  <option value="5">Banana (yellow)</option>
+                  <option value="6">Tangerine</option>
+                  <option value="7">Peacock (teal)</option>
+                  <option value="8">Graphite</option>
+                  <option value="9">Blueberry</option>
+                  <option value="10">Basil (dark green)</option>
+                  <option value="11">Tomato (red)</option>
+                </select>
+              </div>
+              <div class="cal-form-actions">
+                <button class="cal-btn-primary cal-save-btn-instance" onclick="calSaveSettings()">Save settings</button>
+                <span class="cal-save-status-all cal-save-status"></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Active Holds -->
+          <section class="cal-card" id="cal-holds-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-hours">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Active Holds</h2>
+                <p>Provisional slots awaiting customer confirmation. Holds are flagged as overdue after <span id="holds-timeout-label">1 hour</span> with no response — the slot can then be offered to other customers.</p>
+              </div>
+              <button class="cal-btn-ghost" id="holds-refresh-btn" onclick="holdsLoad()" style="white-space:nowrap;flex-shrink:0">↻ Refresh</button>
+            </div>
+            <div id="cal-holds-body" class="holds-body">
+              <p class="cal-hint" style="margin:12px 0 0">Loading holds…</p>
+            </div>
+          </section>
+
+          <!-- Slot finder (test tool) -->
+          <section class="cal-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-slots">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="16" cy="15" r="1"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Find Available Slots</h2>
+                <p>Test the scheduler: pick a date and job length and see what fits.</p>
+              </div>
+            </div>
+            <div class="cal-form">
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="cal-slot-date">Date</label>
+                  <input type="date" id="cal-slot-date">
+                </div>
+                <div class="cal-field">
+                  <label for="cal-slot-duration">Job duration (minutes)</label>
+                  <input type="number" id="cal-slot-duration" min="15" max="480" step="15" value="120">
+                </div>
+                <div class="cal-field cal-field-btn">
+                  <label>&nbsp;</label>
+                  <button class="cal-btn-primary" id="cal-find-slots-btn">Find slots</button>
+                </div>
+              </div>
+              <div id="cal-slots-result" class="cal-slots-result"></div>
+            </div>
+          </section>
+
+          <!-- Engineers & Smart Scheduling -->
+          <section class="cal-card" id="cal-engineers-card">
+            <div class="cal-card-header">
+              <div class="cal-icon cal-icon-job">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>Engineers &amp; Smart Scheduling</h2>
+                <p>Configure your team. The AI uses home postcodes, regions, and priority to assign jobs efficiently and group nearby work.</p>
+              </div>
+            </div>
+
+            <div class="cal-form">
+              <!-- Engineer list -->
+              <div id="sched-eng-list" class="sched-eng-list"></div>
+              <div class="cal-form-actions" style="margin-top:8px">
+                <button class="cal-btn-secondary" id="sched-add-eng-btn">+ Add engineer</button>
+              </div>
+
+              <!-- Add / Edit form (hidden by default) -->
+              <div id="sched-eng-form" class="sched-eng-form" style="display:none">
+                <div class="sched-eng-form-title" id="sched-eng-form-title">Add engineer</div>
+                <input type="hidden" id="sched-eng-id">
+                <div class="cal-field-row">
+                  <div class="cal-field">
+                    <label for="sched-eng-name">Name</label>
+                    <input type="text" id="sched-eng-name" placeholder="e.g. James">
+                  </div>
+                  <div class="cal-field">
+                    <label for="sched-eng-postcode">Home postcode <span class="cal-hint-inline">(e.g. SW12 or M1 4BT)</span></label>
+                    <input type="text" id="sched-eng-postcode" placeholder="SW12">
+                  </div>
+                </div>
+                <div class="cal-field-row">
+                  <div class="cal-field">
+                    <label for="sched-eng-region">Region coverage</label>
+                    <select id="sched-eng-region">
+                      <option value="north">North (Manchester, Birmingham, Liverpool…)</option>
+                      <option value="south">South (London &amp; surrounding)</option>
+                      <option value="both">Both regions</option>
+                    </select>
+                  </div>
+                  <div class="cal-field">
+                    <label for="sched-eng-priority">Priority <span class="cal-hint-inline">(1 = highest)</span></label>
+                    <input type="number" id="sched-eng-priority" min="1" max="10" value="1">
+                  </div>
+                  <div class="cal-field">
+                    <label for="sched-eng-fillahead">Fill ahead (days) <span class="cal-hint-inline">Fill P1 this many days before offering P2</span></label>
+                    <input type="number" id="sched-eng-fillahead" min="0" max="30" value="0">
+                  </div>
+                </div>
+                <div class="cal-field">
+                  <label for="sched-eng-calid">Google Calendar <span class="cal-hint-inline">(this engineer is booked on this calendar only — no calendar = AI won't book them)</span></label>
+                  <select id="sched-eng-calid">
+                    <option value="">— No calendar (AI won't book) —</option>
+                  </select>
+                </div>
+                <div class="cal-field">
+                  <label for="sched-eng-notes">Notes</label>
+                  <textarea id="sched-eng-notes" rows="2" placeholder="e.g. Covers North — Manchester, Birmingham, Liverpool"></textarea>
+                </div>
+                <div class="cal-field">
+                  <label class="sched-eng-active-label">
+                    <input type="checkbox" id="sched-eng-active" checked>
+                    Active (receives job assignments)
+                  </label>
+                </div>
+                <div class="cal-form-actions">
+                  <button class="cal-btn-primary" id="sched-save-eng-btn">Save engineer</button>
+                  <button class="cal-btn-ghost" id="sched-cancel-eng-btn">Cancel</button>
+                  <span id="sched-eng-status" class="cal-save-status"></span>
+                </div>
+              </div>
+
+              <!-- Scheduling Rules -->
+              <div class="sched-rules-divider"></div>
+              <div class="sched-rules-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Scheduling Priority Rules
+              </div>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="sched-fill-ahead">Fill ahead (days)</label>
+                  <input type="number" id="sched-fill-ahead" min="0" max="30" value="5">
+                  <span class="cal-hint-inline">How many days ahead the P1 South engineer must be booked before offering P2 to new customers.</span>
+                </div>
+              </div>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="sched-london-km">London / South max grouping (km)</label>
+                  <input type="number" id="sched-london-km" min="5" max="100" step="5" value="20">
+                  <span class="cal-hint-inline">Normal max straight-line distance between jobs on the same day in London/South. 20km covers most of Greater London (e.g. SW19 → Tooting → Croydon is ~9km total).</span>
+                </div>
+                <div class="cal-field">
+                  <label for="sched-london-urgent-km">London / South urgent (km)</label>
+                  <input type="number" id="sched-london-urgent-km" min="5" max="100" step="5" value="35">
+                  <span class="cal-hint-inline">Extended range used when urgently filling gaps in the diary. The AI uses this automatically when slots need filling a day ahead.</span>
+                </div>
+              </div>
+              <div class="cal-field-row">
+                <div class="cal-field">
+                  <label for="sched-group-km">North max grouping (km)</label>
+                  <input type="number" id="sched-group-km" min="10" max="200" step="5" value="60">
+                  <span class="cal-hint-inline">Normal max straight-line distance between jobs on the same day in the North. ~60km covers Manchester–Liverpool. Birmingham is a separate day from Manchester (~130km).</span>
+                </div>
+                <div class="cal-field">
+                  <label for="sched-north-urgent-km">North urgent (km)</label>
+                  <input type="number" id="sched-north-urgent-km" min="10" max="300" step="10" value="90">
+                  <span class="cal-hint-inline">Extended range for urgent North bookings.</span>
+                </div>
+              </div>
+              <div class="cal-form-actions">
+                <button class="cal-btn-primary" id="sched-save-rules-btn">Save rules</button>
+                <span id="sched-rules-status" class="cal-save-status"></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- AI SCHEDULING AGENT card — lives next to engineers -->
+          <section class="cal-card" id="sched-agent-card">
+            <div class="cal-card-header">
+              <div class="cal-icon" style="background:#ede9fe">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+              </div>
+              <div class="cal-card-title">
+                <h2>AI Scheduling Agent</h2>
+                <p>A separate AI that reasons about routes, travel times, and engineer availability — then hands slot options to the customer AI to present.</p>
+              </div>
+              <div id="sched-agent-maps-badge" class="cal-badge cal-badge-off">No Maps API</div>
+            </div>
+
+            <!-- Google Maps API key -->
+            <div class="cal-field" style="margin-bottom:16px">
+              <label for="sched-agent-maps-key">Google Maps API key <span class="cal-hint-inline">(optional — improves urban driving time accuracy)</span></label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="password" id="sched-agent-maps-key" class="cal-input" placeholder="AIza…" style="flex:1">
+                <button class="cal-btn-secondary" id="sched-agent-maps-save-btn" style="white-space:nowrap">Save key</button>
+              </div>
+              <span class="cal-hint-inline" style="display:block;margin-top:4px">Without this, travel times are estimated (straight-line × 1.35). Accurate enough for North motorway routing but inaccurate for city driving. <a href="https://developers.google.com/maps/documentation/distance-matrix/get-api-key" target="_blank" rel="noopener">Get a key →</a></span>
+              <span id="sched-agent-maps-status" class="cal-save-status"></span>
+            </div>
+
+            <!-- Scheduling knowledge — KB-style refine -->
+            <div class="sched-knowledge-section">
+              <div class="sched-knowledge-label">
+                Scheduling knowledge
+                <span class="cal-hint-inline">Everything the agent knows about your engineers, routes, and preferences. Add or update anything — AI merges it in without losing what's already there. Contradictions replace the old version.</span>
+              </div>
+
+              <!-- Current knowledge display -->
+              <div class="sched-knowledge-display" id="sched-knowledge-display">
+                <pre class="sched-knowledge-text" id="sched-knowledge-text">Loading…</pre>
+                <button class="sched-knowledge-edit-btn" id="sched-agent-edit-btn" type="button">Edit directly</button>
+              </div>
+
+              <!-- Direct edit panel (hidden by default) -->
+              <div id="sched-agent-direct-edit" style="display:none;margin-bottom:12px">
+                <textarea id="sched-agent-instructions" class="cal-input" rows="10"></textarea>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="cal-btn-primary" id="sched-agent-save-btn">Save</button>
+                  <button class="cal-btn-ghost" id="sched-agent-cancel-edit-btn">Cancel</button>
+                  <span id="sched-agent-save-status" class="cal-save-status"></span>
+                </div>
+              </div>
+
+              <!-- Refine with AI -->
+              <div class="sched-rules-divider" style="margin:14px 0 12px"></div>
+              <label class="cal-hint-inline" style="display:block;font-weight:600;color:var(--text);margin-bottom:4px">Add or update something:</label>
+              <textarea id="sched-agent-refine-input" class="cal-input" rows="3" placeholder="e.g. Dan now also covers Sheffield and Leeds. He tries to be home by 5pm. For London jobs, prefer midweek over Friday."></textarea>
+              <div style="display:flex;gap:10px;align-items:center;margin-top:8px;margin-bottom:4px">
+                <button class="cal-btn-primary" id="sched-agent-refine-btn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:4px"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>Update with AI
+                </button>
+                <span id="sched-agent-refine-status" class="cal-save-status"></span>
+              </div>
+            </div>
+
+            <!-- Scheduling AI assistant chat -->
+            <div class="sched-rules-divider"></div>
+            <div class="sched-rules-header" id="sched-asst-toggle" style="cursor:pointer;user-select:none" title="Click to expand/collapse">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Ask about your setup
+              <svg id="sched-asst-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:auto;transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div id="sched-asst-panel" style="display:none">
+              <p class="cal-hint-inline" style="display:block;margin-bottom:10px">Ask anything about your calendar setup, engineers, routing rules, or how the scheduling agent works.</p>
+              <div id="sched-asst-log" class="sched-asst-log">
+                <div class="kb-bubble kb-bubble--ai"><span class="kb-bubble__text">Hi! I know your full scheduling setup — engineers, routing rules, working hours, all of it. Ask me anything.</span></div>
+              </div>
+              <div class="kb-chat-input-area" style="margin-top:8px">
+                <textarea id="sched-asst-input" rows="2" placeholder="e.g. Why isn't this engineer eligible, or how does the fill-ahead rule work?"></textarea>
+                <button id="sched-asst-send" class="primary" type="button">Ask</button>
+              </div>
+            </div>
+
+            <!-- Test panel -->
+            <div class="sched-rules-divider"></div>
+            <div class="sched-rules-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Test the Scheduling Agent
+            </div>
+            <p class="cal-hint-inline" style="display:block;margin-bottom:12px">Enter a job postcode and service to see what the agent recommends. This does not book anything.</p>
+            <div class="cal-field-row" style="margin-bottom:10px">
+              <div class="cal-field">
+                <label for="sched-agent-test-postcode">Job postcode</label>
+                <input type="text" id="sched-agent-test-postcode" class="cal-input" placeholder="e.g. B1 1AA or M1">
+              </div>
+              <div class="cal-field">
+                <label for="sched-agent-test-service">Service</label>
+                <input type="text" id="sched-agent-test-service" class="cal-input" placeholder="e.g. driveway clean">
+              </div>
+              <div class="cal-field" style="max-width:120px">
+                <label for="sched-agent-test-duration">Duration (mins)</label>
+                <input type="number" id="sched-agent-test-duration" class="cal-input" value="120" min="30" step="30">
+              </div>
+            </div>
+            <div class="cal-field-row" style="margin-bottom:10px">
+              <div class="cal-field">
+                <label for="sched-agent-test-notes">Customer notes (optional)</label>
+                <input type="text" id="sched-agent-test-notes" class="cal-input" placeholder="e.g. prefers mornings, not available Wednesdays">
+              </div>
+              <div class="cal-field">
+                <label for="sched-agent-test-customer">Customer name <span class="cal-hint-inline">(for test booking)</span></label>
+                <input type="text" id="sched-agent-test-customer" class="cal-input" placeholder="e.g. Lauren Park">
+              </div>
+            </div>
+            <button class="cal-btn-primary" id="sched-agent-test-btn">Ask the agent</button>
+            <div id="sched-agent-result" style="display:none;margin-top:16px">
+              <div id="sched-agent-result-body"></div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+      <!-- END CALENDAR TAB -->
+
+      <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+      <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+        <button id="lightbox-close" aria-label="Close">×</button>
+        <img id="lightbox-image" alt="Preview" />
+      </div>
+    </div>
+
+    <!-- ── AI Advisor Modal ─────────────────────────────────────────── -->
+    <div id="kb-advisor-modal" class="kb-advisor-modal" hidden>
+      <div class="kb-advisor-header">
+        <span class="kb-advisor-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+          AI Advisor
+        </span>
+        <button class="kb-advisor-close" id="kb-advisor-close" title="Dismiss">✕</button>
+      </div>
+      <div class="kb-advisor-body">
+        <p id="kb-advisor-message" class="kb-advisor-message"></p>
+      </div>
+      <div class="kb-advisor-thread" id="kb-advisor-thread"></div>
+      <div class="kb-advisor-actions" id="kb-advisor-actions">
+        <button id="kb-advisor-dismiss" class="kb-btn kb-btn--ghost">Dismiss</button>
+        <button id="kb-advisor-apply" class="kb-btn kb-btn--primary" hidden></button>
+      </div>
+      <div class="kb-advisor-reply" id="kb-advisor-reply">
+        <textarea id="kb-advisor-reply-input" class="kb-advisor-reply-input" rows="2" placeholder="Reply to the advisor…"></textarea>
+        <div class="kb-advisor-reply-row">
+          <button id="kb-advisor-reply-send" class="kb-btn kb-btn--primary">Send</button>
+          <span id="kb-advisor-reply-status" class="kb-advisor-reply-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <script>window.CHECKATRADE_SCRAPER_URL = {{ checkatrade_scraper_url|tojson }};</script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=46" defer></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        // Unregister any old SW that was scoped to /static/ — it prevented push from working
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(reg => {
+            if (!reg.scope.endsWith('/') || reg.scope.includes('/static')) {
+              reg.unregister();
+            }
+          });
+        });
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkatrade Tools — PowWash</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f1f5f9; color: #111827; min-height: 100vh; padding: 32px 16px; }
+    .page { max-width: 680px; margin: 0 auto; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    .header a { font-size: 13px; color: #6b7280; text-decoration: none; }
+    .header a:hover { color: #111827; }
+    .header h1 { font-size: 20px; font-weight: 700; color: #111827; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 18px; }
+    .card p b { color: #111827; }
+    .run-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #1e293b; color: #fff; border: none; border-radius: 8px;
+      padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background .15s;
+    }
+    .run-btn:hover:not(:disabled) { background: #0f172a; }
+    .run-btn:disabled { opacity: .6; cursor: default; }
+    #status-line { margin-top: 14px; font-size: 13px; color: #6b7280; min-height: 20px; }
+    #status-line.ok  { color: #15803d; font-weight: 600; }
+    #status-line.err { color: #dc2626; font-weight: 600; }
+    #results { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .result-card { border-radius: 10px; padding: 14px 16px; border: 1px solid #e5e7eb; }
+    .result-card.matched { border-color: #bbf7d0; background: #f0fdf4; }
+    .result-card.missed  { border-color: #fee2e2; background: #fff5f5; }
+    .result-card .rc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .result-card .rc-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .result-card.matched .rc-label { color: #15803d; }
+    .result-card.missed  .rc-label { color: #b91c1c; }
+    .result-card .rc-subject { font-size: 12px; color: #6b7280; margin-bottom: 8px; }
+    .result-card .rc-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .result-card .rc-details { font-size: 13px; color: #374151; line-height: 1.6; }
+    .result-card .rc-msg { margin-top: 6px; font-size: 12px; color: #6b7280; font-style: italic; border-top: 1px solid #e5e7eb; padding-top: 6px; }
+    .progress-bar { height: 3px; background: #e5e7eb; border-radius: 2px; overflow: hidden; margin-top: 14px; }
+    .progress-bar .fill { height: 100%; background: #3b82f6; width: 0%; transition: width .4s; border-radius: 2px; }
+    .summary { font-size: 14px; font-weight: 600; padding: 12px 16px; border-radius: 8px; margin-top: 4px; }
+    .summary.ok  { background: #f0fdf4; color: #15803d; }
+    .summary.err { background: #fff5f5; color: #b91c1c; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <a href="/#checkatrade">← Back to PowWash</a>
+    <h1>Checkatrade Tools</h1>
+  </div>
+
+  <div class="card">
+    <h2>Test Scraper</h2>
+    <p>
+      Reads your <b>last 3 Checkatrade enquiry emails</b>, auto-logs into Checkatrade,
+      finds the matching job for each postcode (switching between London and Midlands profiles),
+      and shows you the full customer details it would pass to the messenger.
+      <br><br>
+      <b>Preview only — no customers are contacted.</b> Takes ~2 minutes while it reads the login OTP from your inbox.
+    </p>
+    <button class="run-btn" id="run-btn">▶ Run test</button>
+    <div class="progress-bar" id="prog-wrap" style="display:none"><div class="fill" id="prog-fill"></div></div>
+    <div id="status-line"></div>
+    <div id="results"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const btn      = document.getElementById('run-btn');
+  const statusEl = document.getElementById('status-line');
+  const resultsEl= document.getElementById('results');
+  const progWrap = document.getElementById('prog-wrap');
+  const progFill = document.getElementById('prog-fill');
+
+  let total = 0;
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = cls || '';
+  }
+
+  function setProgress(n, of) {
+    if (!of) return;
+    progFill.style.width = Math.round((n / of) * 100) + '%';
+  }
+
+  function addResultCard(d) {
+    const e = d.enquiry || {};
+    const l = d.lead;
+    const card = document.createElement('div');
+    card.className = 'result-card ' + (l ? 'matched' : 'missed');
+
+    const emailNum = (d.index != null ? d.index + 1 : '?');
+    const ofTotal  = d.total || total || '?';
+
+    card.innerHTML =
+      '<div class="rc-top">' +
+        '<span class="rc-label">' + (l ? '✓ Matched' : '✗ No match') + '</span>' +
+        '<span style="font-size:12px;color:#9ca3af">Email ' + emailNum + ' of ' + ofTotal + '</span>' +
+      '</div>' +
+      '<div class="rc-subject">' + (e.subject || '') + (e.postcode ? ' · ' + e.postcode : '') + (e.date ? ' · ' + fmtDate(e.date) : '') + '</div>' +
+      (l
+        ? '<div class="rc-name">' + esc(l.customerName || '—') + '</div>' +
+          '<div class="rc-details">' +
+            (l.phone  ? '📞 ' + esc(l.phone)  + '<br>' : '') +
+            (l.email  ? '✉ '  + esc(l.email)  + '<br>' : '') +
+            (l.address? '📍 ' + esc(l.address) + '<br>' : '') +
+            (l.jobTitle ? '🔧 ' + esc(l.jobTitle) + (l.profile ? ' · ' + esc(l.profile) : '') : '') +
+          '</div>' +
+          (l.message ? '<div class="rc-msg">' + esc(l.message.slice(0, 220)) + (l.message.length > 220 ? '…' : '') + '</div>' : '')
+        : '<div style="font-size:13px;color:#9ca3af;margin-top:4px">No live job card found for this postcode — probably already claimed by another trader.</div>'
+      );
+
+    resultsEl.appendChild(card);
+    setProgress(d.index != null ? d.index + 1 : 0, d.total || total);
+  }
+
+  function fmtDate(iso) {
+    try {
+      return new Date(iso).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    } catch(_) { return iso; }
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  btn.addEventListener('click', async function () {
+    btn.disabled = true;
+    btn.textContent = 'Running… (~2 min)';
+    resultsEl.innerHTML = '';
+    progWrap.style.display = 'block';
+    progFill.style.width = '0%';
+    setStatus('Starting…');
+    total = 0;
+
+    let resp;
+    try {
+      resp = await fetch('/api/checkatrade/run-test', { method: 'POST' });
+    } catch (err) {
+      setStatus('Network error: ' + err.message, 'err');
+      btn.disabled = false; btn.textContent = '▶ Run test';
+      return;
+    }
+
+    if (!resp.ok) {
+      let msg = 'Request failed (' + resp.status + ')';
+      try { const j = await resp.json(); msg = j.error || msg; } catch (_) {}
+      setStatus(msg, 'err');
+      btn.disabled = false; btn.textContent = '▶ Run test';
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = '', curEvent = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            curEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            let d;
+            try { d = JSON.parse(line.slice(6)); } catch (_) { d = line.slice(6); }
+            if (curEvent === 'teststart') {
+              if (d && d.total) { total = d.total; }
+              if (d && d.msg)   setStatus(d.msg);
+            } else if (curEvent === 'status') {
+              setStatus(typeof d === 'string' ? d : JSON.stringify(d));
+            } else if (curEvent === 'testresult') {
+              addResultCard(d);
+            } else if (curEvent === 'testdone') {
+              if (d && d.error) {
+                setStatus('Error: ' + d.error, 'err');
+              } else {
+                progFill.style.width = '100%';
+                const sum = document.createElement('div');
+                sum.className = 'summary ok';
+                sum.textContent = 'Done — ' + (d.matched || 0) + ' of ' + (d.total || total) + ' emails matched a live job.';
+                resultsEl.appendChild(sum);
+                statusEl.textContent = '';
+              }
+            }
+            curEvent = '';
+          }
+        }
+      }
+    } catch (err) {
+      setStatus('Stream interrupted: ' + err.message, 'err');
+    }
+
+    btn.disabled = false;
+    btn.textContent = '▶ Run test';
+  });
+})();
+</script>
+</body>
+</html>

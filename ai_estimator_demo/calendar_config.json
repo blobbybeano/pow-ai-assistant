@@ -1,0 +1,19 @@
+{
+  "calendarId": "",
+  "businessTimezone": "Europe/London",
+  "workingHours": {
+    "start": "09:00",
+    "end": "17:00",
+    "days": [1, 2, 3, 4, 5],
+    "overtimeEnd": "18:00"
+  },
+  "holdTimeoutMinutes": 30,
+  "travelBufferMinutes": 30,
+  "eventFormat": {
+    "titleTemplate": "{service} - {customerName}",
+    "descriptionTemplate": "Customer: {customerName}\nPhone: {phone}\nEmail: {customerEmail}\nNotes: {notes}",
+    "colorId": ""
+  },
+  "connectionId": "",
+  "calendarDemoMode": true
+}

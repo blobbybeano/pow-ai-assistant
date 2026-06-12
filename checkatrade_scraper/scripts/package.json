@@ -1,0 +1,16 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "checkatrade-login": "tsx ./src/checkatrade-login.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "playwright": "^1.60.0",
+    "tsx": "catalog:"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "fillAheadDays": 5,
+  "londonMaxGroupingKm": 20,
+  "northMaxGroupingKm": 60,
+  "londonUrgentGroupingKm": 35,
+  "northUrgentGroupingKm": 90,
+  "homeReturnBonus": true,
+  "notes": "Configure scheduling rules for your own service area and engineers."
+}
