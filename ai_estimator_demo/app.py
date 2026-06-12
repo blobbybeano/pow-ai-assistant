@@ -7370,6 +7370,63 @@ def cal_connect():
         return jsonify({"error": str(exc)}), 500
 
 
+_CALENDAR_OAUTH_CALLBACK_PATH = "/api/calendar/oauth/callback"
+
+
+def _calendar_oauth_origin() -> str:
+    """Return the browser-facing origin used for Google OAuth callbacks."""
+    from urllib.parse import urlsplit
+
+    public_url = os.environ.get("PUBLIC_APP_URL", "").strip().rstrip("/")
+    if public_url:
+        parsed = urlsplit(public_url)
+        public_hostname = (parsed.hostname or "").lower()
+        public_is_loopback = public_hostname in {"localhost", "127.0.0.1", "::1"}
+        valid_public_scheme = parsed.scheme == "https" or (parsed.scheme == "http" and public_is_loopback)
+        if valid_public_scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+
+    forwarded_host = request.headers.get("X-Forwarded-Host", "").split(",")[0].strip()
+    host = forwarded_host or request.host
+    hostname = (urlsplit(f"//{host}").hostname or "").lower()
+    is_loopback = hostname in {"localhost", "127.0.0.1", "::1"}
+
+    if is_loopback:
+        replit_host = os.environ.get("REPLIT_DEV_DOMAIN", "").strip()
+        if replit_host:
+            return f"https://{replit_host}"
+        return f"http://{host}"
+
+    return f"https://{host}"
+
+
+def _calendar_oauth_redirect_uri(candidate: str = "") -> str:
+    """Use an exact, local callback URI and reject arbitrary redirect hosts."""
+    from urllib.parse import urlsplit
+
+    fallback = _calendar_oauth_origin() + _CALENDAR_OAUTH_CALLBACK_PATH
+    candidate = candidate.strip()
+    if not candidate:
+        return fallback
+
+    parsed = urlsplit(candidate)
+    fallback_parsed = urlsplit(fallback)
+    hostname = (parsed.hostname or "").lower()
+    is_loopback = hostname in {"localhost", "127.0.0.1", "::1"}
+    valid_scheme = parsed.scheme == "https" or (parsed.scheme == "http" and is_loopback)
+    valid_shape = (
+        parsed.netloc
+        and parsed.path == _CALENDAR_OAUTH_CALLBACK_PATH
+        and not parsed.query
+        and not parsed.fragment
+        and not parsed.username
+        and not parsed.password
+    )
+    if valid_scheme and valid_shape and parsed.netloc == fallback_parsed.netloc:
+        return candidate
+    return fallback
+
+
 @app.route("/api/calendar/credentials", methods=["GET", "POST"])
 def cal_credentials():
     """GET: return masked credential status. POST: save client_id + client_secret."""
@@ -7378,13 +7435,10 @@ def cal_credentials():
         creds = load_credentials()
         cid = creds.get("client_id", "") or os.environ.get("GOOGLE_CLIENT_ID", "")
         has_secret = bool(creds.get("client_secret") or os.environ.get("GOOGLE_CLIENT_SECRET", ""))
-        _host = request.host
-        if _host.startswith("localhost") or _host.startswith("127."):
-            _host = os.environ.get("REPLIT_DEV_DOMAIN", _host)
         return jsonify({
             "hasCredentials": bool(cid and has_secret),
             "clientIdMasked": (cid[:12] + "…" + cid[-6:]) if len(cid) > 20 else (cid or ""),
-            "redirectUri": f"https://{_host}/api/calendar/oauth/callback",
+            "redirectUri": _calendar_oauth_redirect_uri(),
         })
     # POST — save
     try:
@@ -7426,11 +7480,7 @@ def cal_oauth_start():
         )
     # The frontend passes its own origin so the server never has to guess the
     # public domain (Replit's reverse proxy makes request.host unreliable).
-    redirect_uri = request.args.get("redirect_uri", "").strip()
-    if not redirect_uri or not redirect_uri.startswith("https://"):
-        # Fallback: derive from request headers (works in dev/local)
-        _host = request.headers.get("X-Forwarded-Host", "").split(",")[0].strip() or request.host
-        redirect_uri = f"https://{_host}/api/calendar/oauth/callback"
+    redirect_uri = _calendar_oauth_redirect_uri(request.args.get("redirect_uri", ""))
     # Store so the callback can use the exact same URI
     session["cal_oauth_redirect_uri"] = redirect_uri
     params = {
@@ -7467,8 +7517,7 @@ window.close();
     # Google requires it to match precisely.
     redirect_uri = session.get("cal_oauth_redirect_uri", "")
     if not redirect_uri:
-        _cb_host = request.headers.get("X-Forwarded-Host", "").split(",")[0].strip() or request.host
-        redirect_uri = f"https://{_cb_host}/api/calendar/oauth/callback"
+        redirect_uri = _calendar_oauth_redirect_uri()
 
     try:
         resp = _req.post(

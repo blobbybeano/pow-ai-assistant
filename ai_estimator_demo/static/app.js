@@ -6012,9 +6012,9 @@ async function calLoadCredentialStatus() {
     const cidInput = document.getElementById('cal-client-id-input');
     const copyBtn  = document.getElementById('cal-copy-uri-btn');
 
-    // Always derive the redirect URI from the current page origin — server-side
-    // host detection is unreliable behind Replit's reverse proxy.
-    const uri = window.location.origin + '/api/calendar/oauth/callback';
+    // Display the same URI the backend will send to Google. Local loopback
+    // origins use HTTP; deployed origins use HTTPS.
+    const uri = data.redirectUri || (window.location.origin + '/api/calendar/oauth/callback');
     if (uriEl) uriEl.textContent = uri;
 
     // Wire copy button
@@ -6198,9 +6198,10 @@ function calStartOAuth() {
   const w = 520, h = 640;
   const left = Math.max(0, (screen.width  - w) / 2);
   const top  = Math.max(0, (screen.height - h) / 2);
-  // Pass the redirect URI derived from the browser origin — the server cannot
-  // reliably determine the public domain behind Replit's reverse proxy.
-  const oauthRedirectUri = encodeURIComponent(window.location.origin + '/api/calendar/oauth/callback');
+  const displayedRedirectUri = document.getElementById('cal-redirect-uri-display')?.textContent?.trim();
+  const oauthRedirectUri = encodeURIComponent(
+    displayedRedirectUri || (window.location.origin + '/api/calendar/oauth/callback')
+  );
   const popup = window.open(
     '/api/calendar/oauth/start?redirect_uri=' + oauthRedirectUri,
     'google_calendar_oauth',
