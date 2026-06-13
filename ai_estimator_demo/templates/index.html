@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PowWash" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=33" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=34" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -683,13 +683,33 @@
                 <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="checkatrade" data-access="admin-desktop">Checkatrade</button>
               </nav>
             </div>
-            <!-- Global flashing light: shows whenever the AI is drafting/sending a
-                 reply in ANY conversation, so operators know their quote answers
-                 are being relayed to the customer even from another screen. -->
-            <button class="wa-ai-activity-banner" id="wa-ai-activity-banner" style="display:none" title="AI is drafting or sending a reply">
-              <span class="wa-ai-activity-banner__light"></span>
-              <span class="wa-ai-activity-banner__text">AI is replying…</span>
-            </button>
+            <div class="wa-top-bar-actions">
+              <!-- Global flashing light: shows whenever the AI is drafting/sending a
+                   reply in ANY conversation, so operators know their quote answers
+                   are being relayed to the customer even from another screen. -->
+              <button class="wa-ai-activity-banner" id="wa-ai-activity-banner" style="display:none" title="AI is drafting or sending a reply">
+                <span class="wa-ai-activity-banner__light"></span>
+                <span class="wa-ai-activity-banner__text">AI is replying…</span>
+              </button>
+              <button class="wa-primary-menu-btn" id="wa-primary-menu-btn" type="button" aria-expanded="false" aria-controls="wa-primary-menu">
+                <span class="wa-primary-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span>Menu</span>
+              </button>
+            </div>
+            <nav class="wa-primary-menu" id="wa-primary-menu" aria-label="Application menu" hidden>
+              <span class="wa-primary-menu-label">Workspace</span>
+              <button class="wa-primary-menu-item active" type="button" data-waview="overview">Overview</button>
+              <button class="wa-primary-menu-item" type="button" data-waview="conversations">Conversations</button>
+              <button class="wa-primary-menu-item" type="button" data-waview="quotes">Quotes</button>
+              <button class="wa-primary-menu-item" type="button" data-waview="bookings">Bookings</button>
+              <span class="wa-primary-menu-label">Application</span>
+              <button class="wa-primary-menu-item wa-app-tab" type="button" data-tab-target="estimator" data-access="admin-desktop">Estimator</button>
+              <button class="wa-primary-menu-item wa-app-tab" type="button" data-tab-target="tune" data-access="admin-desktop">Tune AI</button>
+              <button class="wa-primary-menu-item wa-app-tab" type="button" data-tab-target="kb" data-access="admin">Knowledge</button>
+              <button class="wa-primary-menu-item wa-app-tab" type="button" data-tab-target="settings" data-access="admin-desktop">Settings</button>
+              <button class="wa-primary-menu-item wa-app-tab" type="button" data-tab-target="calendar" data-access="admin-desktop">Calendar</button>
+              <button class="wa-primary-menu-item wa-app-tab" type="button" data-tab-target="checkatrade" data-access="admin-desktop">Checkatrade</button>
+            </nav>
           </header>
 
           <!-- Screens -->
@@ -2136,7 +2156,7 @@
     </div>
 
     <script>window.CHECKATRADE_SCRAPER_URL = {{ checkatrade_scraper_url|tojson }};</script>
-    <script src="{{ url_for('static', filename='app.js') }}?v=48" defer></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=49" defer></script>
     <script>
       if ('serviceWorker' in navigator) {
         // Unregister any old SW that was scoped to /static/ — it prevented push from working

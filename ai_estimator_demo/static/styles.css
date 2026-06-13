@@ -2539,6 +2539,7 @@ small {
   border-bottom: 1px solid rgba(134,150,160,0.14);
   flex-shrink: 0;
   min-height: 44px;
+  position: relative;
 }
 .wa-top-bar-main {
   display: flex;
@@ -2590,6 +2591,83 @@ small {
   margin: 0 5px;
   background: rgba(134,150,160,0.22);
   flex-shrink: 0;
+}
+.wa-top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.wa-primary-menu-btn {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border: 1px solid rgba(134,150,160,0.35);
+  border-radius: 6px;
+  background: #202c33;
+  color: #e9edef;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.wa-primary-menu-btn:hover,
+.wa-primary-menu-btn[aria-expanded="true"] {
+  border-color: #00a884;
+  background: #2a3942;
+}
+.wa-primary-menu-icon {
+  width: 15px;
+  display: grid;
+  gap: 3px;
+}
+.wa-primary-menu-icon span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.wa-primary-menu {
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 6px);
+  right: 16px;
+  width: min(260px, calc(100vw - 32px));
+  padding: 8px;
+  border: 1px solid rgba(134,150,160,0.28);
+  border-radius: 6px;
+  background: #202c33;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.38);
+}
+.wa-primary-menu[hidden] { display: none; }
+.wa-primary-menu-label {
+  display: block;
+  padding: 8px 9px 5px;
+  color: #8696a0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.wa-primary-menu-item {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #e9edef;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+}
+.wa-primary-menu-item:hover { background: #2a3942; }
+.wa-primary-menu-item.active {
+  background: rgba(0,168,132,0.16);
+  color: #25d366;
 }
 
 /* Global "AI is replying" flashing light in the top bar — visible from every

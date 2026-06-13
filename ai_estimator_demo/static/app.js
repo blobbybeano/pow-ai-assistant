@@ -2898,7 +2898,7 @@ function waShowView(name) {
       btn.classList.toggle('active', btn.dataset.waview === name);
     });
   }
-  document.querySelectorAll('.wa-desktop-nav-item[data-waview]').forEach(btn => {
+  document.querySelectorAll('.wa-desktop-nav-item[data-waview], .wa-primary-menu-item[data-waview]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.waview === name);
   });
   // Scroll to top of new view
@@ -4339,7 +4339,7 @@ async function waInit() {
     });
   });
 
-  document.querySelectorAll('.wa-desktop-nav-item[data-waview]').forEach(btn => {
+  document.querySelectorAll('.wa-desktop-nav-item[data-waview], .wa-primary-menu-item[data-waview]').forEach(btn => {
     btn.addEventListener('click', () => {
       const view = btn.dataset.waview;
       waShowView(view);
@@ -4347,13 +4347,35 @@ async function waInit() {
       if (view === 'conversations') waRenderConvoList();
       if (view === 'quotes')        waLoadQuoteRequests().then(() => waRenderQuotesView());
       if (view === 'bookings')      waLoadBookings().then(() => waRenderBookingsView());
+      const menu = document.getElementById('wa-primary-menu');
+      const menuBtn = document.getElementById('wa-primary-menu-btn');
+      if (menu) menu.hidden = true;
+      if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
     });
   });
 
   document.querySelectorAll('.wa-app-tab[data-tab-target]').forEach(btn => {
     btn.addEventListener('click', () => {
+      const menu = document.getElementById('wa-primary-menu');
+      const menuBtn = document.getElementById('wa-primary-menu-btn');
+      if (menu) menu.hidden = true;
+      if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
       document.querySelector(`.tab-btn[data-tab="${btn.dataset.tabTarget}"]`)?.click();
     });
+  });
+
+  const primaryMenuBtn = document.getElementById('wa-primary-menu-btn');
+  const primaryMenu = document.getElementById('wa-primary-menu');
+  primaryMenuBtn?.addEventListener('click', event => {
+    event.stopPropagation();
+    const open = primaryMenu?.hidden !== false;
+    if (primaryMenu) primaryMenu.hidden = !open;
+    primaryMenuBtn.setAttribute('aria-expanded', String(open));
+  });
+  primaryMenu?.addEventListener('click', event => event.stopPropagation());
+  document.addEventListener('click', () => {
+    if (primaryMenu) primaryMenu.hidden = true;
+    primaryMenuBtn?.setAttribute('aria-expanded', 'false');
   });
 
   // Wire overview buttons
