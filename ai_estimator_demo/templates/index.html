@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PowWash" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=32" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=33" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -667,7 +667,22 @@
 
           <!-- Top bar -->
           <header class="wa-top-bar">
-            <span class="wa-top-bar-title">Messages</span>
+            <div class="wa-top-bar-main">
+              <span class="wa-top-bar-title">Messages</span>
+              <nav class="wa-desktop-nav" aria-label="Workspace and primary app navigation">
+                <button class="wa-desktop-nav-item active" type="button" data-waview="overview">Overview</button>
+                <button class="wa-desktop-nav-item" type="button" data-waview="conversations">Conversations</button>
+                <button class="wa-desktop-nav-item" type="button" data-waview="quotes">Quotes</button>
+                <button class="wa-desktop-nav-item" type="button" data-waview="bookings">Bookings</button>
+                <span class="wa-desktop-nav-divider" aria-hidden="true"></span>
+                <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="estimator" data-access="admin-desktop">Estimator</button>
+                <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="tune" data-access="admin-desktop">Tune AI</button>
+                <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="kb" data-access="admin">Knowledge</button>
+                <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="settings" data-access="admin-desktop">Settings</button>
+                <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="calendar" data-access="admin-desktop">Calendar</button>
+                <button class="wa-desktop-nav-item wa-app-tab" type="button" data-tab-target="checkatrade" data-access="admin-desktop">Checkatrade</button>
+              </nav>
+            </div>
             <!-- Global flashing light: shows whenever the AI is drafting/sending a
                  reply in ANY conversation, so operators know their quote answers
                  are being relayed to the customer even from another screen. -->
@@ -2121,7 +2136,7 @@
     </div>
 
     <script>window.CHECKATRADE_SCRAPER_URL = {{ checkatrade_scraper_url|tojson }};</script>
-    <script src="{{ url_for('static', filename='app.js') }}?v=46" defer></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=47" defer></script>
     <script>
       if ('serviceWorker' in navigator) {
         // Unregister any old SW that was scoped to /static/ — it prevented push from working

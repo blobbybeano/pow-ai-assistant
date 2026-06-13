@@ -81,7 +81,7 @@ function isMobile() { return window.innerWidth <= 768; }
 
 function applyTabVisibility(role) {
   const mobile = isMobile();
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  document.querySelectorAll('.tab-btn, .wa-app-tab').forEach(btn => {
     const access = btn.dataset.access || 'all';
     let visible = false;
     if (access === 'all') visible = true;
@@ -2896,6 +2896,9 @@ function waShowView(name) {
       btn.classList.toggle('active', btn.dataset.waview === name);
     });
   }
+  document.querySelectorAll('.wa-desktop-nav-item[data-waview]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.waview === name);
+  });
   // Scroll to top of new view
   const viewEl = document.getElementById('wa-view-' + name);
   if (viewEl) viewEl.scrollTop = 0;
@@ -4331,6 +4334,23 @@ async function waInit() {
       if (view === 'quotes') {
         waLoadQuoteRequests().then(() => waRenderQuotesView());
       }
+    });
+  });
+
+  document.querySelectorAll('.wa-desktop-nav-item[data-waview]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.waview;
+      waShowView(view);
+      if (view === 'overview')      { waLoadCoverageAlerts().then(waRenderOverview); waLoadAttentionAlerts().then(waRenderOverview); waRenderOverview(); }
+      if (view === 'conversations') waRenderConvoList();
+      if (view === 'quotes')        waLoadQuoteRequests().then(() => waRenderQuotesView());
+      if (view === 'bookings')      waLoadBookings().then(() => waRenderBookingsView());
+    });
+  });
+
+  document.querySelectorAll('.wa-app-tab[data-tab-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelector(`.tab-btn[data-tab="${btn.dataset.tabTarget}"]`)?.click();
     });
   });
 

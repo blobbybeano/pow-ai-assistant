@@ -2540,10 +2540,56 @@ small {
   flex-shrink: 0;
   min-height: 44px;
 }
+.wa-top-bar-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
 .wa-top-bar-title {
   color: #e9edef;
   font-size: 16px;
   font-weight: 600;
+  flex-shrink: 0;
+}
+.wa-desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.wa-desktop-nav::-webkit-scrollbar { display: none; }
+.wa-desktop-nav-item {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #aebac1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wa-desktop-nav-item:hover {
+  background: #202c33;
+  color: #e9edef;
+}
+.wa-desktop-nav-item.active {
+  background: rgba(0,168,132,0.16);
+  color: #25d366;
+}
+.wa-desktop-nav-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 5px;
+  background: rgba(134,150,160,0.22);
+  flex-shrink: 0;
 }
 
 /* Global "AI is replying" flashing light in the top bar — visible from every
@@ -3676,6 +3722,14 @@ video.wa-media-thumb {
   background: #111b21;
   border-top: 1px solid rgba(134,150,160,0.14);
   flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  .wa-bottom-nav { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  .wa-desktop-nav { display: none; }
 }
 .wa-nav-item {
   flex: 1;

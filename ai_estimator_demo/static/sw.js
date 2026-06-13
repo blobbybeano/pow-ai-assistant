@@ -1,4 +1,4 @@
-const CACHE = 'powwash-v2';
+const CACHE = 'powwash-v3';
 const SHELL = ['/', '/login'];
 
 self.addEventListener('install', e => {
