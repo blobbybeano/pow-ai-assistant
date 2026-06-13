@@ -1,4 +1,4 @@
-const CACHE = 'powwash-v3';
+const CACHE = 'powwash-v4';
 const SHELL = ['/', '/login'];
 
 self.addEventListener('install', e => {
@@ -20,6 +20,18 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.pathname.startsWith('/api/') || url.pathname === '/login' || url.pathname === '/logout') {
     e.respondWith(fetch(e.request));
+    return;
+  }
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok && !res.redirected) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request).then(cached => cached || caches.match('/login')))
+    );
     return;
   }
   e.respondWith(

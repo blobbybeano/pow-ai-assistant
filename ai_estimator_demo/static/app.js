@@ -170,7 +170,9 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
       b.setAttribute('aria-selected', b.dataset.tab === target);
     });
     document.querySelectorAll('.tab-content').forEach((el) => {
-      el.classList.toggle('active', el.id === `tab-${target}`);
+      const active = el.id === `tab-${target}`;
+      el.classList.toggle('active', active);
+      el.setAttribute('aria-hidden', String(!active));
     });
     // Hide the app header when in the full-screen Messages view
     document.body.classList.toggle('tab-messages-active', target === 'messages');
@@ -7296,3 +7298,7 @@ async function schedSaveRules() {
     if (btn) btn.disabled = false;
   }
 }
+
+// Messages is the primary workspace. Initialise it on first load as well as
+// when an operator returns to it from another primary tab.
+document.querySelector('.tab-btn[data-tab="messages"].active')?.click();
