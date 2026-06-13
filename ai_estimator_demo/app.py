@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, session
+from flask import Flask, jsonify, make_response, redirect, render_template, request, send_from_directory, session
 from werkzeug.datastructures import FileStorage
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -536,7 +536,7 @@ def login_required(f):
     return decorated
 
 # ── Gate every request ────────────────────────────────────────────────────
-_PUBLIC_PREFIXES = ("/login", "/logout", "/static/", "/healthz", "/favicon", "/webhook/", "/api/twilio/status-callback")
+_PUBLIC_PREFIXES = ("/login", "/logout", "/reset-ui", "/static/", "/healthz", "/favicon", "/webhook/", "/api/twilio/status-callback")
 
 @app.before_request
 def require_login():
@@ -565,6 +565,33 @@ def service_worker():
                                    mimetype="application/javascript")
     response.headers["Service-Worker-Allowed"] = "/"
     response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
+@app.route("/reset-ui")
+def reset_ui():
+    """Remove stale PWA caches without clearing the user's login cookie."""
+    response = make_response("""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Refreshing PowWash</title></head><body>
+<p style="font:16px system-ui;padding:24px">Refreshing the PowWash workspace...</p>
+<script>
+(async () => {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => registration.unregister()));
+    }
+    if ('caches' in window) {
+      const names = await caches.keys();
+      await Promise.all(names.map(name => caches.delete(name)));
+    }
+  } finally {
+    window.location.replace('/?ui_reset=20260613');
+  }
+})();
+</script></body></html>""")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
 
 
@@ -1095,11 +1122,13 @@ def notif_prefs_set():
 # ── Main app ───────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template(
+    response = make_response(render_template(
         "index.html",
         service_presets={k: v.get("label", k.title()) for k, v in params.preset_options().items()},
         checkatrade_scraper_url=os.environ.get("CHECKATRADE_SCRAPER_PUBLIC_URL", ""),
-    )
+    ))
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
 
 
 @app.route("/api/params", methods=["GET"])
